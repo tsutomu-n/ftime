@@ -1,6 +1,6 @@
 /demo
 *.cast
-# media: track only the single README GIF; ignore all other media artifacts
+# media: track only README GIFs (basic.gif); ignore all other media artifacts
 /media/*
 !/media/
 !/media/basic.gif

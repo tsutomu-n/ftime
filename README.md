@@ -114,8 +114,10 @@ ftime --help
 ```bash
 ftime               # List files in current directory
 ftime -a            # Show relative age instead of absolute timestamps
+ftime -s time       # Sort by modified time (newest first)
+ftime -R -d 2 md    # Recurse up to depth 2 and list *.md
 ftime --help        # Show detailed help
-ftime --help-short  # Show short help (3 lines)
+ftime --help-short  # Short help (3 lines)
 ftime --version     # Show version
 ```
 
@@ -133,10 +135,60 @@ ftime [DIR] [PATTERN ...]
 
 ### Options
 
+- **-a, --age**: show relative time (e.g., `5m`, `3h`) instead of absolute timestamps
+- **-s, --sort time|name**: sort key (default: name; `time` = modified time)
+- **-r, --reverse**: reverse the sort order
+- **-R, --recursive**: recurse into subdirectories
+- **-d, --max-depth N**: limit recursion depth to N (requires -R)
 - **-h, --help**: show full help
 - **--help-short**: show short help
 - **-V, --version**: show version
-- **-a, --age**: show relative time instead of absolute timestamps (e.g., `5m`, `3h`)
+
+### Examples (combinations)
+
+```bash
+# Recurse the entire tree (may be large)
+ftime -R
+
+# Recurse up to depth 3
+ftime -R -d 3
+
+# Depth 2 under docs/, only *.md
+ftime -R -d 2 docs md
+
+# Sort by modified time; recurse 1 level
+ftime -s time -R -d 1
+
+# Oldest first by modified time
+ftime -s time -r -R
+```
+
+### Common pitfalls
+
+- **Provide a number with -d**
+  ```bash
+  ftime -d          # Error: --max-depth expects a positive integer
+  ftime -d -R       # Error: --max-depth expects a positive integer
+  ftime -R -d 3     # OK
+  ftime -d 3 -R     # OK (option order doesn't matter)
+  ```
+
+- **Use -R with -d**
+  ```bash
+  ftime -d 3        # Error: --max-depth requires --recursive (-R)
+  ftime -R -d 3     # OK
+  ```
+
+- **Quote patterns to prevent shell expansion**
+  ```bash
+  ftime '*.md'      # OK: pattern handled by ftime as a filter
+  ftime *.md        # Your shell expands to file names; may behave unexpectedly
+  ```
+
+- **Depth is relative to the starting DIR**
+  ```bash
+  ftime -R -d 1 docs   # docs/ and its direct children (not grandchildren)
+  ```
 
 Notes:
 - **Precedence**: CLI options override environment variables, which override defaults.
