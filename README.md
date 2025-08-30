@@ -2,6 +2,11 @@
 
 A tiny, dependency‑light CLI to list files with their modified and created times.
 
+<p align="left">
+  <img src="./media/basic.gif"   alt="ftime: see modified/created/name at a glance" width="600" />
+  
+</p>
+
 | Column   | Meaning                                                                              |
 |----------|--------------------------------------------------------------------------------------|
 | mark     | One‑char indicator placed before "modified". `+` means the file was modified after it was created; blank otherwise (yellow when color is enabled). |
@@ -21,7 +26,31 @@ Designed to be friendly for junior engineers and non‑native English speakers. 
 
 ---
 
-## Install (recommended: from a cloned repo)
+## Uninstall
+
+```bash
+rm ~/.local/bin/ftime
+```
+
+---
+
+## Install (one‑liner: download only) – Recommended
+
+You do not need to clone the repo. Download the script and make it executable.
+
+```bash
+mkdir -p ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/ftime-list.sh \
+  -o ~/.local/bin/ftime
+chmod +x ~/.local/bin/ftime
+
+# test
+hash -r
+ftime --help
+```
+
+<details>
+  <summary><strong>Install (from a cloned repo) – Optional</strong></summary>
 
 Use a symlink in `~/.local/bin`. This makes a real command named `ftime`. It works in scripts and in CI.
 
@@ -68,28 +97,7 @@ hash -r
 ftime --help
 ```
 
-### Uninstall
-
-```bash
-rm ~/.local/bin/ftime
-```
-
----
-
-## Install (one‑liner: download only)
-
-You do not need to clone the repo. Download the script and make it executable.
-
-```bash
-mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/ftime-list.sh \
-  -o ~/.local/bin/ftime
-chmod +x ~/.local/bin/ftime
-
-# test
-hash -r
-ftime --help
-```
+</details>
 
 **Notes**
 
@@ -102,8 +110,10 @@ ftime --help
 
 ### Quick Start
 
+
 ```bash
-ftime               # List files in current directory  
+ftime               # List files in current directory
+ftime -a            # Show relative age instead of absolute timestamps
 ftime --help        # Show detailed help
 ftime --help-short  # Show short help (3 lines)
 ftime --version     # Show version
@@ -130,32 +140,11 @@ ftime [DIR] [PATTERN ...]
 
 Notes:
 - **Precedence**: CLI options override environment variables, which override defaults.
-- `FTL_RELATIVE` is kept for compatibility, but using `-a/--age` is recommended.
 
-### Examples
+Timezone: default is your machine’s local timezone. Override via env var `FTL_TZ` (e.g., `FTL_TZ=Asia/Tokyo ftime md`).
 
-```bash
-ftime                 # list everything in current dir
-ftime md              # only *.md
-ftime py              # only *.py
-ftime .log            # only *.log
-ftime docs md         # *.md inside ./docs
-ftime '*.test.*'      # explicit glob
-```
-
----
-
-## Demo (GIF) – animated on GitHub
-
-<p align="left">
-  <img src="./media/basic.gif"   alt="ftime: see modified/created/name at a glance" width="600" />
-  
-</p>
-
-## Timezone
-
-- Default: your machine’s local timezone
-- Override: env var `FTL_TZ` (example: `FTL_TZ=Asia/Tokyo ftime md`)
+<details>
+  <summary><strong>Display customization (optional)</strong></summary>
 
 ## Color
 
@@ -174,6 +163,11 @@ ftime '*.test.*'      # explicit glob
 - Old (7d+): gray
 - Disable time coloring: `FTL_NO_TIME_COLOR=1`
 - Configure thresholds: `FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
+
+</details>
+
+<details>
+  <summary><strong>Environment variables (optional)</strong></summary>
 
 ### How to Use Environment Variables (Examples)
 
@@ -203,6 +197,8 @@ ftime --age
 - `FTL_NO_TIME_COLOR`: disable time‑based coloring only
 - `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`: thresholds for recency coloring (in hours)
 - `FTL_RELATIVE`: show relative times instead of absolute (e.g., `5m`, `3h`)
+
+</details>
 
 ---
 
