@@ -2,6 +2,13 @@
 
 ファイルの「更新時刻」「作成時刻」「名前」を一覧表示する小さなCLIです。
 
+<p align="left">
+  <img src="./media/basic.gif"   alt="ftime: modified/created/name をひと目で" width="600" />
+  
+</p>
+
+初学者や非ネイティブにも読みやすい設計。わかりやすいエラーメッセージと初心者向けヘルプを備えています。
+
 | 列       | 意味                                                                                         |
 |----------|----------------------------------------------------------------------------------------------|
 | mark     | 更新フラグです（1文字）。`+` は「作成後に更新があった」ことを示します。色分けが有効な場合は黄色で表示されます。 |
@@ -19,16 +26,17 @@
 
 ---
 
-## インストール（推奨: クローンして使う）
+## インストール（ワンライナー: ダウンロードのみ） – 推奨
 
-`~/.local/bin` にシンボリックリンクを置いて `ftime` コマンドとして利用します。
+リポジトリをクローンする必要はありません。スクリプトをダウンロードして実行権限を付与します。
 
 ```bash
-git clone https://github.com/tsutomu-n/ftime.git
-cd ftime
-chmod +x ftime-list.sh
 mkdir -p ~/.local/bin
-ln -sf "$PWD/ftime-list.sh" ~/.local/bin/ftime
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/ftime-list.sh \
+  -o ~/.local/bin/ftime
+chmod +x ~/.local/bin/ftime
+
+# test
 hash -r
 ftime --help
 ```
@@ -41,18 +49,60 @@ rm ~/.local/bin/ftime
 
 ---
 
-## インストール（ワンライナー: ダウンロードのみ）
+<details>
+  <summary><strong>インストール（リポジトリから） – 任意</strong></summary>
+
+`~/.local/bin` にシンボリックリンクを置いて `ftime` コマンドとして利用します。
+
+1) 任意の場所へクローン
+
+```bash
+git clone https://github.com/tsutomu-n/ftime.git
+cd ftime   # リポジトリルートへ
+```
+
+2) 実行権限を付与
+
+```bash
+chmod +x ftime-list.sh
+```
+
+3) `~/.local/bin` を PATH に含める（zsh/bash を自動判定。rc が無ければ作成）
+
+```bash
+if [ -n "$ZSH_VERSION" ]; then
+  rc="${ZDOTDIR:-$HOME}/.zshrc"
+elif [ -n "$BASH_VERSION" ]; then
+  rc="$HOME/.bashrc"
+else
+  rc="$HOME/.profile"
+fi
+mkdir -p "$(dirname "$rc")"
+grep -q '\\.local/bin' "$rc" 2>/dev/null || \
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+. "$rc"
+```
+
+4) `ftime` というコマンドを作成
 
 ```bash
 mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/ftime-list.sh \
-  -o ~/.local/bin/ftime
-chmod +x ~/.local/bin/ftime
+ln -sf "$PWD/ftime-list.sh" ~/.local/bin/ftime
+```
+
+5) リフレッシュして確認
+
+```bash
 hash -r
 ftime --help
 ```
 
-> シェルが `ftime` を見つけない場合は新しいターミナルを開くか、`source ~/.zshrc` を実行してください。
+</details>
+
+**注意**
+
+- シェルが `ftime` を見つけない場合は新しいターミナルを開くか、`source ~/.zshrc` を実行してください。
+- このツールは Linux の GNU `stat`/`date` と Bash を必要とします。
 
 ---
 
@@ -93,8 +143,7 @@ ftime [DIR] [PATTERN ...]
 - `--help-short`: 短いヘルプを表示
 - `-V, --version`: バージョンを表示
 
-注意:
-- 優先順位は「オプション > 環境変数 > デフォルト」
+注記:
 - 互換のため `FTL_RELATIVE` も利用できますが、`-a/--age` の使用を推奨します
 
 ### 例（組み合わせ）
@@ -143,34 +192,42 @@ ftime -s time -r -R
   ftime -R -d 1 docs   # docs/ と直下のみ（孫以降は含まない）
   ```
 
----
+----
 
-## タイムゾーン
+**Notes**
+- 優先順位: コマンドラインオプション > 環境変数 > デフォルト
 
-- デフォルト: マシンのローカルタイムゾーン
-- 上書き: 環境変数 `FTL_TZ` で上書きできます（例: `FTL_TZ=Asia/Tokyo ftime md`）。
+タイムゾーン: デフォルトはマシンのローカル。環境変数 `FTL_TZ` で上書き可（例: `FTL_TZ=Asia/Tokyo ftime md`）。
+
+<details>
+  <summary><strong>表示のカスタマイズ（任意）</strong></summary>
 
 ## 色
 
-- 端末（TTY）での実行時は、自動で色付けされます。
-- パイプやページャ経由で使う場合も、`FTL_FORCE_COLOR=1` を使えば色付けを強制できます（例: `ftime | less -R`）。
-- すべての色を無効化する場合: `NO_COLOR=1` または `FTL_NO_COLOR=1` を指定します。
+- 端末（TTY）では自動で色付け。
+- パイプ/ページャでも `FTL_FORCE_COLOR=1 ftime | less -R` で強制。
+- すべての色を無効化: `NO_COLOR=1` または `FTL_NO_COLOR=1`。
 
-### どこが色付けされるか
-- `modified` 列と `created` 列: 経過時間に応じて色が変わります。
-- `name` 列: ファイルの種類や拡張子に応じて色分けされます。
-- `mark` 列: 作成後に更新があった場合、`+` が黄色で表示されます。
+### 色付けされるもの
+- `modified` と `created` 列は経過時間で色付け
+- `name` 列は種別/拡張子で色分け
+- `mark` 列は作成後に更新があると `+` を黄色表示（それ以外は空欄）
 
-### 時間ベースの色分け（デフォルト / 変更可能）
-- **アクティブ**（デフォルト4時間以内）: 明るい緑
-- **最近**（デフォルト24時間以内）: デフォルトカラー（色付けなし）
-- **古い**（7日以上経過）: グレー
-- 時間ベースの色付けを無効化する場合: `FTL_NO_TIME_COLOR=1`
-- 閾値を調整する場合: `FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
+### 時間ベースの色分け（設定可能）
+- アクティブ（デフォルト4h）: 明るい緑
+- 最近（デフォルト24h）: デフォルト色
+- 古い（7日以上）: グレー
+- 時間色付けを無効化: `FTL_NO_TIME_COLOR=1`
+- 閾値調整: `FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
 
-### 環境変数の使い方（例）
+</details>
 
-`ftime` コマンドの前に変数を指定すると、そのコマンド実行中だけ有効な一時的な設定になります。この設定は永続的ではありません。複数組み合わせることも可能です。
+<details>
+  <summary><strong>環境変数（任意）</strong></summary>
+
+### 使い方（例）
+
+コマンドの前に一時的に付与して実行します。複数同時指定も可能です。
 
 ```bash
 # タイムゾーンをニューヨークに変更
@@ -182,22 +239,22 @@ FTL_ACTIVE_HOURS=1 ftime
 # 複数指定
 FTL_TZ=UTC FTL_RECENT_HOURS=48 ftime
 
-# 絶対時刻の代わりに相対時間を表示
+# 相対時間表示を有効化
 FTL_RELATIVE=1 ftime
-# オプションで有効化
+# オプションでも可
 ftime -a
 ftime --age
 ```
 
- 
+### リファレンス
+- `FTL_TZ`: タイムゾーン上書き（例: `Asia/Tokyo`）
+- `FTL_FORCE_COLOR`: パイプ時も色付けを強制
+- `NO_COLOR` / `FTL_NO_COLOR`: すべての色付けを無効化
+- `FTL_NO_TIME_COLOR`: 時間ベース色付けのみ無効化
+- `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`: 色分けの閾値（時間）
+- `FTL_RELATIVE`: 相対時間表示（例: `5m`, `3h`）
 
-### 環境変数（リファレンス）
-- `FTL_TZ`: タイムゾーンを上書きします（例: `Asia/Tokyo`）。
-- `FTL_FORCE_COLOR`: パイプ経由でも色付けを強制します。
-- `NO_COLOR` / `FTL_NO_COLOR`: すべての色付けを無効化します。
-- `FTL_NO_TIME_COLOR`: 時間ベースの色付けだけを無効化します。
-- `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`: 経過時間（アクティブ/最近）の閾値を時間単位で設定します。
-- `FTL_RELATIVE`: 絶対時刻の代わりに相対時間を表示します（例: `5m`, `3h`）。
+</details>
 
 ---
 
