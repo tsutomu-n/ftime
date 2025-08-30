@@ -41,3 +41,6 @@ media/*.min.svg
 # Tmp intermediates (also covered by '/tmp')
 tmp/*.cast
 tmp/*.stamp
+
+# Demo tooling (exclude from OSS package)
+/tools/
