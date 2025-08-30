@@ -1,5 +1,7 @@
 # ftime — Simple File Time Viewer
 
+Translations: [日本語](README-ja.md) · [中文](README-zh.md)
+
 A tiny, dependency‑light CLI to list files with their modified and created times.
 
 <p align="left">
