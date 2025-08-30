@@ -1,0 +1,24 @@
+/demo
+*.cast
+/media
+.claude
+GEMINI.md
+/tmp
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# IDE settings
+.idea/
+.vscode/
+
+# Env tools
+.direnv/
+
+# Package manager logs
+npm-debug.log*
+yarn-error.log*
