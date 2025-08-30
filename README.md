@@ -145,77 +145,12 @@ ftime '*.test.*'      # explicit glob
 
 ---
 
-## Demo (SVG) – drop‑in placeholders
-
-<!--
-  How to use:
-  1) Generate SVGs into ./media via `make rec-<name>`, `make demos`, or manual svg-term + svgo.
-  2) Keep width between 640–960px to avoid line wrapping.
-  3) Update alt texts if you change the scenario.
--->
+## Demo (GIF) – animated on GitHub
 
 <p align="left">
-  <img src="./media/basic.svg"   alt="ftime: see modified/created/name at a glance" width="720" />
+  <img src="./media/basic.gif"   alt="ftime: see modified/created/name at a glance" width="600" />
+  
 </p>
-
-<p align="left">
-  <img src="./media/pattern.svg" alt="ftime: pattern shorthand (md / .log / OR)" width="720" />
-</p>
-
-<p align="left">
-  <img src="./media/dir.svg"     alt="ftime: target another directory (docs md)" width="720" />
-</p>
-
-<p align="left">
-  <img src="./media/tz.svg"      alt="ftime: switch timezone via env var (legend shows tz)" width="720" />
-</p>
-
-> TIP: If SVGs aren’t ready yet, keep these tags as is. Once you add files under `./media/`, they will render automatically on GitHub.
-
-
-### SVG Demo Workflow (asciinema → svg-term → SVGO)
-
-Quickest path to a crisp animated SVG for your README.
-
-1) Record (.cast)
-
-```bash
-# Press Ctrl-D (or type 'exit') to finish
-asciinema rec demo.cast
-# run a few ftime commands during recording
-```
-
-2) Convert to SVG (uses npx)
-
-```bash
-npx -y svg-term --cast demo.cast --out demo.svg --window --no-cursor
-```
-
-3) Optimize (smaller SVG)
-
-```bash
-npx -y svgo --multipass -o demo.svg demo.svg
-```
-
-4) Embed in README
-
-```markdown
-![ftime demo](./demo.svg)
-```
-
-### Make targets
-
-```bash
-make rec-basic     # records basic.cast
-make rec-pattern   # records pattern.cast
-make rec-dir       # records dir.cast
-make rec-tz        # records tz.cast
-make demos         # builds media/{basic,pattern,dir,tz}.svg
-```
-
-> Tip: Fix your terminal width (e.g., 80–100 cols). Use `--no-cursor` and keep clips under ~10s.
-
----
 
 ## Timezone
 

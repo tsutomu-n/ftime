@@ -1,12 +1,9 @@
 /demo
 *.cast
-# media: ignore all but selected SVGs for README
+# media: track only the single README GIF; ignore all other media artifacts
 /media/*
 !/media/
-!/media/basic.svg
-!/media/dir.svg
-!/media/pattern.svg
-!/media/tz.svg
+!/media/basic.gif
 .claude
 GEMINI.md
 /tmp
@@ -38,9 +35,12 @@ yarn-error.log*
 # Media intermediates
 media/*.raw
 media/*.min.svg
+media/*.svg
+media/*.tmp.gif
 # Tmp intermediates (also covered by '/tmp')
 tmp/*.cast
 tmp/*.stamp
 
 # Demo tooling (exclude from OSS package)
 /tools/
+Makefile
