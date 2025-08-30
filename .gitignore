@@ -1,6 +1,12 @@
 /demo
 *.cast
-/media
+# media: ignore all but selected SVGs for README
+/media/*
+!/media/
+!/media/basic.svg
+!/media/dir.svg
+!/media/pattern.svg
+!/media/tz.svg
 .claude
 GEMINI.md
 /tmp
