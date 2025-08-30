@@ -44,3 +44,4 @@ tmp/*.stamp
 # Demo tooling (exclude from OSS package)
 /tools/
 Makefile
+make-demo.sh

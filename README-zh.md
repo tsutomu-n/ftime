@@ -62,8 +62,11 @@ ftime --help
 
 ```bash
 ftime               # 列出当前目录
+ftime -a            # 使用相对时间
+ftime -s time       # 按修改时间排序（新到旧）
+ftime -R -d 2 md    # 递归到深度2，并仅列出 *.md
 ftime --help        # 详细帮助
-ftime --help-short  # 简短帮助
+ftime --help-short  # 简短帮助（3行）
 ftime --version     # 显示版本
 ```
 
@@ -81,25 +84,64 @@ ftime [DIR] [PATTERN ...]
 
 ### 选项
 
+- `-a, --age`：使用相对时间替代绝对时间戳（例如：`5m`、`3h`）
+- `-s, --sort time|name`：排序键（默认：`name`；`time` 为修改时间）
+- `-r, --reverse`：反转排序顺序
+- `-R, --recursive`：递归进入子目录
+- `-d, --max-depth N`：将递归深度限制为 N（需要 `-R`）
 - `-h, --help`：显示完整帮助
 - `--help-short`：显示简短帮助
 - `-V, --version`：显示版本
-- `-a, --age`：使用相对时间替代绝对时间戳（例如：`5m`、`3h`）
 
 说明：
 - 优先级：命令行选项 > 环境变量 > 默认值
 - 为兼容保留 `FTL_RELATIVE`，但推荐使用 `-a/--age`
 
-### 示例
+### 示例（组合）
 
 ```bash
-ftime                 # 全部
-ftime md              # 仅 *.md
-ftime py              # 仅 *.py
-ftime .log            # 仅 *.log
-ftime docs md         # ./docs 下的 *.md
-ftime '*.test.*'      # 显式 glob
+# 递归整个目录树（可能结果较大）
+ftime -R
+
+# 递归深度 3
+ftime -R -d 3
+
+# 在 docs/ 下递归深度 2，且仅 *.md
+ftime -R -d 2 docs md
+
+# 按修改时间排序，并仅递归 1 层
+ftime -s time -R -d 1
+
+# 按修改时间升序（较旧优先）遍历整个目录树
+ftime -s time -r -R
 ```
+
+### 常见陷阱
+
+- `-d` 需要跟数字
+  ```bash
+  ftime -d          # Error: --max-depth expects a positive integer
+  ftime -d -R       # Error: --max-depth expects a positive integer
+  ftime -R -d 3     # OK
+  ftime -d 3 -R     # OK（选项顺序无关）
+  ```
+
+- 使用 `-d` 时需要同时加上 `-R`
+  ```bash
+  ftime -d 3        # Error: --max-depth requires --recursive (-R)
+  ftime -R -d 3     # OK
+  ```
+
+- 为避免 shell 展开，请对模式加引号
+  ```bash
+  ftime '*.md'      # OK：模式由 ftime 作为过滤器处理
+  ftime *.md        # 可能被 shell 展开为文件名，导致行为与预期不符
+  ```
+
+- 深度以起始 DIR 为基准
+  ```bash
+  ftime -R -d 1 docs   # 仅 docs/ 及其直接子项（不包含孙级）
+  ```
 
 ---
 

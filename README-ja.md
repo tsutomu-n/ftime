@@ -62,8 +62,11 @@ ftime --help
 
 ```bash
 ftime               # カレントディレクトリを一覧
+ftime -a            # 絶対時刻の代わりに相対時間を表示
+ftime -s time       # 更新時刻でソート（新しい順）
+ftime -R -d 2 md    # 深さ2で再帰し *.md を一覧
 ftime --help        # 詳細ヘルプ
-ftime --help-short  # 短いヘルプ
+ftime --help-short  # 短いヘルプ（3行）
 ftime --version     # バージョン表示
 ```
 
@@ -81,25 +84,64 @@ ftime [DIR] [PATTERN ...]
 
 ### オプション
 
+- `-a, --age`: 絶対時刻の代わりに相対時間を表示（例: `5m`, `3h`）
+- `-s, --sort time|name`: ソートキー（デフォルト: name、`time` は更新時刻）
+- `-r, --reverse`: ソート順を反転
+- `-R, --recursive`: サブディレクトリを再帰的に走査
+- `-d, --max-depth N`: 再帰の深さを N に制限（`-R` が必要）
 - `-h, --help`: 詳細ヘルプを表示
 - `--help-short`: 短いヘルプを表示
 - `-V, --version`: バージョンを表示
-- `-a, --age`: 絶対時刻の代わりに相対時間を表示（例: `5m`, `3h`）
 
 注意:
 - 優先順位は「オプション > 環境変数 > デフォルト」
 - 互換のため `FTL_RELATIVE` も利用できますが、`-a/--age` の使用を推奨します
 
-### 例
+### 例（組み合わせ）
 
 ```bash
-ftime                 # すべて
-ftime md              # *.md のみ
-ftime py              # *.py のみ
-ftime .log            # *.log のみ
-ftime docs md         # ./docs 配下の *.md
-ftime '*.test.*'      # 明示的なグロブ
+# ツリー全体を再帰（大きくなる可能性あり）
+ftime -R
+
+# 深さ3で再帰
+ftime -R -d 3
+
+# docs/ 配下を深さ2、*.md のみ
+ftime -R -d 2 docs md
+
+# 更新時刻でソートし、1階層だけ再帰
+ftime -s time -R -d 1
+
+# 更新時刻の昇順（古い順）でツリー全体
+ftime -s time -r -R
 ```
+
+### よくあるつまずき
+
+- `-d` には数値が必要
+  ```bash
+  ftime -d          # Error: --max-depth expects a positive integer
+  ftime -d -R       # Error: --max-depth expects a positive integer
+  ftime -R -d 3     # OK
+  ftime -d 3 -R     # OK（オプション順は任意）
+  ```
+
+- `-d` を使うときは `-R` も指定
+  ```bash
+  ftime -d 3        # Error: --max-depth requires --recursive (-R)
+  ftime -R -d 3     # OK
+  ```
+
+- シェル展開を避けるためにパターンはクォート
+  ```bash
+  ftime '*.md'      # OK: パターンは ftime がフィルタとして扱う
+  ftime *.md        # シェルがファイル名へ展開し、意図通りでない場合あり
+  ```
+
+- 深さは起点の DIR 基準
+  ```bash
+  ftime -R -d 1 docs   # docs/ と直下のみ（孫以降は含まない）
+  ```
 
 ---
 
