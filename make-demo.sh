@@ -108,7 +108,7 @@ To record the four demos (from repo root):
   make rec-pattern  # (cd demo) -> ftime md / .log / md py -> exit
   make rec-dir      # (cd repo) -> ftime demo md -> exit
   make rec-tz       # (cd demo) -> ftime / FTL_TZ=Asia/Tokyo ftime -> exit
-  make demos        # builds media/*.min.svg
+  make demos        # builds media/*.svg
 
 NOTE
 

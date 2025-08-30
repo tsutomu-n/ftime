@@ -28,3 +28,16 @@ Thumbs.db
 # Package manager logs
 npm-debug.log*
 yarn-error.log*
+
+# Demo build artifacts
+# Root casts (also covered by '*.cast')
+/basic.cast
+/pattern.cast
+/dir.cast
+/tz.cast
+# Media intermediates
+media/*.raw
+media/*.min.svg
+# Tmp intermediates (also covered by '/tmp')
+tmp/*.cast
+tmp/*.stamp

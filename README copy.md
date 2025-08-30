@@ -131,19 +131,19 @@ ftime '*.test.*'      # explicit glob
 -->
 
 <p align="left">
-  <img src="./media/basic.min.svg"   alt="ftime: see modified/created/name at a glance" width="720" />
+  <img src="./media/basic.svg"   alt="ftime: see modified/created/name at a glance" width="720" />
 </p>
 
 <p align="left">
-  <img src="./media/pattern.min.svg" alt="ftime: pattern shorthand (md / .log / OR)" width="720" />
+  <img src="./media/pattern.svg" alt="ftime: pattern shorthand (md / .log / OR)" width="720" />
 </p>
 
 <p align="left">
-  <img src="./media/dir.min.svg"     alt="ftime: target another directory (docs md)" width="720" />
+  <img src="./media/dir.svg"     alt="ftime: target another directory (docs md)" width="720" />
 </p>
 
 <p align="left">
-  <img src="./media/tz.min.svg"      alt="ftime: switch timezone via env var (legend shows tz)" width="720" />
+  <img src="./media/tz.svg"      alt="ftime: switch timezone via env var (legend shows tz)" width="720" />
 </p>
 
 > TIP: If SVGs aren’t ready yet, keep these tags as is. Once you add files under `./media/`, they will render automatically on GitHub.
@@ -170,13 +170,13 @@ npx -y svg-term --cast demo.cast --out demo.svg --window --no-cursor
 3) Optimize (smaller SVG)
 
 ```bash
-npx -y svgo --multipass -o demo.min.svg demo.svg
+npx -y svgo --multipass -o demo.svg demo.svg
 ```
 
 4) Embed in README
 
 ```markdown
-![ftime demo](./demo.min.svg)
+![ftime demo](./demo.svg)
 ```
 
 ### Make targets
@@ -186,7 +186,7 @@ make rec-basic     # records basic.cast
 make rec-pattern   # records pattern.cast
 make rec-dir       # records dir.cast
 make rec-tz        # records tz.cast
-make demos         # builds media/{basic,pattern,dir,tz}.min.svg
+make demos         # builds media/{basic,pattern,dir,tz}.svg
 ```
 
 > Tip: Fix your terminal width (e.g., 80–100 cols). Use `--no-cursor` and keep clips under ~10s.

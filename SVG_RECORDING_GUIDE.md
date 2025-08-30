@@ -168,24 +168,24 @@ npx -y svg-term --cast tz.cast --out media/tz.svg --window --no-cursor
 ls -la media/*.svg
 ```
 
-### .svg → .min.svg 最適化
+### .svg → .svg 最適化
 
 ```bash
 # SVGファイル最適化
-npx -y svgo --multipass -o media/basic.min.svg media/basic.svg
-npx -y svgo --multipass -o media/pattern.min.svg media/pattern.svg
-npx -y svgo --multipass -o media/dir.min.svg media/dir.svg
-npx -y svgo --multipass -o media/tz.min.svg media/tz.svg
+npx -y svgo --multipass -o media/basic.svg media/basic.svg
+npx -y svgo --multipass -o media/pattern.svg media/pattern.svg
+npx -y svgo --multipass -o media/dir.svg media/dir.svg
+npx -y svgo --multipass -o media/tz.svg media/tz.svg
 
 # 最適化結果確認
-ls -la media/*.min.svg
+ls -la media/*.svg
 
 # ファイルサイズ比較
 echo "=== 最適化前後のサイズ比較 ==="
-du -h media/basic.svg media/basic.min.svg
-du -h media/pattern.svg media/pattern.min.svg
-du -h media/dir.svg media/dir.min.svg
-du -h media/tz.svg media/tz.min.svg
+du -h media/basic.svg media/basic.svg
+du -h media/pattern.svg media/pattern.svg
+du -h media/dir.svg media/dir.svg
+du -h media/tz.svg media/tz.svg
 ```
 
 ---
@@ -210,10 +210,10 @@ asciinema play tz.cast
 
 ```bash
 # Firefoxで確認 (例)
-firefox media/basic.min.svg
-firefox media/pattern.min.svg
-firefox media/dir.min.svg
-firefox media/tz.min.svg
+firefox media/basic.svg
+firefox media/pattern.svg
+firefox media/dir.svg
+firefox media/tz.svg
 ```
 
 **確認ポイント**:
@@ -237,16 +237,16 @@ README.mdの該当箇所を以下で更新:
 
 ```html
 <p align="left">
-  <img src="./media/basic.min.svg"   alt="ftime: see modified/created/name at a glance" width="720" />
+  <img src="./media/basic.svg"   alt="ftime: see modified/created/name at a glance" width="720" />
 </p>
 <p align="left">
-  <img src="./media/pattern.min.svg" alt="ftime: pattern shorthand (md / .log / OR)" width="720" />
+  <img src="./media/pattern.svg" alt="ftime: pattern shorthand (md / .log / OR)" width="720" />
 </p>
 <p align="left">
-  <img src="./media/dir.min.svg"     alt="ftime: target another directory (docs md)" width="720" />
+  <img src="./media/dir.svg"     alt="ftime: target another directory (docs md)" width="720" />
 </p>
 <p align="left">
-  <img src="./media/tz.min.svg"      alt="ftime: switch timezone via env var (legend shows tz)" width="720" />
+  <img src="./media/tz.svg"      alt="ftime: switch timezone via env var (legend shows tz)" width="720" />
 </p>
 ```
 
@@ -310,10 +310,10 @@ npx -y svgo --multipass --config='{"plugins": [{"name": "removeViewBox", "active
 
 # 作業結果確認
 echo "=== 作成されたファイル ==="
-ls -la media/*.min.svg
+ls -la media/*.svg
 
 echo "=== 合計サイズ ==="
-du -sh media/*.min.svg | awk '{sum+=$1} END {print "Total: " sum "K"}'
+du -sh media/*.svg | awk '{sum+=$1} END {print "Total: " sum "K"}'
 
 echo "=== README.mdの更新忘れチェック ==="
 grep -n "media/.*\.min\.svg" README.md || echo "⚠️  README.mdにSVGが貼り付けられていません"
@@ -325,7 +325,7 @@ grep -n "media/.*\.min\.svg" README.md || echo "⚠️  README.mdにSVGが貼り
 
 すべて完了したら以下を確認:
 
-- [ ] 4つの.min.svgファイルが生成されている
+- [ ] 4つの.svgファイルが生成されている
 - [ ] README.mdに4つのSVGが貼り付けられている
 - [ ] ブラウザでSVGが正しく表示される
 - [ ] 各SVGが4-8秒程度の適切な長さ
@@ -334,7 +334,7 @@ grep -n "media/.*\.min\.svg" README.md || echo "⚠️  README.mdにSVGが貼り
 ```bash
 # 最終確認コマンド
 echo "✅ SVGデモ作成完了!"
-echo "📁 作成されたファイル数: $(ls media/*.min.svg 2>/dev/null | wc -l)/4"
+echo "📁 作成されたファイル数: $(ls media/*.svg 2>/dev/null | wc -l)/4"
 echo "📝 README.md更新状況: $(grep -c "media/.*\.min\.svg" README.md)/4"
 echo "🎬 作業完了!"
 ```

@@ -3,7 +3,7 @@
 # Output files
 CAST ?= demo.cast
 SVG  ?= demo.svg
-MIN  ?= demo.min.svg
+MIN  ?= demo.svg
 # Slowdown factor for playback timing (1 = no change, 2 = 2x slower)
 SLOW ?= 1
 
@@ -36,7 +36,7 @@ DEMO ?= basic pattern dir tz
 
 # Do not delete intermediate SVGs
 .SECONDARY: media/%.svg tmp/%.slow.cast tmp/%.height.cast
-.PRECIOUS: media/%.svg media/%.min.svg tmp/%.slow.cast tmp/%.height.cast
+.PRECIOUS: media/%.svg media/%.svg tmp/%.slow.cast tmp/%.height.cast
 
 # Interactive recording for named demo (basic/pattern/dir/tz)
 rec-%:
@@ -77,13 +77,13 @@ media/%.svg: %.cast tmp/slow-$(SLOW)-$(PREROLL).stamp tmp/from-$(FROM).stamp too
 svg-%: media/%.svg
 	@true
 
-# Build file: media/<name>.min.svg from media/<name>.svg
-media/%.min.svg: media/%.svg
+# Build file: media/<name>.svg from media/<name>.svg
+media/%.svg: media/%.svg
 	@npx -y --package svgo svgo --multipass -i $< -o $@
 	@echo "[svgo] Wrote $@"
 
 # Convenience target: also allow `make svg-min-<name>`
-svg-min-%: media/%.min.svg
+svg-min-%: media/%.svg
 	@true
 
 # Build all base SVGs explicitly so they are kept
@@ -91,7 +91,7 @@ media-all-svg: $(patsubst %,media/%.svg,$(DEMO))
 	@echo "[svg] Built all: $(DEMO)"
 
 # Build all required demos (SVG + min SVG)
-demos: media-all-svg $(patsubst %,media/%.min.svg,$(DEMO))
+demos: media-all-svg $(patsubst %,media/%.svg,$(DEMO))
 	@echo "[done] Built: $(DEMO)"
 
 # --- Non-interactive (scripted) recordings ---
@@ -127,7 +127,7 @@ auto-demos: rec-auto demos
 
 .PHONY: clean
 clean:
-	rm -f media/*.svg media/*.min.svg media/*.raw tmp/*.cast tmp/*.stamp
+	rm -f media/*.svg media/*.svg media/*.raw tmp/*.cast tmp/*.stamp
 	@echo "[clean] Removed generated media and tmp files"
 
 .PHONY: lint
