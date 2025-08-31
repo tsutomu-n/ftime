@@ -211,7 +211,11 @@ load_config_defaults() {
 
 # Git-only support: build a set of changed/untracked files relative to $dir
 CHANGED_TMP=""
-cleanup_tmp() { [ -n "$CHANGED_TMP" ] && rm -rf -- "$CHANGED_TMP" || true; }
+cleanup_tmp() {
+  if [ -n "$CHANGED_TMP" ]; then
+    rm -rf -- "$CHANGED_TMP" || :
+  fi
+}
 trap cleanup_tmp EXIT
 
 build_git_changed_set() {
@@ -406,7 +410,7 @@ fi
 
 if [[ "$sort_key" == "time" ]]; then
   # Time sort: newest first by default; --reverse flips to oldest first
-  sort_flags=(-z -t ' ' -k1,1n)
+  sort_flags=(-z -t ' ' -k '1,1n')
   if [[ $reverse -eq 0 ]]; then
     sort_flags+=(-r)
   fi
@@ -419,6 +423,7 @@ if [[ "$sort_key" == "time" ]]; then
         keep=0
         base_f="${f##*/}"
         for pat in "${filters[@]}"; do
+          # shellcheck disable=SC2053  # we intentionally use glob matching on the right-hand side
           if [[ "$base_f" == $pat ]]; then keep=1; break; fi
         done
         [[ $keep -eq 0 ]] && continue
@@ -494,6 +499,7 @@ if [[ "$sort_key" == "time" ]]; then
         keep=0
         base_f="${f##*/}"
         for pat in "${filters[@]}"; do
+          # shellcheck disable=SC2053  # we intentionally use glob matching on the right-hand side
           if [[ "$base_f" == $pat ]]; then keep=1; break; fi
         done
         [[ $keep -eq 0 ]] && continue
@@ -582,6 +588,7 @@ else
         keep=0
         base_f="${f##*/}"
         for pat in "${filters[@]}"; do
+          # shellcheck disable=SC2053  # we intentionally use glob matching on the right-hand side
           if [[ "$base_f" == $pat ]]; then keep=1; break; fi
         done
         [[ $keep -eq 0 ]] && continue
