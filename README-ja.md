@@ -20,9 +20,16 @@
 
 ## 必要要件
 
-- Linux + GNU coreutils: `stat`, `date`
+- GNU coreutils: `stat`, `date`
 - GNU findutils（`-printf`/`-print0` を備えた `find`）と GNU `sort`（`-z` 対応）
 - Bash シェル（`#!/usr/bin/env bash`）
+
+macOS向けメモ:
+- Homebrew などで GNU ツールを導入すれば動作します。
+  ```bash
+  brew install coreutils findutils   # gstat/gdate/gfind/gsort を提供
+  ```
+  スクリプトは `gstat/gdate/gfind/gsort` を自動検出し、GNU がデフォルトの環境では `stat/date/find/sort` を使います。
 
 ---
 
@@ -115,6 +122,7 @@ ftime               # カレントディレクトリを一覧
 ftime -a            # 絶対時刻の代わりに相対時間を表示
 ftime -s time       # 更新時刻でソート（新しい順）
 ftime -R -d 2 md    # 深さ2で再帰し *.md を一覧
+ftime --git-only    # 現在のgitリポジトリで変更/ステージ/未追跡のみを表示
 ftime --help        # 詳細ヘルプ
 ftime --help-short  # 短いヘルプ（3行）
 ftime --version     # バージョン表示
@@ -139,12 +147,10 @@ ftime [DIR] [PATTERN ...]
 - `-r, --reverse`: ソート順を反転
 - `-R, --recursive`: サブディレクトリを再帰的に走査
 - `-d, --max-depth N`: 再帰の深さを N に制限（`-R` が必要）
+- `--git-only`: 現在のgitリポジトリで変更/ステージ/未追跡のみを表示（リポジトリ外では全件にフォールバック）
 - `-h, --help`: 詳細ヘルプを表示
 - `--help-short`: 短いヘルプを表示
 - `-V, --version`: バージョンを表示
-
-注記:
-- 互換のため `FTL_RELATIVE` も利用できますが、`-a/--age` の使用を推奨します
 
 ### 例（組み合わせ）
 
@@ -192,12 +198,40 @@ ftime -s time -r -R
   ftime -R -d 1 docs   # docs/ と直下のみ（孫以降は含まない）
   ```
 
+- ベース名のみでフィルタ
+  パターンはファイル名（ベース名）のみに適用されます（ディレクトリ名には一致しません）。`docs/*.md` のようなパス指定は `-R` と `md`/`*.md` を併用してください。
+
 ----
 
 **Notes**
 - 優先順位: コマンドラインオプション > 環境変数 > デフォルト
 
 タイムゾーン: デフォルトはマシンのローカル。環境変数 `FTL_TZ` で上書き可（例: `FTL_TZ=Asia/Tokyo ftime md`）。
+
+### Git-only の詳細
+
+Git のポーセリンに優しいプランビングを使い、ヌル区切りで安全に処理します:
+
+- 作業ツリーで変更: `git -C "$dir" ls-files -z -m --`
+- ステージ済みの変更: `git -C "$dir" diff --name-only -z --cached --`
+- 未追跡（無視規則を尊重）: `git -C "$dir" ls-files -z -o --exclude-standard --`
+
+サブディレクトリから実行した場合も、パスは正しくマッピングされます。
+
+### 設定ファイル（XDG）
+
+- パス: `$XDG_CONFIG_HOME/ftime/config` または `~/.config/ftime/config`
+- 形式: `KEY=VALUE` のシンプルな行。未知のキーは安全のため無視します。
+- 許可キー: `FTL_TZ`, `FTL_FORCE_COLOR`, `FTL_NO_COLOR`, `FTL_NO_TIME_COLOR`, `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`
+- 優先順位: コマンドライン > 環境変数 > 設定ファイル > デフォルト
+
+例 `~/.config/ftime/config`:
+
+```ini
+FTL_TZ=UTC
+FTL_ACTIVE_HOURS=4
+FTL_RECENT_HOURS=24
+```
 
 <details>
   <summary><strong>表示のカスタマイズ（任意）</strong></summary>
@@ -207,6 +241,7 @@ ftime -s time -r -R
 - 端末（TTY）では自動で色付け。
 - パイプ/ページャでも `FTL_FORCE_COLOR=1 ftime | less -R` で強制。
 - すべての色を無効化: `NO_COLOR=1` または `FTL_NO_COLOR=1`。
+- NO_COLOR の慣行に従います。必要な場合は `FTL_FORCE_COLOR=1` が `NO_COLOR` を明示的に上書きします。
 
 ### 色付けされるもの
 - `modified` と `created` 列は経過時間で色付け
@@ -216,7 +251,7 @@ ftime -s time -r -R
 ### 時間ベースの色分け（設定可能）
 - アクティブ（デフォルト4h）: 明るい緑
 - 最近（デフォルト24h）: デフォルト色
-- 古い（7日以上）: グレー
+- 古い（「最近」閾値より古い; デフォルトでは24h超）: グレー
 - 時間色付けを無効化: `FTL_NO_TIME_COLOR=1`
 - 閾値調整: `FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
 
@@ -238,12 +273,6 @@ FTL_ACTIVE_HOURS=1 ftime
 
 # 複数指定
 FTL_TZ=UTC FTL_RECENT_HOURS=48 ftime
-
-# 相対時間表示を有効化
-FTL_RELATIVE=1 ftime
-# オプションでも可
-ftime -a
-ftime --age
 ```
 
 ### リファレンス
@@ -252,17 +281,27 @@ ftime --age
 - `NO_COLOR` / `FTL_NO_COLOR`: すべての色付けを無効化
 - `FTL_NO_TIME_COLOR`: 時間ベース色付けのみ無効化
 - `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`: 色分けの閾値（時間）
-- `FTL_RELATIVE`: 相対時間表示（例: `5m`, `3h`）
 
 </details>
 
----
+### Tips: エイリアス
+
+- 手短なエイリアス:
+  ```bash
+  alias f='ftime'
+  ```
+- 相対時間 + 更新時刻ソートを好む場合:
+  ```bash
+  alias ft='ftime -a -s time'
+  ```
+
+----
 
 ## セキュリティ / 制限事項
 
 - 作成時刻はファイルシステム/カーネル/ツールに依存し、`-` となる場合があります。
 - ファイル名に制御文字を含む場合があります。ANSI色が解釈される場所へ貼り付ける際は注意してください。
-- Linux/GNU 専用。macOS/BSD の `stat`/`date` はオプションが異なります。
+- macOS は GNU ツールを導入した場合にサポートされます（例: Homebrew）。デフォルトの BSD `stat`/`date` は非対応で、GNU の機能が必要です。
 
 ---
 

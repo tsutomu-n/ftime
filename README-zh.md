@@ -143,9 +143,6 @@ ftime [DIR] [PATTERN ...]
 - `--help-short`：显示简短帮助
 - `-V, --version`：显示版本
 
-注记：
-- 为兼容保留 `FTL_RELATIVE`，但推荐使用 `-a/--age`
-
 ### 示例（组合）
 
 ```bash
@@ -192,6 +189,9 @@ ftime -s time -r -R
   ftime -R -d 1 docs   # 仅 docs/ 及其直接子项（不包含孙级）
   ```
 
+- 仅按“文件名（basename）”匹配
+  模式只作用于文件名（basename），不会匹配目录路径。若想实现 `docs/*.md` 一类效果，请结合 `-R` 并传入 `md`/`*.md` 模式。
+
 ---
 
 **Notes**
@@ -216,7 +216,7 @@ ftime -s time -r -R
 ### 基于时间的着色（可配置）
 - 活跃（默认 4h）：亮绿色
 - 最近（默认 24h）：默认色
-- 较旧（7d+）：灰色
+- 较旧（超过“最近”阈值；默认 24h+）：灰色
 - 仅关闭时间着色：`FTL_NO_TIME_COLOR=1`
 - 调整阈值：`FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
 
@@ -239,9 +239,7 @@ FTL_ACTIVE_HOURS=1 ftime
 # 组合多个变量
 FTL_TZ=UTC FTL_RECENT_HOURS=48 ftime
 
-# 启用相对时间显示
-FTL_RELATIVE=1 ftime
-# 也可用选项
+# 启用相对时间显示（使用选项）
 ftime -a
 ftime --age
 ```
@@ -252,7 +250,6 @@ ftime --age
 - `NO_COLOR` / `FTL_NO_COLOR`：关闭所有颜色
 - `FTL_NO_TIME_COLOR`：仅关闭基于时间的着色
 - `FTL_ACTIVE_HOURS`、`FTL_RECENT_HOURS`：新旧阈值（小时）
-- `FTL_RELATIVE`：显示相对时间（例如 `5m`, `3h`）
 
 </details>
 

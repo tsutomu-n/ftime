@@ -22,9 +22,20 @@ Designed to be friendly for junior engineers and non‑native English speakers. 
 
 ## Requirements
 
-- Linux with GNU coreutils: `stat`, `date`
-- GNU findutils (`find` with `-printf`/`-print0`) and GNU `sort` (with `-z`)
+- GNU coreutils: `stat`, `date`
+- GNU findutils: `find` with `-printf`/`-print0` and GNU `sort` (with `-z`)
 - Bash shell (`#!/usr/bin/env bash`)
+
+macOS note:
+- Supported when GNU tools are installed. Install via Homebrew:
+  ```bash
+  brew install coreutils findutils   # provides gstat/gdate/gfind/gsort
+  ```
+  The script auto-detects `gstat/gdate/gfind/gsort` and falls back to `stat/date/find/sort` when GNU variants are the defaults.
+  Alternatively, add Homebrew's "gnubin" to PATH to use GNU names without the `g` prefix (as documented by Homebrew):
+  ```bash
+  PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/findutils/libexec/gnubin:$PATH"
+  ```
 
 ---
 
@@ -118,6 +129,7 @@ ftime               # List files in current directory
 ftime -a            # Show relative age instead of absolute timestamps
 ftime -s time       # Sort by modified time (newest first)
 ftime -R -d 2 md    # Recurse up to depth 2 and list *.md
+ftime --git-only    # Show only files changed/staged/untracked in the current git repo
 ftime --help        # Show detailed help
 ftime --help-short  # Short help (3 lines)
 ftime --version     # Show version
@@ -142,6 +154,7 @@ ftime [DIR] [PATTERN ...]
 - **-r, --reverse**: reverse the sort order
 - **-R, --recursive**: recurse into subdirectories
 - **-d, --max-depth N**: limit recursion depth to N (requires -R)
+- **--git-only**: show only files changed/staged/untracked in the current git repo (falls back to full list if not a repo). Respects `.gitignore` via `--exclude-standard`, works when invoked from subdirectories.
 - **-h, --help**: show full help
 - **--help-short**: show short help
 - **-V, --version**: show version
@@ -192,10 +205,38 @@ ftime -s time -r -R
   ftime -R -d 1 docs   # docs/ and its direct children (not grandchildren)
   ```
 
+- **Basename-only filtering**
+  Patterns apply to the filename only (not directories). For path globs like `docs/*.md`, use `-R` and a pattern like `md` or `*.md`.
+
 Notes:
 - **Precedence**: CLI options override environment variables, which override defaults.
 
 Timezone: default is your machine’s local timezone. Override via env var `FTL_TZ` (e.g., `FTL_TZ=Asia/Tokyo ftime md`).
+
+### Git-only details
+
+Internals follow Git porcelain-friendly plumbing with null-delimited paths:
+
+- Changed in worktree: `git -C "$dir" ls-files -z -m --`
+- Staged changes: `git -C "$dir" diff --name-only -z --cached --`
+- Untracked, honoring ignore rules: `git -C "$dir" ls-files -z -o --exclude-standard --`
+
+Paths are correctly mapped when running from subdirectories.
+
+### Configuration file (XDG)
+
+- Path: `$XDG_CONFIG_HOME/ftime/config` or `~/.config/ftime/config`
+- Format: simple `KEY=VALUE` lines. Unknown keys are ignored for safety.
+- Allowed keys: `FTL_TZ`, `FTL_FORCE_COLOR`, `FTL_NO_COLOR`, `FTL_NO_TIME_COLOR`, `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`.
+- Precedence: CLI > environment > config file > defaults.
+
+Example `~/.config/ftime/config`:
+
+```ini
+FTL_TZ=UTC
+FTL_ACTIVE_HOURS=4
+FTL_RECENT_HOURS=24
+```
 
 <details>
   <summary><strong>Display customization (optional)</strong></summary>
@@ -205,6 +246,7 @@ Timezone: default is your machine’s local timezone. Override via env var `FTL_
 - Auto on TTY
 - Force ON for pipes/pagers: `FTL_FORCE_COLOR=1 ftime | less -R`
 - Turn OFF all colors: `NO_COLOR=1` or `FTL_NO_COLOR=1`
+- Follows the NO_COLOR informal standard; `FTL_FORCE_COLOR=1` explicitly overrides `NO_COLOR` when needed.
 
 ### What is colorized
 - **Modified** and **Created** time columns are colorized by recency (active/recent/old)
@@ -214,7 +256,7 @@ Timezone: default is your machine’s local timezone. Override via env var `FTL_
 ### Time‑based coloring (configurable)
 - Active (default 4h): bright green
 - Recent (default 24h): default color (no extra tint)
-- Old (7d+): gray
+- Old (older than recent threshold; default 24h+): gray
 - Disable time coloring: `FTL_NO_TIME_COLOR=1`
 - Configure thresholds: `FTL_ACTIVE_HOURS=4 FTL_RECENT_HOURS=24`
 
@@ -237,11 +279,7 @@ FTL_ACTIVE_HOURS=1 ftime
 # Combine multiple variables
 FTL_TZ=UTC FTL_RECENT_HOURS=48 ftime
 
-# Show relative times instead of absolute timestamps
-FTL_RELATIVE=1 ftime
-# Enable via option
-ftime -a
-ftime --age
+ 
 ```
 
 ### Environment Variables (Reference)
@@ -250,9 +288,20 @@ ftime --age
 - `NO_COLOR` / `FTL_NO_COLOR`: disable all color
 - `FTL_NO_TIME_COLOR`: disable time‑based coloring only
 - `FTL_ACTIVE_HOURS`, `FTL_RECENT_HOURS`: thresholds for recency coloring (in hours)
-- `FTL_RELATIVE`: show relative times instead of absolute (e.g., `5m`, `3h`)
+ 
 
 </details>
+
+### Tips: Aliases
+
+- Quick alias:
+  ```bash
+  alias f='ftime'
+  ```
+- Example to prefer relative time and time sort:
+  ```bash
+  alias ft='ftime -a -s time'
+  ```
 
 ---
 
@@ -260,7 +309,7 @@ ftime --age
 
 - Creation time depends on filesystem/kernel/tools; it may show `-`.
 - Filenames can contain control characters. Colors are added only to the name column. Use caution when copying colored output to places that interpret ANSI.
-- Linux/GNU only. macOS/BSD use different `stat`/`date` flags.
+- macOS is supported when GNU tools are installed (e.g., via Homebrew). Default BSD `stat`/`date` are not supported; GNU features are required.
 
 ---
 

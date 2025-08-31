@@ -11,6 +11,31 @@ set -euo pipefail
 die() { echo "Error: $*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Prefer GNU tools when available (macOS/Homebrew: g*), fallback to POSIX names
+# We still REQUIRE GNU features; on non-GNU, ensure_requirements will fail with guidance.
+choose_cmd() {
+  for c in "$@"; do
+    if command -v "$c" >/dev/null 2>&1; then
+      printf '%s' "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Resolved tool commands (global)
+FIND_CMD="${FIND_CMD:-}"
+SORT_CMD="${SORT_CMD:-}"
+STAT_CMD="${STAT_CMD:-}"
+DATE_CMD="${DATE_CMD:-}"
+
+resolve_tools() {
+  FIND_CMD=${FIND_CMD:-$(choose_cmd gfind find || true)}
+  SORT_CMD=${SORT_CMD:-$(choose_cmd gsort sort || true)}
+  STAT_CMD=${STAT_CMD:-$(choose_cmd gstat stat || true)}
+  DATE_CMD=${DATE_CMD:-$(choose_cmd gdate date || true)}
+}
+
 print_version() {
   # Print version from VERSION file (same dir as script) if available
   local dir version_file
@@ -25,23 +50,37 @@ print_version() {
 
 ensure_requirements() {
   # Ensure required GNU tools & features are available
-  for cmd in date stat find sort; do
+  resolve_tools
+  for cmd in "$DATE_CMD" "$STAT_CMD" "$FIND_CMD" "$SORT_CMD"; do
+    [ -n "$cmd" ] || die "Required command not found"
     have "$cmd" || die "Required command not found: $cmd"
   done
   # find -printf (GNU findutils)
-  if ! find . -maxdepth 0 -printf '' >/dev/null 2>&1; then
+  if ! "$FIND_CMD" . -maxdepth 0 -printf '' >/dev/null 2>&1; then
+    if uname -s 2>/dev/null | grep -qi darwin; then
+      die "GNU findutils required. On macOS: brew install findutils (use gfind)."
+    fi
     die "This script requires GNU findutils (find with -printf)"
   fi
   # sort -z (GNU sort)
-  if ! printf 'a\0b\0' | LC_ALL=C sort -z >/dev/null 2>&1; then
+  if ! printf 'a\0b\0' | LC_ALL=C "$SORT_CMD" -z >/dev/null 2>&1; then
+    if uname -s 2>/dev/null | grep -qi darwin; then
+      die "GNU coreutils sort required. On macOS: brew install coreutils (use gsort)."
+    fi
     die "This script requires GNU sort with -z support"
   fi
   # stat -c %W (GNU coreutils)
-  if ! stat -c '%W' -- "$0" >/dev/null 2>&1; then
+  if ! "$STAT_CMD" -c '%W' -- "$0" >/dev/null 2>&1; then
+    if uname -s 2>/dev/null | grep -qi darwin; then
+      die "GNU coreutils stat required. On macOS: brew install coreutils (use gstat)."
+    fi
     die "This script requires GNU coreutils stat with -c '%W' support"
   fi
   # date -d (GNU date)
-  if ! date -d @0 +%s >/dev/null 2>&1; then
+  if ! "$DATE_CMD" -d @0 +%s >/dev/null 2>&1; then
+    if uname -s 2>/dev/null | grep -qi darwin; then
+      die "GNU coreutils date required. On macOS: brew install coreutils (use gdate)."
+    fi
     die "This script requires GNU date with -d support"
   fi
 }
@@ -50,7 +89,7 @@ usage() {
   cat <<'EOF'
 ftime - list files with modified/created times
 Usage: ftime [OPTIONS] [DIR] [PATTERN ...]
-Options: -s/--sort time|name  -r/--reverse  -R/--recursive  -d N/--max-depth=N  -a/--age  -V/--version
+Options: -s/--sort time|name  -r/--reverse  -R/--recursive  -d N/--max-depth=N  -a/--age  --git-only  -V/--version
 Try:   ftime --help (details)  |  ftime -s time -R -d 2 md (*.md only)
 EOF
 }
@@ -89,7 +128,8 @@ How to use
       -r, --reverse          Reverse the sort order
       -R, --recursive        Recurse into subdirectories
       -d, --max-depth N      Limit recursion depth to N (requires -R)
-      -a, --age              Show relative times instead of absolute (e.g., 5m, 3h). Env: FTL_RELATIVE=1
+      -a, --age              Show relative times instead of absolute (e.g., 5m, 3h)
+      --git-only             Show only files changed/staged/untracked in the current git repo
       -V, --version          Show version and exit
   - DIR: directory to scan (default: current directory)
   - PATTERN: filename filters (OR). Simple rules:
@@ -140,7 +180,76 @@ case "${1:-}" in
     print_version; exit 0 ;;
 esac
 
-# Ensure required tools/features (skip for help/version handled above)
+# Load defaults from XDG config file (~/.config/ftime/config) if present.
+# Only allow a whitelist of keys. Do not override existing environment.
+load_config_defaults() {
+  local base cfg
+  base="${XDG_CONFIG_HOME:-$HOME/.config}"
+  cfg="$base/ftime/config"
+  [ -f "$cfg" ] || return 0
+  local line key val
+  while IFS= read -r line || [ -n "$line" ]; do
+    # skip blanks and comments
+    case "$line" in
+      ''|'#'*) continue ;;
+    esac
+    case "$line" in
+      FTL_TZ=*|FTL_FORCE_COLOR=*|FTL_NO_COLOR=*|FTL_NO_TIME_COLOR=*|FTL_ACTIVE_HOURS=*|FTL_RECENT_HOURS=*)
+        key=${line%%=*}
+        val=${line#*=}
+        # do not override explicit env
+        if [ -z "${!key-}" ]; then
+          export "$key=$val"
+        fi
+        ;;
+      *)
+        # ignore unknown keys for safety
+        ;;
+    esac
+  done <"$cfg"
+}
+
+# Git-only support: build a set of changed/untracked files relative to $dir
+CHANGED_TMP=""
+cleanup_tmp() { [ -n "$CHANGED_TMP" ] && rm -rf -- "$CHANGED_TMP" || true; }
+trap cleanup_tmp EXIT
+
+build_git_changed_set() {
+  local d="$1"
+  if ! command -v git >/dev/null 2>&1; then
+    echo "Warning: git not found; --git-only ignored" >&2
+    return 1
+  fi
+  if ! git -C "$d" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Warning: '$d' is not inside a git repository; --git-only ignored" >&2
+    return 1
+  fi
+  local prefix
+  prefix=$(git -C "$d" rev-parse --show-prefix 2>/dev/null || echo "")
+  CHANGED_TMP=$(mktemp -d)
+  # union of: modified in working tree, staged changes, untracked (exclude-standard)
+  {
+    git -C "$d" ls-files -z -m -- ;
+    git -C "$d" diff --name-only -z --cached -- ;
+    git -C "$d" ls-files -z -o --exclude-standard -- ;
+  } | while IFS= read -r -d '' p; do
+    # Map to path relative to $d
+    local rel="$p"
+    if [ -n "$prefix" ]; then
+      case "$rel" in
+        "$prefix"*) rel="${rel#"$prefix"}" ;;
+        *) rel="" ;;
+      esac
+    fi
+    [ -n "$rel" ] || continue
+    mkdir -p -- "$CHANGED_TMP/$(dirname -- "$rel")" 2>/dev/null || true
+    : >"$CHANGED_TMP/$rel"
+  done
+  return 0
+}
+
+# Load config defaults (env-level), then ensure required tools/features
+load_config_defaults
 ensure_requirements
 
 # ---- Option parsing ----
@@ -149,6 +258,7 @@ reverse=0
 recursive=0
 max_depth=""
 relative=0
+git_only=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --)
@@ -184,6 +294,8 @@ while [[ $# -gt 0 ]]; do
       max_depth="$val"; shift ;;
     -a|--age)
       relative=1 ;;
+    --git-only)
+      git_only=1 ;;
     -V|--version)
       print_version; exit 0 ;;
     -h|--help|help)
@@ -213,10 +325,7 @@ if [[ -n "$max_depth" ]]; then
   fi
 fi
 
-# Env override for relative time display
-if [[ -n "${FTL_RELATIVE:-}" && "${FTL_RELATIVE}" != "0" ]]; then
-  relative=1
-fi
+# Relative time can be enabled only via -a/--age
 
 dir="."
 # arg parsing: first arg may be a directory; remaining args are name filters
@@ -248,14 +357,14 @@ for tok in "$@"; do
 done
 
 # 時間ベースの色分け設定
-now=$(date +%s)
+now=$("$DATE_CMD" +%s)
 active_hours="${FTL_ACTIVE_HOURS:-4}"
 recent_hours="${FTL_RECENT_HOURS:-24}"
 
 # Validate env configuration
 # - FTL_TZ validity: if invalid, warn and ignore
 if [[ -n "${FTL_TZ:-}" ]]; then
-  if ! TZ="$FTL_TZ" date +%s >/dev/null 2>&1; then
+  if ! TZ="$FTL_TZ" "$DATE_CMD" +%s >/dev/null 2>&1; then
     echo "Warning: Invalid timezone in FTL_TZ ('$FTL_TZ'); ignoring." >&2
     unset FTL_TZ
   fi
@@ -278,6 +387,13 @@ recent_seconds=$((recent_hours * 3600))
 # Header: include a fixed 1-char mark column (blank) BEFORE MODIFIED
 printf "%s %-12s %-12s %s\n" " " "MODIFIED" "CREATED" "NAME"
 
+# If git-only, build the changed set once; if unavailable, fall back to full listing
+if [[ "$git_only" -eq 1 ]]; then
+  if ! build_git_changed_set "$dir"; then
+    git_only=0
+  fi
+fi
+
 # Build find arguments
 find_args=("$dir" -mindepth 1)
 if [[ $recursive -eq 1 ]]; then
@@ -294,8 +410,8 @@ if [[ "$sort_key" == "time" ]]; then
   if [[ $reverse -eq 0 ]]; then
     sort_flags+=(-r)
   fi
-  LC_ALL=C find "${find_args[@]}" -printf '%T@ %P\0' \
-    | LC_ALL=C sort "${sort_flags[@]}" \
+  LC_ALL=C "$FIND_CMD" "${find_args[@]}" -printf '%T@ %P\0' \
+    | LC_ALL=C "$SORT_CMD" "${sort_flags[@]}" \
     | while IFS= read -r -d '' rec; do
       f="${rec#* }"
       # apply filters early (basename only) to avoid unnecessary stat calls
@@ -307,19 +423,23 @@ if [[ "$sort_key" == "time" ]]; then
         done
         [[ $keep -eq 0 ]] && continue
       fi
+      # git-only filter early
+      if [[ "$git_only" -eq 1 ]]; then
+        [[ -e "$CHANGED_TMP/$f" ]] || continue
+      fi
       p="$dir/$f"
-      m=$(stat -c '%Y' -- "$p" 2>/dev/null || echo -1)
-      b=$(stat -c '%W' -- "$p" 2>/dev/null || echo -1)
+      m=$("$STAT_CMD" -c '%Y' -- "$p" 2>/dev/null || echo -1)
+      b=$("$STAT_CMD" -c '%W' -- "$p" 2>/dev/null || echo -1)
       if [[ -n "${FTL_TZ:-}" ]]; then
-        mt=$(TZ="$FTL_TZ" date -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+        mt=$(TZ="$FTL_TZ" "$DATE_CMD" -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
       else
-        mt=$(date -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+        mt=$("$DATE_CMD" -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
       fi
       if [[ "$b" -gt 0 ]] 2>/dev/null; then
         if [[ -n "${FTL_TZ:-}" ]]; then
-          bt=$(TZ="$FTL_TZ" date -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+          bt=$(TZ="$FTL_TZ" "$DATE_CMD" -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
         else
-          bt=$(date -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+          bt=$("$DATE_CMD" -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
         fi
       else
         bt='-'
@@ -454,8 +574,8 @@ else
   if [[ $reverse -eq 1 ]]; then
     name_sort_flags+=(-r)
   fi
-  LC_ALL=C find "${find_args[@]}" -printf '%P\0' \
-    | LC_ALL=C sort "${name_sort_flags[@]}" \
+  LC_ALL=C "$FIND_CMD" "${find_args[@]}" -printf '%P\0' \
+    | LC_ALL=C "$SORT_CMD" "${name_sort_flags[@]}" \
     | while IFS= read -r -d '' f; do
       # apply filters early (basename only) to avoid unnecessary stat calls
       if (( ${#filters[@]} > 0 )); then
@@ -466,19 +586,23 @@ else
         done
         [[ $keep -eq 0 ]] && continue
       fi
+      # git-only filter early
+      if [[ "$git_only" -eq 1 ]]; then
+        [[ -e "$CHANGED_TMP/$f" ]] || continue
+      fi
       p="$dir/$f"
-      m=$(stat -c '%Y' -- "$p" 2>/dev/null || echo -1)
-      b=$(stat -c '%W' -- "$p" 2>/dev/null || echo -1)
+      m=$("$STAT_CMD" -c '%Y' -- "$p" 2>/dev/null || echo -1)
+      b=$("$STAT_CMD" -c '%W' -- "$p" 2>/dev/null || echo -1)
       if [[ -n "${FTL_TZ:-}" ]]; then
-        mt=$(TZ="$FTL_TZ" date -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+        mt=$(TZ="$FTL_TZ" "$DATE_CMD" -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
       else
-        mt=$(date -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+        mt=$("$DATE_CMD" -d "@${m}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
       fi
       if [[ "$b" -gt 0 ]] 2>/dev/null; then
         if [[ -n "${FTL_TZ:-}" ]]; then
-          bt=$(TZ="$FTL_TZ" date -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+          bt=$(TZ="$FTL_TZ" "$DATE_CMD" -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
         else
-          bt=$(date -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
+          bt=$("$DATE_CMD" -d "@${b}" +'%m-%d %H:%M' 2>/dev/null || echo '-')
         fi
       else
         bt='-'
@@ -524,7 +648,7 @@ else
         fi
 
         # 編集マークの追加（内容は'+'。色は表示時に付与）
-        if [[ "$b" -ge 0 && "$m" != "$b" ]] 2>/dev/null; then
+        if [[ "$b" -gt 0 && "$m" != "$b" ]] 2>/dev/null; then
           edit_mark="+"
         fi
       fi

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-08-31
+### Removed
+- Legacy environment variable `FTL_RELATIVE` support. Use `-a/--age` to enable relative time display.
+
+### Documentation
+- Removed all references to `FTL_RELATIVE` from `README.md`, `README-ja.md`, and `README-zh.md`.
+- `README-zh.md`: updated time-based coloring to describe "older than recent threshold (default 24h+)" and added a note that filtering applies to basenames only.
+
 ## [0.3.0] - 2025-08-28
 ### Changed
 - **BREAKING**: `ftime` without arguments now shows file listing (like `ls`) instead of help
