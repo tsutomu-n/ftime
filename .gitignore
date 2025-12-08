@@ -1,0 +1,10 @@
+# Build artifacts
+/target/
+
+# Temporary files
+*.swp
+*.swo
+*.tmp
+
+# macOS
+.DS_Store
