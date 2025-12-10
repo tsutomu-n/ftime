@@ -21,6 +21,7 @@ ftime [OPTIONS] [PATH]
 
 ## 4. Environment Variables
 *   `NO_COLOR`: If present (regardless of value), disable color output.
+*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped/color output even when stdout is piped or redirected.
 
 ## 5. Exit Codes
 *   `0`: Success.

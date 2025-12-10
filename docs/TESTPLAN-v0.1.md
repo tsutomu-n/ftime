@@ -23,3 +23,4 @@
 *   **Empty Directory:** Should output nothing (or "No recent files found" message) without crashing.
 *   **Permission Denied:** Run on a folder with a locked file inside. Should skip file without crashing.
 *   **Broken Symlink:** Should list the link itself without crashing.
+*   **Symlink Display:** (TTY) Shows `name -> target` with the link colored and target dimmed.

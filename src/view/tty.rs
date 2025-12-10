@@ -2,7 +2,7 @@ use crate::engine::Bucketed;
 use crate::model::FileEntry;
 use crate::util::time::relative_time;
 use anyhow::Result;
-use colored::{ColoredString, Colorize};
+use colored::Colorize;
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -58,7 +58,7 @@ fn render_bucket(header: &str, entries: &[FileEntry], now: SystemTime, base: &Pa
     println!();
 }
 
-fn format_name(entry: &FileEntry, base: &Path) -> ColoredString {
+fn format_name(entry: &FileEntry, base: &Path) -> String {
     let rel = entry
         .path
         .strip_prefix(base)
@@ -66,10 +66,21 @@ fn format_name(entry: &FileEntry, base: &Path) -> ColoredString {
         .unwrap_or_else(|_| entry.name.clone());
 
     if entry.is_dir {
-        format!("{}/", rel).bold().blue()
+        format!("{}/", rel).bold().blue().to_string()
     } else if entry.is_symlink {
-        rel.normal().yellow()
+        let target = entry
+            .symlink_target
+            .as_ref()
+            .and_then(|p| p.strip_prefix(base).ok().map(|pp| pp.display().to_string()))
+            .unwrap_or_else(|| {
+                entry
+                    .symlink_target
+                    .as_ref()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_else(|| "<unresolved>".to_string())
+            });
+        format!("{} -> {}", rel.normal().yellow(), target.dimmed())
     } else {
-        rel.normal()
+        rel.normal().to_string()
     }
 }

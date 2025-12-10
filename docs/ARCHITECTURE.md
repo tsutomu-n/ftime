@@ -25,6 +25,8 @@ pub struct FileEntry {
     pub name: String,
     pub is_dir: bool,
     pub mtime: SystemTime,
+    pub is_symlink: bool,
+    pub symlink_target: Option<PathBuf>,
     // v0.2: pub btime: Option<SystemTime>,
     // v1.1: pub git_status: Option<GitStatus>,
 }
@@ -46,4 +48,4 @@ pub enum TimeBucket {
     *   `clap` (derive feature)
     *   `colored` (simple coloring)
     *   `chrono` (time math)
-    *   `is-terminal` (pipe detection)
+*   `std::io::IsTerminal` (TTY detection; `is-terminal` crate kept for compatibility)

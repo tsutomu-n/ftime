@@ -39,12 +39,18 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
 
         let is_dir = metadata.is_dir();
         let is_symlink = metadata.file_type().is_symlink();
+        let symlink_target = if is_symlink {
+            fs::read_link(entry.path()).ok()
+        } else {
+            None
+        };
         entries.push(FileEntry {
             path: entry.path(),
             name,
             is_dir,
             mtime,
             is_symlink,
+            symlink_target,
         });
     }
 
@@ -121,6 +127,7 @@ mod tests {
             is_dir: false,
             mtime: now - Duration::from_secs(delta_secs),
             is_symlink: false,
+            symlink_target: None,
         };
         let entries = vec![
             mk(10),            // active

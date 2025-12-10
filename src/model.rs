@@ -8,6 +8,8 @@ pub struct FileEntry {
     pub is_dir: bool,
     pub mtime: SystemTime,
     pub is_symlink: bool,
+    #[allow(dead_code)]
+    pub symlink_target: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

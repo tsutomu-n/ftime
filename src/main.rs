@@ -40,9 +40,10 @@ fn main() {
 fn run() -> Result<()> {
     let cli = Cli::parse();
 
-    let path = cli
-        .path
-        .unwrap_or_else(|| env::current_dir().expect("current_dir unavailable"));
+    let path = match cli.path {
+        Some(p) => p,
+        None => env::current_dir().context("failed to obtain current directory")?,
+    };
 
     let meta = std::fs::metadata(&path)
         .with_context(|| format!("failed to read metadata for {}", path.display()))?;

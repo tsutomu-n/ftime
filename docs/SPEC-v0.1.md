@@ -27,6 +27,7 @@ Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation or
 
 *   **Display Limit:** Max **20 items** per bucket. If exceeded, show top 20 and append a summary line (e.g., `... and 42 more items`).
 *   **Empty Buckets:** Do not display headers for empty buckets.
+*   **Symlinks:** Show as `name -> target` and color the source name yellow. If target resolution fails, display `<unresolved>`.
 
 ## 4. Sorting Strategy
 1.  Collect all valid entries in the target directory.
@@ -37,8 +38,8 @@ Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation or
 When `stdout` is a terminal:
 *   **Headers:** Display bucket icon and name (e.g., `🔥 Active Context (< 1h)`).
 *   **Entries:**
-    *   Format: `<padding> <icon> <filename> <padding> <relative_time>`
-    *   Directory distinction: Append `/` to directory names and apply **Bold Blue** color.
+    *   Format: `<padding> <icon> <filename> <padding> <relative_time>`; symlinks include `-> target`.
+    *   Directory distinction: Append `/` to directory names and apply **Bold Blue** color. Symlinks are Yellow, targets are dimmed.
     *   Time format: `12 mins ago`, `3 hours ago`, `Yesterday`, `YYYY-MM-DD`.
 *   **History:** By default, collapse "History" bucket (show only count, e.g., `💤 History (128 files hidden)`). Expand if `--all` is set.
 
@@ -51,3 +52,7 @@ When `stdout` is **NOT** a terminal:
 
 ## 7. Filtering
 *   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
+
+## 8. Environment Overrides
+*   `NO_COLOR`: Disable color output when set.
+*   `FTIME_FORCE_TTY`: Force TTY mode (bucketed, colored) even when stdout is not a terminal.
