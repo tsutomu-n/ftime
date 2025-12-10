@@ -27,6 +27,10 @@ struct Cli {
     #[arg(short = 'a', long = "all")]
     show_all_history: bool,
 
+    /// Filter files by comma-separated extensions (case-insensitive)
+    #[arg(long = "ext")]
+    ext: Option<String>,
+
     /// Show Nerd Font icons (opt-in)
     #[arg(short = 'I', long = "icons")]
     use_icons: bool,
@@ -68,6 +72,12 @@ fn run() -> Result<()> {
         &path,
         &ScanOptions {
             include_hidden: cli.include_hidden,
+            ext_filter: cli.ext.as_ref().map(|s| {
+                s.split(',')
+                    .map(|p| p.trim().to_lowercase())
+                    .filter(|x| !x.is_empty())
+                    .collect()
+            }),
         },
     )?;
     let bucketed = bucketize(&scan.entries, scan.now);

@@ -28,6 +28,7 @@ ftime [OPTIONS] [PATH]
 - `-H, --hidden`: ドットファイルを含める
 - `-I, --icons` : バケット見出しをNerd Fontグリフに（feature iconsビルド時のみ）
 - `--json`      : JSON Linesで出力（色・アイコン・バケット上限なし）
+- `--ext`       : 拡張子ホワイトリスト（カンマ区切り、case-insensitive、ファイルのみ対象）
 
 環境変数:
 - `NO_COLOR`        : 色を無効化（最優先）

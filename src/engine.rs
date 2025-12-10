@@ -7,6 +7,7 @@ use std::time::SystemTime;
 
 pub struct ScanOptions {
     pub include_hidden: bool,
+    pub ext_filter: Option<Vec<String>>,
 }
 
 pub struct ScanResult {
@@ -47,6 +48,27 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         } else {
             None
         };
+        // Extensionフィルタ（ファイルのみ対象、ディレクトリやシンボリックリンク先は除外）
+        if let Some(exts) = &opts.ext_filter {
+            if metadata.is_file() {
+                let ext = entry
+                    .path()
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_lowercase());
+                if !ext
+                    .as_ref()
+                    .map(|e| exts.iter().any(|x| x == e))
+                    .unwrap_or(false)
+                {
+                    continue;
+                }
+            } else {
+                // 非ファイルはスキップ
+                continue;
+            }
+        }
+
         entries.push(FileEntry {
             path: entry.path(),
             name,
@@ -114,6 +136,7 @@ mod tests {
         File::create(dir.path().join(".hidden"))?;
         let opts = ScanOptions {
             include_hidden: false,
+            ext_filter: None,
         };
         let res = scan_dir(dir.path(), &opts)?;
         assert_eq!(res.entries.len(), 1);

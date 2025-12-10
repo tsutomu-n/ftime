@@ -56,3 +56,4 @@ pub enum TimeBucket {
 *   `util::time`: `classify_bucket`/`relative_time` など時間境界を集約し、境界テストをここに集中させる。
 *   `view::tty` / `view::text` / `view::json`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。
 *   `view::icon`（v0.1以降追加）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。
+*   `engine::ScanOptions` は `include_hidden`, `ext_filter`（拡張子ホワイトリスト）を受け取り、ファイル拡張子によるフィルタはスキャン段階で適用する（ディレクトリは除外）。

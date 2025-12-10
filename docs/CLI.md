@@ -15,6 +15,7 @@ ftime [OPTIONS] [PATH]
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
 | `--json` | `--json` | Emit JSON Lines output (fields frozen for compatibility: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target). |
+|  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 | `-H` | `--hidden` | Include hidden files (starting with `.`). |

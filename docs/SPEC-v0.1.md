@@ -67,6 +67,7 @@ When `stdout` is **NOT** a terminal:
 
 ## 8. Filtering
 *   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
+*   **Extension Filter:** `--ext ext1,ext2` で拡張子ホワイトリスト（case-insensitive）。対象はファイルのみで、ディレクトリ/拡張子なしファイルは除外される。
 
 ## 9. Environment Overrides
 *   `NO_COLOR`: Disable color output when set. **最優先**で適用する（TTY強制より優先）。

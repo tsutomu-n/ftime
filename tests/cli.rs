@@ -198,3 +198,23 @@ fn json_output_contains_expected_fields() {
     assert!(v.get("relative_time").is_some());
     assert_eq!(v.get("is_dir").unwrap(), false);
 }
+
+#[test]
+fn ext_filter_filters_files_case_insensitively() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("keep.rs")).unwrap();
+    File::create(dir.path().join("keep.RS")).unwrap();
+    File::create(dir.path().join("drop.txt")).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--ext")
+        .arg("rs")
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("keep.rs"));
+    assert!(stdout.contains("keep.RS"));
+    assert!(!stdout.contains("drop.txt"));
+}
