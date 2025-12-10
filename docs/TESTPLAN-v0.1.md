@@ -32,9 +32,10 @@
     *   `ftime --json` returns JSON Lines with fields {path,bucket,mtime,relative_time,is_dir,is_symlink,symlink_target,label}
     *   `label` is `"fresh"` or null; `symlink_target` null when non-symlink or unresolved.
 *   **Ignore Rules:**
-    *   `.DS_Store` / `Thumbs.db` are excluded by default.
-    *   `FTIME_IGNORE` pointing to a file containing `*.tmp` excludes matching files.
-    *   `--no-ignore` restores excluded files.
+    *   デフォルト除外: `.DS_Store` / `Thumbs.db`。
+    *   グローバル ignore: `FTIME_IGNORE` で指すファイル、なければ `~/.ftimeignore`（`#`コメント・空行無視・簡易グロブ）。
+    *   ローカル ignore: ルート直下の `.ftimeignore`（存在すればグローバルに後続で適用）。
+    *   `--no-ignore` で全ignoreを無効化。
 
 ## 3. Edge Cases
 *   **Empty Directory:** Should print `No recent files found` (no crash).
