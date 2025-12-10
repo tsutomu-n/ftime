@@ -55,7 +55,7 @@ When `stdout` is **NOT** a terminal:
 ## 7. Output Format (JSON Mode)
 *   Triggered by `--json`.
 *   Emits one JSON object per line (JSON Lines).
-*   Fields (fixed):
+*   Fields (**frozen for compatibility**):
     * `path`: string（可能なら基準ディレクトリ相対）
     * `bucket`: `"active" | "today" | "this_week" | "history"`
     * `mtime`: string (RFC3339, UTC)
