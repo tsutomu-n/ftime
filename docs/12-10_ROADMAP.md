@@ -209,8 +209,9 @@ Phase 1 では、以下を満たす実装を対象とします。
   ftime --json
   ```
 
-  * TimeBucket / path / mtime / (あれば)ラベル 等を JSON で出力
-  * 将来の TUI や外部ツールが、`ftime` の出力をそのまま取り込めるようにする
+  * TimeBucket / path / mtime / relative_time / is_dir / is_symlink / symlink_target を **後方互換のため固定フィールド** として出力（必要な追加情報は Optional フィールドで拡張）。
+  * 将来の TUI や外部ツールが、`ftime` の出力をそのまま取り込めるようにする。
+  * ベンチマーク目安（devビルド, 約2,000件, /dev/null）：TTY/TSV ~0.06s, JSON ~0.25s。線形スケール想定。
 * 既存の TSV 出力（非TTY）との整合性は維持する。
 
 #### 4.2.4 symlink の扱い強化（余力があれば）
@@ -251,6 +252,7 @@ Phase 1 では、以下を満たす実装を対象とします。
   * その意味
   * 将来的に互換性を壊す可能性があるかどうか
     を明文化する。
+* JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
 * 将来的に仕様変更の可能性があるものは、ドキュメント上で「Experimental」としてマークする。
 
 #### 5.2.2 プラットフォーム検証
