@@ -52,6 +52,9 @@ JSON Lines:
 {"path":"src/main.rs","bucket":"active","mtime":"2025-12-10T12:00:00Z","relative_time":"just now","is_dir":false,"is_symlink":false}
 ```
 
+## Performance (参考値)
+- 約2,000ファイルでの実測 (devビルド, /dev/null出力): TSV/TTY ~0.06s, JSON ~0.25s。線形に近い挙動を確認。
+
 ## Notes
 - ソート安定性: `mtime` DESC、同値は `name` ASC。
 - symlink: TTYでは `name -> target`、Pipeではパスのみ。
