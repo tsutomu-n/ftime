@@ -15,6 +15,7 @@ ftime [OPTIONS] [PATH]
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
+| `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 | `-H` | `--hidden` | Include hidden files (starting with `.`). |
 | `-h` | `--help` | Print help message. |
 | `-V` | `--version` | Print version information. |
@@ -22,6 +23,7 @@ ftime [OPTIONS] [PATH]
 ## 4. Environment Variables
 *   `NO_COLOR`: If present (regardless of value), disable color output.
 *   `FTIME_FORCE_TTY`: If present, force TTY-style grouped/color output even when stdout is piped or redirected.
+*   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 
 ## 5. Exit Codes
 *   `0`: Success.
@@ -37,6 +39,10 @@ ftime ~/Downloads
 
 # Show everything including dotfiles and history
 ftime -a -H
+
+# Build with Nerd Font icons feature and enable icons at runtime
+cargo build --features icons
+./target/debug/ftime --icons
 
 # Pipe usage (outputs plain text)
 ftime | grep ".rs"
