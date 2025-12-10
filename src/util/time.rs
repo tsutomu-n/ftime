@@ -2,6 +2,9 @@ use crate::model::Label;
 use chrono::{DateTime, Datelike, Local, NaiveDate, TimeZone};
 use std::time::{Duration, SystemTime};
 
+/// Freshラベル判定のウィンドウ（秒）
+pub const FRESH_WINDOW_SECS: u64 = 5 * 60;
+
 /// Compute the bucket for a given modification time.
 pub fn classify_bucket(now: SystemTime, mtime: SystemTime) -> crate::model::TimeBucket {
     use crate::model::TimeBucket;
@@ -84,7 +87,7 @@ pub fn start_of_day(ts: SystemTime) -> SystemTime {
 
 /// Best-effort label classification. Currently only `Fresh` with a small time window.
 pub fn classify_label(now: SystemTime, mtime: SystemTime) -> Option<Label> {
-    let window = Duration::from_secs(5 * 60);
+    let window = Duration::from_secs(FRESH_WINDOW_SECS);
     if now.duration_since(mtime).unwrap_or(Duration::MAX) <= window {
         Some(Label::Fresh)
     } else {
