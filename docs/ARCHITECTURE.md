@@ -11,7 +11,8 @@ src/
 ├── view/
 │   ├── mod.rs       # View trait or switch
 │   ├── tty.rs       # Colored/Rich output logic
-│   └── text.rs      # Plain/Pipe output logic
+│   ├── text.rs      # Plain/Pipe output logic
+│   └── json.rs      # JSON Lines output (`--json`, feature json)
 └── util/
     └── time.rs      # Relative time calculation logic
 ```
@@ -53,5 +54,5 @@ pub enum TimeBucket {
 ## 4. Responsibility Boundaries
 *   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。
 *   `util::time`: `classify_bucket`/`relative_time` など時間境界を集約し、境界テストをここに集中させる。
-*   `view::tty` / `view::text`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。
+*   `view::tty` / `view::text` / `view::json`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。
 *   `view::icon`（v0.1以降追加）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。

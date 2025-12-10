@@ -8,12 +8,14 @@ Recent-file viewer with time buckets. Depth=1, read-only, zero-panic設計。
 - Pipe/リダイレクト: タブ区切りで全件出力（ヘッダ・色・アイコンなし）。
 - 隠しファイルはデフォルト非表示、`-H/--hidden` で表示。
 - オプトインのNerd Fontアイコン: `--icons`（要 `cargo build --features icons`）。
+- JSON Lines出力: `--json` で1行1オブジェクト（bucket/path/mtime等）。
 
 ## Install / Build
 ```bash
 cargo build
 # Nerd Fontアイコンを使う場合
 cargo build --features icons
+# JSONはデフォルト有効（json feature）。無効ビルドは `--no-default-features`。
 ```
 
 ## Usage
@@ -25,6 +27,7 @@ ftime [OPTIONS] [PATH]
 - `-a, --all`   : Historyも展開して表示
 - `-H, --hidden`: ドットファイルを含める
 - `-I, --icons` : バケット見出しをNerd Fontグリフに（feature iconsビルド時のみ）
+- `--json`      : JSON Linesで出力（色・アイコン・バケット上限なし）
 
 環境変数:
 - `NO_COLOR`        : 色を無効化（最優先）
@@ -44,7 +47,13 @@ subdir\t2 hours ago
 link_to_file\t3 days ago
 ```
 
+JSON Lines:
+```
+{"path":"src/main.rs","bucket":"active","mtime":"2025-12-10T12:00:00Z","relative_time":"just now","is_dir":false,"is_symlink":false}
+```
+
 ## Notes
 - ソート安定性: `mtime` DESC、同値は `name` ASC。
 - symlink: TTYでは `name -> target`、Pipeではパスのみ。
 - ディレクトリ: TTYでは末尾`/`付き、Pipeではパスのみ。
+- デフォルトで除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）

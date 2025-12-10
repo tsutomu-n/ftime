@@ -1,6 +1,7 @@
 use assert_cmd::Command;
 use filetime::{set_file_mtime, FileTime};
 use predicates::prelude::*;
+use serde_json::Value;
 use std::fs::File;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
@@ -146,4 +147,54 @@ fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
     assert!(stdout.contains("subdir\t")); // directory without trailing slash
     assert!(stdout.contains("link_to_file\t")); // symlink path only
     assert!(!stdout.contains("->")); // no target shown in pipe mode
+}
+
+#[test]
+fn ignores_ds_store_and_thumbs_db_even_with_hidden() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("visible")).unwrap();
+    File::create(dir.path().join(".DS_Store")).unwrap();
+    File::create(dir.path().join("Thumbs.db")).unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+
+    // default: .DS_Store, Thumbs.db excluded
+    let out_default = bin().current_dir(dir.path()).output().unwrap();
+    let stdout = String::from_utf8(out_default.stdout).unwrap();
+    assert!(stdout.contains("visible"));
+    assert!(!stdout.contains(".DS_Store"));
+    assert!(!stdout.contains("Thumbs.db"));
+
+    // even with --hidden they stay excluded, but hidden file is shown
+    let out_hidden = bin()
+        .current_dir(dir.path())
+        .arg("--hidden")
+        .output()
+        .unwrap();
+    let stdout_h = String::from_utf8(out_hidden.stdout).unwrap();
+    assert!(stdout_h.contains(".hidden"));
+    assert!(!stdout_h.contains(".DS_Store"));
+    assert!(!stdout_h.contains("Thumbs.db"));
+}
+
+#[test]
+fn json_output_contains_expected_fields() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let mut lines = stdout.lines();
+    let first = lines.next().expect("one line present");
+    let v: Value = serde_json::from_str(first).unwrap();
+    assert_eq!(v.get("path").unwrap(), "f1");
+    assert!(v.get("bucket").is_some());
+    assert!(v.get("mtime").is_some());
+    assert!(v.get("relative_time").is_some());
+    assert_eq!(v.get("is_dir").unwrap(), false);
 }

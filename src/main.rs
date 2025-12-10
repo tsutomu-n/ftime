@@ -18,6 +18,11 @@ use std::process;
     about = "Recent file viewer with time buckets"
 )]
 struct Cli {
+    /// Emit JSON Lines output
+    #[cfg(feature = "json")]
+    #[arg(long = "json")]
+    json: bool,
+
     /// Show full History bucket
     #[arg(short = 'a', long = "all")]
     show_all_history: bool,
@@ -67,6 +72,11 @@ fn run() -> Result<()> {
     )?;
     let bucketed = bucketize(&scan.entries, scan.now);
     let force_tty = env::var_os("FTIME_FORCE_TTY").is_some();
+
+    #[cfg(feature = "json")]
+    if cli.json {
+        return view::json::render(&bucketed, scan.now, &path);
+    }
 
     if force_tty || std::io::stdout().is_terminal() {
         view::tty::render(

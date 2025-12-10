@@ -14,6 +14,7 @@
     *   Symlinks: Follow metadata of the link itself (`lstat`), not target.
     *   Broken Links: Treat as regular files (do not panic).
     *   Permissions: Skip entries with permission errors silently (or log to stderr if verbose).
+    *   Default ignore (always skipped): `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
 
 ## 3. Time Bucketing Logic
 Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation order is strictly top-to-bottom.
@@ -51,9 +52,22 @@ When `stdout` is **NOT** a terminal:
 *   **Format:** `<path>\t<relative_time>` (Tab-separated).
 *   **Limit:** Do NOT apply the 20-item limit (output all).
 
-## 7. Filtering
+## 7. Output Format (JSON Mode)
+*   Triggered by `--json`.
+*   Emits one JSON object per line (JSON Lines).
+*   Fields (fixed):
+    * `path`: string（可能なら基準ディレクトリ相対）
+    * `bucket`: `"active" | "today" | "this_week" | "history"`
+    * `mtime`: string (RFC3339, UTC)
+    * `relative_time`: string（TTY/pipeと同じ表記）
+    * `is_dir`: bool
+    * `is_symlink`: bool
+    * `symlink_target`: string|null（可能なら相対）
+*   Colors/icons/20件制限は無効。TTY/非TTYに依存しない。
+
+## 8. Filtering
 *   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
 
-## 8. Environment Overrides
+## 9. Environment Overrides
 *   `NO_COLOR`: Disable color output when set. **最優先**で適用する（TTY強制より優先）。
 *   `FTIME_FORCE_TTY`: Force TTY mode (bucketed layout) even when stdout is not a terminal。色の有無は `NO_COLOR` に従う。

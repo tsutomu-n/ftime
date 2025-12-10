@@ -24,6 +24,9 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         let Ok(entry) = entry else { continue };
         let file_name = entry.file_name();
         let name = file_name.to_string_lossy().to_string();
+        if name == ".DS_Store" || name == "Thumbs.db" {
+            continue;
+        }
         if !opts.include_hidden && name.starts_with('.') {
             continue;
         }

@@ -14,6 +14,7 @@ ftime [OPTIONS] [PATH]
 ## 3. Options
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
+| `--json` | `--json` | Emit JSON Lines output (includes bucket, path, mtime, etc.). |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 | `-H` | `--hidden` | Include hidden files (starting with `.`). |
@@ -43,6 +44,9 @@ ftime -a -H
 # Build with Nerd Font icons feature and enable icons at runtime
 cargo build --features icons
 ./target/debug/ftime --icons
+
+# JSON output (one JSON object per line)
+ftime --json | jq .
 
 # Pipe usage (outputs plain text)
 ftime | grep ".rs"
