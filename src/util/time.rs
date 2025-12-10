@@ -1,3 +1,4 @@
+use crate::model::Label;
 use chrono::{DateTime, Datelike, Local, NaiveDate, TimeZone};
 use std::time::{Duration, SystemTime};
 
@@ -79,6 +80,16 @@ pub fn start_of_day(ts: SystemTime) -> SystemTime {
         .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
         .unwrap();
     start.into()
+}
+
+/// Best-effort label classification. Currently only `Fresh` with a small time window.
+pub fn classify_label(now: SystemTime, mtime: SystemTime) -> Option<Label> {
+    let window = Duration::from_secs(5 * 60);
+    if now.duration_since(mtime).unwrap_or(Duration::MAX) <= window {
+        Some(Label::Fresh)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

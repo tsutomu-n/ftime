@@ -1,5 +1,5 @@
 use crate::model::{FileEntry, TimeBucket};
-use crate::util::time::classify_bucket;
+use crate::util::time::{classify_bucket, classify_label};
 use anyhow::{Context, Result};
 use std::fs::{self, ReadDir};
 use std::path::Path;
@@ -8,6 +8,9 @@ use std::time::SystemTime;
 pub struct ScanOptions {
     pub include_hidden: bool,
     pub ext_filter: Option<Vec<String>>,
+    pub no_ignore: bool,
+    pub ignore_patterns: Vec<String>,
+    pub no_labels: bool,
 }
 
 pub struct ScanResult {
@@ -21,11 +24,26 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         .with_context(|| format!("failed to read directory {}", path.display()))?;
     let mut entries = Vec::new();
 
+    let default_ignores = if opts.no_ignore {
+        Vec::new()
+    } else {
+        vec![".DS_Store".to_string(), "Thumbs.db".to_string()]
+    };
+
     for entry in read_dir {
         let Ok(entry) = entry else { continue };
         let file_name = entry.file_name();
         let name = file_name.to_string_lossy().to_string();
-        if name == ".DS_Store" || name == "Thumbs.db" {
+
+        if !opts.no_ignore
+            && is_ignored(
+                &name,
+                &entry.path(),
+                path,
+                &opts.ignore_patterns,
+                &default_ignores,
+            )
+        {
             continue;
         }
         if !opts.include_hidden && name.starts_with('.') {
@@ -76,6 +94,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
             mtime,
             is_symlink,
             symlink_target,
+            label: None,
         });
     }
 
@@ -85,18 +104,78 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
     Ok(ScanResult { entries, now })
 }
 
-pub fn bucketize(entries: &[FileEntry], now: SystemTime) -> Bucketed {
+fn is_ignored(
+    name: &str,
+    full_path: &Path,
+    root: &Path,
+    user_patterns: &[String],
+    default_patterns: &[String],
+) -> bool {
+    let rel = full_path.strip_prefix(root).ok();
+    let rel_str = rel.map(|p| p.to_string_lossy().to_string());
+
+    for pat in default_patterns.iter().chain(user_patterns.iter()) {
+        let has_slash = pat.contains('/');
+        if has_slash {
+            if let Some(rel) = &rel_str {
+                if glob_match(pat, rel) {
+                    return true;
+                }
+            }
+        } else if glob_match(pat, name) {
+            return true;
+        }
+    }
+    false
+}
+
+// 簡易グロブ: * 任意長、? 1文字、その他はリテラル。バックスラッシュエスケープなし。
+fn glob_match(pattern: &str, text: &str) -> bool {
+    glob_match_inner(pattern.as_bytes(), text.as_bytes())
+}
+
+fn glob_match_inner(p: &[u8], t: &[u8]) -> bool {
+    if p.is_empty() {
+        return t.is_empty();
+    }
+    match p[0] {
+        b'*' => {
+            // *: 0文字以上
+            (0..=t.len()).any(|i| glob_match_inner(&p[1..], &t[i..]))
+        }
+        b'?' => {
+            if t.is_empty() {
+                false
+            } else {
+                glob_match_inner(&p[1..], &t[1..])
+            }
+        }
+        c => {
+            if t.first() == Some(&c) {
+                glob_match_inner(&p[1..], &t[1..])
+            } else {
+                false
+            }
+        }
+    }
+}
+
+pub fn bucketize(entries: &[FileEntry], now: SystemTime, opts: &ScanOptions) -> Bucketed {
     let mut active = Vec::new();
     let mut today = Vec::new();
     let mut week = Vec::new();
     let mut history = Vec::new();
 
     for entry in entries {
-        match classify_bucket(now, entry.mtime) {
-            TimeBucket::Active => active.push(entry.clone()),
-            TimeBucket::Today => today.push(entry.clone()),
-            TimeBucket::ThisWeek => week.push(entry.clone()),
-            TimeBucket::History => history.push(entry.clone()),
+        let mut e = entry.clone();
+        if !opts.no_labels && e.label.is_none() {
+            e.label = classify_label(now, e.mtime);
+        }
+        match classify_bucket(now, e.mtime) {
+            TimeBucket::Active => active.push(e),
+            TimeBucket::Today => today.push(e),
+            TimeBucket::ThisWeek => week.push(e),
+            TimeBucket::History => history.push(e),
         }
     }
 
@@ -137,6 +216,9 @@ mod tests {
         let opts = ScanOptions {
             include_hidden: false,
             ext_filter: None,
+            no_ignore: false,
+            ignore_patterns: Vec::new(),
+            no_labels: false,
         };
         let res = scan_dir(dir.path(), &opts)?;
         assert_eq!(res.entries.len(), 1);
@@ -154,6 +236,7 @@ mod tests {
             mtime: now - Duration::from_secs(delta_secs),
             is_symlink: false,
             symlink_target: None,
+            label: None,
         };
         let entries = vec![
             mk(10),            // active
@@ -161,7 +244,14 @@ mod tests {
             mk(2 * 24 * 3600), // week
             mk(8 * 24 * 3600), // history
         ];
-        let b = bucketize(&entries, now);
+        let opts = ScanOptions {
+            include_hidden: false,
+            ext_filter: None,
+            no_ignore: false,
+            ignore_patterns: Vec::new(),
+            no_labels: false,
+        };
+        let b = bucketize(&entries, now, &opts);
         assert_eq!(b.active.len(), 1);
         assert_eq!(b.today.len(), 1);
         assert_eq!(b.week.len(), 1);

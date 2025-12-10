@@ -9,6 +9,8 @@ Recent-file viewer with time buckets. Depth=1, read-only, zero-panic設計。
 - 隠しファイルはデフォルト非表示、`-H/--hidden` で表示。
 - オプトインのNerd Fontアイコン: `--icons`（要 `cargo build --features icons`）。
 - JSON Lines出力: `--json` で1行1オブジェクト（フィールドは後方互換のため固定: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）。
+- 拡張子ホワイトリスト: `--ext rs,toml`（カンマ区切り・大小無視・ファイルのみ）
+- グローバル ignore: `~/.ftimeignore`（`FTIME_IGNORE` で指定、`--no-ignore` で無効化）
 
 ## Install / Build
 ```bash
@@ -29,10 +31,12 @@ ftime [OPTIONS] [PATH]
 - `-I, --icons` : バケット見出しをNerd Fontグリフに（feature iconsビルド時のみ）
 - `--json`      : JSON Linesで出力（色・アイコン・バケット上限なし）
 - `--ext`       : 拡張子ホワイトリスト（カンマ区切り、case-insensitive、ファイルのみ対象）
+- `--no-ignore` : デフォルト・ユーザーignoreを無効化
 
 環境変数:
 - `NO_COLOR`        : 色を無効化（最優先）
 - `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制（色の有無は NO_COLOR に従う）
+- `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（デフォルトは `~/.ftimeignore`）
 
 ## Output Examples
 TTY:

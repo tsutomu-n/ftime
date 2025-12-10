@@ -7,6 +7,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use engine::{bucketize, scan_dir, ScanOptions};
 use std::env;
+use std::fs;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process;
@@ -22,6 +23,14 @@ struct Cli {
     #[cfg(feature = "json")]
     #[arg(long = "json")]
     json: bool,
+
+    /// Disable ignore rules (built-in and ~/.ftimeignore)
+    #[arg(long = "no-ignore")]
+    no_ignore: bool,
+
+    /// Disable best-effort labels (e.g., Fresh)
+    #[arg(long = "no-labels")]
+    no_labels: bool,
 
     /// Show full History bucket
     #[arg(short = 'a', long = "all")]
@@ -68,19 +77,25 @@ fn run() -> Result<()> {
         colored::control::set_override(false);
     }
 
-    let scan = scan_dir(
-        &path,
-        &ScanOptions {
-            include_hidden: cli.include_hidden,
-            ext_filter: cli.ext.as_ref().map(|s| {
-                s.split(',')
-                    .map(|p| p.trim().to_lowercase())
-                    .filter(|x| !x.is_empty())
-                    .collect()
-            }),
+    let scan_opts = ScanOptions {
+        include_hidden: cli.include_hidden,
+        ext_filter: cli.ext.as_ref().map(|s| {
+            s.split(',')
+                .map(|p| p.trim().to_lowercase())
+                .filter(|x| !x.is_empty())
+                .collect()
+        }),
+        no_ignore: cli.no_ignore,
+        ignore_patterns: if cli.no_ignore {
+            Vec::new()
+        } else {
+            load_ignore_patterns()
         },
-    )?;
-    let bucketed = bucketize(&scan.entries, scan.now);
+        no_labels: cli.no_labels,
+    };
+
+    let scan = scan_dir(&path, &scan_opts)?;
+    let bucketed = bucketize(&scan.entries, scan.now, &scan_opts);
     let force_tty = env::var_os("FTIME_FORCE_TTY").is_some();
 
     #[cfg(feature = "json")]
@@ -100,4 +115,32 @@ fn run() -> Result<()> {
         view::text::render(&scan.entries, scan.now, &path)?;
     }
     Ok(())
+}
+
+fn load_ignore_patterns() -> Vec<String> {
+    if let Some(path) = env::var_os("FTIME_IGNORE") {
+        return read_ignore_file(PathBuf::from(path));
+    }
+    if let Some(home) = env::var_os("HOME") {
+        let default = PathBuf::from(home).join(".ftimeignore");
+        return read_ignore_file(default);
+    }
+    Vec::new()
+}
+
+fn read_ignore_file(path: PathBuf) -> Vec<String> {
+    let Ok(contents) = fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    contents
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        })
+        .collect()
 }

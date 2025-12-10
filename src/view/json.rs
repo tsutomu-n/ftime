@@ -51,6 +51,8 @@ struct JsonEntry {
     is_symlink: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     symlink_target: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    label: Option<String>,
 }
 
 #[cfg(feature = "json")]
@@ -82,6 +84,9 @@ impl JsonEntry {
             is_dir: entry.is_dir,
             is_symlink: entry.is_symlink,
             symlink_target,
+            label: entry.label.map(|l| match l {
+                crate::model::Label::Fresh => "fresh".to_string(),
+            }),
         })
     }
 }

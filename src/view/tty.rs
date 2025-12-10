@@ -79,10 +79,12 @@ fn render_bucket(header: &str, entries: &[FileEntry], now: SystemTime, base: &Pa
     };
 
     for entry in list {
+        let label = format_label(entry);
         println!(
-            "  • {}  {}",
+            "  • {}  {}{}",
             format_name(entry, base),
-            relative_time(now, entry.mtime)
+            relative_time(now, entry.mtime),
+            label
         );
     }
 
@@ -116,6 +118,13 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
         format!("{} -> {}", rel.normal().yellow(), target.dimmed())
     } else {
         rel.normal().to_string()
+    }
+}
+
+fn format_label(entry: &FileEntry) -> String {
+    match entry.label {
+        Some(crate::model::Label::Fresh) => "  ✨ Fresh".to_string(),
+        None => "".to_string(),
     }
 }
 

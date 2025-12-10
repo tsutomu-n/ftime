@@ -16,15 +16,19 @@ ftime [OPTIONS] [PATH]
 | :--- | :--- | :--- |
 | `--json` | `--json` | Emit JSON Lines output (fields frozen for compatibility: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target). |
 |  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
+|  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
+|  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 | `-H` | `--hidden` | Include hidden files (starting with `.`). |
 | `-h` | `--help` | Print help message. |
 | `-V` | `--version` | Print version information. |
+|  |  | Note: `--icons` is a no-op when the binary is built without the `icons` feature (no error). |
 
 ## 4. Environment Variables
 *   `NO_COLOR`: If present (regardless of value), disable color output. **Always takes precedence** over other coloring decisions.
 *   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`.
+*   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 
 ## 5. Exit Codes

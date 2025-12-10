@@ -3,6 +3,7 @@ use filetime::{set_file_mtime, FileTime};
 use predicates::prelude::*;
 use serde_json::Value;
 use std::fs::File;
+use std::io::Write;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -197,6 +198,7 @@ fn json_output_contains_expected_fields() {
     assert!(v.get("mtime").is_some());
     assert!(v.get("relative_time").is_some());
     assert_eq!(v.get("is_dir").unwrap(), false);
+    assert!(v.get("label").is_some());
 }
 
 #[test]
@@ -217,4 +219,65 @@ fn ext_filter_filters_files_case_insensitively() {
     assert!(stdout.contains("keep.rs"));
     assert!(stdout.contains("keep.RS"));
     assert!(!stdout.contains("drop.txt"));
+}
+
+#[test]
+fn global_ignore_file_is_respected_and_no_ignore_overrides() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("keep.log")).unwrap();
+    File::create(dir.path().join("skip.tmp")).unwrap();
+
+    // create temporary ignore file
+    let ig = tempdir().unwrap();
+    let ig_path = ig.path().join("ignore");
+    let mut f = File::create(&ig_path).unwrap();
+    writeln!(f, "*.tmp").unwrap();
+    writeln!(f, "# comment").unwrap();
+    writeln!(f, "").unwrap();
+
+    // default: skip.tmp should be hidden
+    let out = bin()
+        .current_dir(dir.path())
+        .env("FTIME_IGNORE", &ig_path)
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("keep.log"));
+    assert!(!stdout.contains("skip.tmp"));
+
+    // with --no-ignore it should appear
+    let out_no = bin()
+        .current_dir(dir.path())
+        .env("FTIME_IGNORE", &ig_path)
+        .arg("--no-ignore")
+        .output()
+        .unwrap();
+    let stdout_no = String::from_utf8(out_no.stdout).unwrap();
+    assert!(stdout_no.contains("skip.tmp"));
+}
+
+#[test]
+fn fresh_label_shows_and_can_be_disabled() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("newfile");
+    File::create(&file_path).unwrap();
+
+    // label should appear in TTY with FTIME_FORCE_TTY
+    let out = bin()
+        .current_dir(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("Fresh"));
+
+    // --no-labels should remove it
+    let out2 = bin()
+        .current_dir(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .arg("--no-labels")
+        .output()
+        .unwrap();
+    let stdout2 = String::from_utf8(out2.stdout).unwrap();
+    assert!(!stdout2.contains("Fresh"));
 }

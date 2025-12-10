@@ -10,6 +10,7 @@ pub struct FileEntry {
     pub is_symlink: bool,
     #[allow(dead_code)]
     pub symlink_target: Option<PathBuf>,
+    pub label: Option<Label>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,4 +19,9 @@ pub enum TimeBucket {
     Today,
     ThisWeek,
     History,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Label {
+    Fresh,
 }
