@@ -226,6 +226,7 @@ mod tests {
             no_ignore: false,
             ignore_patterns: Vec::new(),
             no_labels: false,
+            local_ignore_patterns: Vec::new(),
         };
         let res = scan_dir(dir.path(), &opts)?;
         assert_eq!(res.entries.len(), 1);
@@ -257,6 +258,7 @@ mod tests {
             no_ignore: false,
             ignore_patterns: Vec::new(),
             no_labels: false,
+            local_ignore_patterns: Vec::new(),
         };
         let b = bucketize(&entries, now, &opts);
         assert_eq!(b.active.len(), 1);

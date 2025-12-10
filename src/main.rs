@@ -9,7 +9,7 @@ use engine::{bucketize, scan_dir, ScanOptions};
 use std::env;
 use std::fs;
 use std::io::IsTerminal;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 #[derive(Parser, Debug)]
