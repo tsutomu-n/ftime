@@ -42,6 +42,7 @@ pub fn render(buckets: &Bucketed, now: SystemTime, base: &Path) -> Result<()> {
 #[cfg(feature = "json")]
 #[derive(Serialize)]
 struct JsonEntry {
+    // フィールド順・名前は後方互換のため凍結。変更はメジャーバージョンのみ。
     path: String,
     bucket: String,
     mtime: String,
