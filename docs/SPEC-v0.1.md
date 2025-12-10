@@ -31,7 +31,7 @@ Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation or
 
 ## 4. Sorting Strategy
 1.  Collect all valid entries in the target directory.
-2.  Sort all entries by `mtime` DESC (newest first).
+2.  Sort all entries by `mtime` DESC (newest first). When `mtime` is equal, sort by `name` ASC for stability.
 3.  Distribute into buckets preserving the sort order.
 
 ## 5. Output Format (TTY Mode)
@@ -47,7 +47,7 @@ When `stdout` is a terminal:
 ## 6. Output Format (Pipe/File Mode)
 When `stdout` is **NOT** a terminal:
 *   **Disable:** All colors, headers, icons, and bucket groupings.
-*   **Content:** List all files (sorted by mtime desc).
+*   **Content:** List all files (sorted by mtime desc). Symlink targets are not shown;ディレクトリも末尾`/`なしでパスのみ。
 *   **Format:** `<path>\t<relative_time>` (Tab-separated).
 *   **Limit:** Do NOT apply the 20-item limit (output all).
 
@@ -55,5 +55,5 @@ When `stdout` is **NOT** a terminal:
 *   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
 
 ## 8. Environment Overrides
-*   `NO_COLOR`: Disable color output when set.
-*   `FTIME_FORCE_TTY`: Force TTY mode (bucketed, colored) even when stdout is not a terminal.
+*   `NO_COLOR`: Disable color output when set. **最優先**で適用する（TTY強制より優先）。
+*   `FTIME_FORCE_TTY`: Force TTY mode (bucketed layout) even when stdout is not a terminal。色の有無は `NO_COLOR` に従う。

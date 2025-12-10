@@ -21,13 +21,13 @@ ftime [OPTIONS] [PATH]
 | `-V` | `--version` | Print version information. |
 
 ## 4. Environment Variables
-*   `NO_COLOR`: If present (regardless of value), disable color output.
-*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped/color output even when stdout is piped or redirected.
+*   `NO_COLOR`: If present (regardless of value), disable color output. **Always takes precedence** over other coloring decisions.
+*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 
 ## 5. Exit Codes
 *   `0`: Success.
-*   `1`: General error (e.g., directory not found, permission denied on target root).
+*   `1`: General error (e.g., directory not found, permission denied on target root, target is a file). Per-entry I/O エラーはスキップし処理継続する。
 
 ## 6. Usage Examples
 ```bash

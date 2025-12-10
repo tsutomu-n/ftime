@@ -109,3 +109,41 @@ fn pipe_mode_outputs_tab_separated_without_headers() {
     assert!(stdout.contains("f1\t"));
     assert!(!stdout.contains("Active Context"));
 }
+
+#[test]
+fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("file");
+    File::create(&file_path).unwrap();
+
+    let subdir = dir.path().join("subdir");
+    std::fs::create_dir(&subdir).unwrap();
+
+    let link_path = dir.path().join("link_to_file");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&file_path, &link_path).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(&file_path, &link_path).unwrap();
+
+    // ensure deterministic ordering by setting mtimes
+    let now = SystemTime::now();
+    set_file_mtime(&file_path, FileTime::from_system_time(now)).unwrap();
+    set_file_mtime(
+        &subdir,
+        FileTime::from_system_time(now - Duration::from_secs(1)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &link_path,
+        FileTime::from_system_time(now - Duration::from_secs(2)),
+    )
+    .unwrap();
+
+    let output = bin().current_dir(dir.path()).output().unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("file\t")); // plain file
+    assert!(stdout.contains("subdir\t")); // directory without trailing slash
+    assert!(stdout.contains("link_to_file\t")); // symlink path only
+    assert!(!stdout.contains("->")); // no target shown in pipe mode
+}

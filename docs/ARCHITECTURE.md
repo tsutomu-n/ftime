@@ -6,7 +6,7 @@ We recommend the following separation of concerns to support future Git integrat
 ```text
 src/
 ├── main.rs          # Entry point, CLI parsing (clap), Mode selection (TTY check)
-├── engine.rs        # Core logic: Scanning, Sorting, Filtering
+├── engine.rs        # Core logic: Scanning (depth=1), Sorting, Filtering (hidden)
 ├── model.rs         # Data structures (FileEntry, TimeBucket)
 ├── view/
 │   ├── mod.rs       # View trait or switch
@@ -49,3 +49,9 @@ pub enum TimeBucket {
     *   `colored` (simple coloring)
     *   `chrono` (time math)
 *   `std::io::IsTerminal` (TTY detection; `is-terminal` crate kept for compatibility)
+
+## 4. Responsibility Boundaries
+*   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。
+*   `util::time`: `classify_bucket`/`relative_time` など時間境界を集約し、境界テストをここに集中させる。
+*   `view::tty` / `view::text`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。
+*   `view::icon`（v0.1以降追加）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。
