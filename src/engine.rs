@@ -11,6 +11,7 @@ pub struct ScanOptions {
     pub no_ignore: bool,
     pub ignore_patterns: Vec<String>,
     pub no_labels: bool,
+    pub local_ignore_patterns: Vec<String>,
 }
 
 pub struct ScanResult {
@@ -41,6 +42,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
                 &entry.path(),
                 path,
                 &opts.ignore_patterns,
+                &opts.local_ignore_patterns,
                 &default_ignores,
             )
         {
@@ -109,12 +111,17 @@ fn is_ignored(
     full_path: &Path,
     root: &Path,
     user_patterns: &[String],
+    local_patterns: &[String],
     default_patterns: &[String],
 ) -> bool {
     let rel = full_path.strip_prefix(root).ok();
     let rel_str = rel.map(|p| p.to_string_lossy().to_string());
 
-    for pat in default_patterns.iter().chain(user_patterns.iter()) {
+    for pat in default_patterns
+        .iter()
+        .chain(user_patterns.iter())
+        .chain(local_patterns.iter())
+    {
         let has_slash = pat.contains('/');
         if has_slash {
             if let Some(rel) = &rel_str {

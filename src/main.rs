@@ -91,6 +91,11 @@ fn run() -> Result<()> {
         } else {
             load_ignore_patterns()
         },
+        local_ignore_patterns: if cli.no_ignore {
+            Vec::new()
+        } else {
+            load_local_ignore(&path)
+        },
         no_labels: cli.no_labels,
     };
 
@@ -126,6 +131,11 @@ fn load_ignore_patterns() -> Vec<String> {
         return read_ignore_file(default);
     }
     Vec::new()
+}
+
+fn load_local_ignore(root: &Path) -> Vec<String> {
+    let candidate = root.join(".ftimeignore");
+    read_ignore_file(candidate)
 }
 
 fn read_ignore_file(path: PathBuf) -> Vec<String> {
