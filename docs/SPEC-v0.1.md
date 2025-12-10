@@ -40,7 +40,8 @@ When `stdout` is a terminal:
 *   **Entries:**
     *   Format: `<padding> <icon> <filename> <padding> <relative_time>`; symlinks include `-> target`.
     *   Directory distinction: Append `/` to directory names and apply **Bold Blue** color. Symlinks are Yellow, targets are dimmed.
-    *   Time format: `12 mins ago`, `3 hours ago`, `Yesterday`, `YYYY-MM-DD`.
+    *   Time format: `just now` (<60s), `1 min ago`, `12 mins ago`, `3 hours ago`, `Yesterday`, `YYYY-MM-DD`.
+*   **Empty Directory:** If no entries are found, print `No recent files found`.
 *   **History:** By default, collapse "History" bucket (show only count, e.g., `💤 History (128 files hidden)`). Expand if `--all` is set.
 
 ## 6. Output Format (Pipe/File Mode)

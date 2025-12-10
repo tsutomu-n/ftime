@@ -49,7 +49,11 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
     if elapsed.as_secs() < 60 {
         "just now".to_string()
     } else if mins < 60 {
-        format!("{} mins ago", mins)
+        if mins == 1 {
+            "1 min ago".to_string()
+        } else {
+            format!("{} mins ago", mins)
+        }
     } else if hours < 24 {
         if hours == 1 {
             "1 hour ago".to_string()
