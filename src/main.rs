@@ -22,6 +22,10 @@ struct Cli {
     #[arg(short = 'a', long = "all")]
     show_all_history: bool,
 
+    /// Show Nerd Font icons (opt-in)
+    #[arg(short = 'I', long = "icons")]
+    use_icons: bool,
+
     /// Include dotfiles
     #[arg(short = 'H', long = "hidden")]
     include_hidden: bool,
@@ -65,7 +69,13 @@ fn run() -> Result<()> {
     let force_tty = env::var_os("FTIME_FORCE_TTY").is_some();
 
     if force_tty || std::io::stdout().is_terminal() {
-        view::tty::render(&bucketed, scan.now, &path, cli.show_all_history)?;
+        view::tty::render(
+            &bucketed,
+            scan.now,
+            &path,
+            cli.show_all_history,
+            cli.use_icons,
+        )?;
     } else {
         view::text::render(&scan.entries, scan.now, &path)?;
     }

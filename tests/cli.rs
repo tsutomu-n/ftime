@@ -77,6 +77,27 @@ fn history_bucket_collapses_and_expands() {
 }
 
 #[test]
+fn icons_flag_keeps_output_stable() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+
+    // add a history item to exercise the History header
+    let old_path = dir.path().join("old");
+    File::create(&old_path).unwrap();
+    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
+    set_file_mtime(&old_path, FileTime::from_system_time(old_time)).unwrap();
+
+    bin()
+        .arg(dir.path())
+        .arg("--icons")
+        .env("FTIME_FORCE_TTY", "1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("History"));
+}
+
+#[test]
 fn pipe_mode_outputs_tab_separated_without_headers() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("f1");

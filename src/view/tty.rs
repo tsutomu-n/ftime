@@ -1,6 +1,9 @@
 use crate::engine::Bucketed;
-use crate::model::FileEntry;
+use crate::model::{FileEntry, TimeBucket};
 use crate::util::time::relative_time;
+#[cfg(feature = "icons")]
+use crate::view::icon::NerdIconProvider;
+use crate::view::icon::{DefaultIconProvider, IconProvider};
 use anyhow::Result;
 use colored::Colorize;
 use std::path::Path;
@@ -13,20 +16,51 @@ pub fn render(
     now: SystemTime,
     base: &Path,
     show_all_history: bool,
+    use_icons: bool,
 ) -> Result<()> {
     if buckets.total() == 0 {
         println!("No recent files found");
         return Ok(());
     }
 
-    render_bucket("🔥 Active Context (< 1h)", &buckets.active, now, base);
-    render_bucket("☕ Today's Session", &buckets.today, now, base);
-    render_bucket("📅 This Week", &buckets.week, now, base);
+    let provider = select_provider(use_icons);
+
+    render_bucket(
+        &header(
+            provider.as_ref(),
+            TimeBucket::Active,
+            "Active Context (< 1h)",
+        ),
+        &buckets.active,
+        now,
+        base,
+    );
+    render_bucket(
+        &header(provider.as_ref(), TimeBucket::Today, "Today's Session"),
+        &buckets.today,
+        now,
+        base,
+    );
+    render_bucket(
+        &header(provider.as_ref(), TimeBucket::ThisWeek, "This Week"),
+        &buckets.week,
+        now,
+        base,
+    );
 
     if show_all_history {
-        render_bucket("💤 History", &buckets.history, now, base);
+        render_bucket(
+            &header(provider.as_ref(), TimeBucket::History, "History"),
+            &buckets.history,
+            now,
+            base,
+        );
     } else if !buckets.history.is_empty() {
-        println!("💤 History ({} files hidden)", buckets.history.len());
+        println!(
+            "{} ({} files hidden)",
+            header(provider.as_ref(), TimeBucket::History, "History"),
+            buckets.history.len()
+        );
     }
 
     Ok(())
@@ -83,4 +117,25 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
     } else {
         rel.normal().to_string()
     }
+}
+
+fn header(provider: &dyn IconProvider, bucket: TimeBucket, label: &str) -> String {
+    let icon = provider.bucket_icon(bucket);
+    if icon.is_empty() {
+        label.to_string()
+    } else {
+        format!("{icon} {label}")
+    }
+}
+
+fn select_provider(use_icons: bool) -> Box<dyn IconProvider> {
+    #[cfg(feature = "icons")]
+    {
+        if use_icons {
+            return Box::new(NerdIconProvider);
+        }
+    }
+    #[cfg(not(feature = "icons"))]
+    let _ = use_icons;
+    Box::new(DefaultIconProvider)
 }
