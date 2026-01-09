@@ -31,7 +31,7 @@ ftime [OPTIONS] [PATH]
 - パスがファイルだった場合はエラー終了（コード1）。
 
 ### オプション
-- `--json`            : JSON Lines で出力（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）。
+- `--json`            : JSON Lines で出力（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target(解決時のみ), label(Fresh時のみ)）。
 - `--ext rs,toml`     : 拡張子ホワイトリスト（カンマ区切り・大小無視）。ファイルのみ対象。
 - `-a, --all`         : History バケットを展開して表示。
 - `-H, --hidden`      : 隠しファイルも含める。

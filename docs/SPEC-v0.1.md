@@ -62,15 +62,15 @@ When `stdout` is **NOT** a terminal:
     * `relative_time`: string（TTY/pipeと同じ表記）
     * `is_dir`: bool
     * `is_symlink`: bool
-    * `symlink_target`: string|null（symlink時のみ。解決失敗/非symlinkは null）
-    * `label`: string|null（現状は `"fresh"` または null）
+    * `symlink_target`: string（is_symlink=true かつ解決成功時のみ）。それ以外は出力しない。
+    * `label`: string（現状は `"fresh"` のみ）。該当しない場合は出力しない。
 *   Colors/icons/20件制限は無効。TTY/非TTYに依存しない。
 
 ## 8. Filtering
 *   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
 *   **Extension Filter:** `--ext ext1,ext2` で拡張子ホワイトリスト（case-insensitive）。対象はファイルのみで、ディレクトリ/拡張子なしファイルは除外される。
 *   **Ignore Files:** Global ignore `~/.ftimeignore` (overridable via `FTIME_IGNORE`) is applied unless `--no-ignore` is set. One glob pattern per line; `#` comments and empty lines ignored. Default ignores `.DS_Store`, `Thumbs.db` are part of this set. If PATH is a file, the command exits with code 1 before ignores are applied.
-*   **Labels:** Best-effort label assignment (currently `Fresh` within ~5 minutes). Disable with `--no-labels`. TSV output does not include labels; TTY shows a badge; JSON uses `label` field.
+*   **Labels:** Best-effort label assignment (currently `Fresh` within ~5 minutes). Disable with `--no-labels`. TSV output does not include labels; TTY shows a badge; JSON includes `label` when assigned.
 
 ## 9. Environment Overrides
 *   `NO_COLOR`: Disable color output when set. **最優先**で適用する（TTY強制より優先）。

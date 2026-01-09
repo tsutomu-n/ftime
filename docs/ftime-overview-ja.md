@@ -12,7 +12,7 @@
 
 フトコロ事情：
 - 再帰やGit連携はあえて外し、「深さ1 + 時間バケット」の最小核に絞って高速性と明確さを担保。
-- Phase 2 の必須項目（`--json`）と拡張子フィルタ、簡易 ignore は実装済み。Phase 2 Optional（出自ラベルなど）は未着手。
+- Phase 2 の必須項目（`--json`）と拡張子フィルタ、簡易 ignore は実装済み。Phase 2 Optional のうち軽量出自ラベルは `Fresh` のみ実装済み（その他は未着手）。
 
 ---
 
@@ -37,7 +37,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 ### 主なオプション
 - `--json`  
   - JSON Lines出力。フィールド凍結:  
-    `path`, `bucket`, `mtime`(RFC3339/UTC), `relative_time`, `is_dir`, `is_symlink`, `symlink_target`  
+    `path`, `bucket`, `mtime`(RFC3339/UTC), `relative_time`, `is_dir`, `is_symlink`, `symlink_target`(symlink解決時のみ), `label`(Fresh時のみ)  
   - 色/アイコン/20件上限なし。TTY/非TTYに依存しない。
 - `--ext rs,toml`  
   - 拡張子ホワイトリスト（大小無視）。カンマ区切り。ファイルのみ対象。ディレクトリ・拡張子なしは除外。
@@ -68,9 +68,11 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 
 ### JSON Lines
 - `--json` 指定時のみ。1行1オブジェクトで固定フィールド（互換性重視、変更はメジャーのみ）。
+- `symlink_target` と `label` は該当時のみ出力（それ以外は省略）。
 - フィールド値の定義:
   - `bucket`: `"active" | "today" | "this_week" | "history"` の4種固定（小文字スネークケース）。
-  - `symlink_target`: `is_symlink=true` かつ解決成功時のみ文字列（ベース相対優先）。解決失敗または symlink でない場合は `null`。
+  - `symlink_target`: `is_symlink=true` かつ解決成功時のみ文字列（ベース相対優先）。解決失敗または非symlinkは出力しない。
+  - `label`: Fresh のときのみ `"fresh"` を出力。該当しない場合は出力しない。
   - `relative_time`: TTY/TSV と同じ表記（下記「相対時間ルール」）。
 - TTY/非TTYや色・上限ロジックに影響されない。
 
@@ -132,12 +134,12 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
   - `Yesterday`
   - `2–6d` : `{N} days ago`
   - `>=7d` : `YYYY-MM-DD`（ローカル日付）
-- シンボリックリンクのターゲット表示は TTY のみ。TSV はパスのみ。JSON は `symlink_target` に格納（解決不可は `null`）。`label` は Fresh のみ（約5分以内）、JSONは `"fresh"`/null、TTYは小バッジで表示、TSVは表示しない。
+- シンボリックリンクのターゲット表示は TTY のみ。TSV はパスのみ。JSON は `symlink_target` を解決成功時のみ出力（失敗/非symlinkは省略）。`label` は Fresh のみ（約5分以内）で、JSON は `label` を出力（それ以外は省略）。TTYは小バッジで表示、TSVは表示しない。
 
 ---
 
 ## 10. 互換性ポリシー（抜粋）
-- JSONフィールドは凍結（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）。変更はメジャーのみ。
+- JSONフィールドは凍結（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）。変更はメジャーのみ。
 - デフォルト動作（バケット定義、20件上限、TSVフォーマット、デフォルト ignore）は v1.0 以降も維持予定。
 - 新オプション追加時は後方互換を最優先し、既存挙動を壊さない。
 
@@ -167,7 +169,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 ---
 
 ## 14. 今後の拡張（ロードマップ抜粋）
-- Phase 2: JSON必須化済み、拡張子フィルタ実装済み。Optionalとして軽量出自ラベル検討。
+- Phase 2: JSON必須化済み、拡張子フィルタ実装済み。Optionalとして軽量出自ラベル検討（Freshは実装済み）。
 - Phase 3: 互換性ポリシー凍結、ignore の高度化（gitignore 互換・複数ルート等）、配布パッケージ、SPEC/TESTPLAN v1.0 作成。
 - 将来: Gitモード、TUI (`--explore`)、再帰や since フィルタなどは別フェーズで検討。
 
@@ -184,7 +186,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 | 拡張子フィルタ (`--ext`)            | 実装済   | Phase 2                           |
 | デフォルト ignore (.DS_Store 等)    | 実装済   | Phase 2                           |
 | Nerd Fontアイコン (`--icons`)       | 実装済   | Phase 1+α（オプトイン）          |
-| 軽量出自ラベル                      | 未実装   | Phase 2 Optional                  |
+| 軽量出自ラベル                      | 一部実装済（Freshのみ） | Phase 2 Optional                  |
 | `~/.ftimeignore` 等の ignore         | 実装済   | Phase 2                           |
 | 再帰・depth指定                     | 未実装   | 未来検討                          |
 | Gitモード / TUI (`--explore`)       | 未実装   | 未来検討                          |
