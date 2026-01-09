@@ -6,7 +6,7 @@
 *   **Limitations:**
     *   No Git integration (v0.1).
     *   No recursive scanning (depth=1 only).
-    *   No heuristic provenance labels (Fresh/Imported logic is for v0.2).
+    *   Heuristic provenance labels are limited to `Fresh` (within ~5 minutes). Other labels such as Imported remain out of scope.
 
 ## 2. Input Model
 *   **Source:** Single directory path provided via CLI argument. (Defaults to current directory `.`).

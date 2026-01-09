@@ -79,7 +79,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 ## 5. フィルタリング仕様
 - 隠しファイル: デフォルト除外。`--hidden` で含める（ただし `.DS_Store` / `Thumbs.db` は常に除外）。
 - 拡張子: `--ext` でホワイトリスト。ファイルのみ判定、拡張子なしは除外。大小無視。PATH がファイルの場合は先にエラー終了（コード1）するため `--ext` は実質無効。
-- 追加の ignore 設定ファイル（例 `~/.ftimeignore`）は未実装（Phase 3 検討）。
+- 追加の ignore 設定ファイルは実装済み。グローバルは `~/.ftimeignore`（`FTIME_IGNORE` で上書き）、ローカルは対象ディレクトリ直下の `.ftimeignore`。`--no-ignore` で無効化できる。
 - ラベル: 約5分以内の更新に `Fresh` を付与。TTYでバッジ、JSONは `label` フィールド、TSVは非表示。`--no-labels` で無効化。
 
 ---
@@ -168,7 +168,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 
 ## 14. 今後の拡張（ロードマップ抜粋）
 - Phase 2: JSON必須化済み、拡張子フィルタ実装済み。Optionalとして軽量出自ラベル検討。
-- Phase 3: 互換性ポリシー凍結、`~/.ftimeignore` など柔軟な ignore、配布パッケージ、SPEC/TESTPLAN v1.0 作成。
+- Phase 3: 互換性ポリシー凍結、ignore の高度化（gitignore 互換・複数ルート等）、配布パッケージ、SPEC/TESTPLAN v1.0 作成。
 - 将来: Gitモード、TUI (`--explore`)、再帰や since フィルタなどは別フェーズで検討。
 
 ---
@@ -185,7 +185,7 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 | デフォルト ignore (.DS_Store 等)    | 実装済   | Phase 2                           |
 | Nerd Fontアイコン (`--icons`)       | 実装済   | Phase 1+α（オプトイン）          |
 | 軽量出自ラベル                      | 未実装   | Phase 2 Optional                  |
-| `~/.ftimeignore` 等の柔軟な ignore   | 未実装   | Phase 3                           |
+| `~/.ftimeignore` 等の ignore         | 実装済   | Phase 2                           |
 | 再帰・depth指定                     | 未実装   | 未来検討                          |
 | Gitモード / TUI (`--explore`)       | 未実装   | 未来検討                          |
 
