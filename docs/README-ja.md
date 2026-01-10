@@ -94,7 +94,7 @@ ftime [OPTIONS] [PATH]
 - `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（既定: `~/.ftimeignore`）
 
 ### 時間バケットの判定（境界）
-- Active: `now - mtime < 1時間`
+- Active: `now - mtime < 1時間`（mtimeが未来でもActive）
 - Today: Active 以外で、ローカル時刻の「今日 00:00:00」以降
 - This Week: Today 以外で、`now - mtime < 7日`（= 7×24時間）
 - History: 上記以外
@@ -138,8 +138,8 @@ ftime [OPTIONS] [PATH]
 
 出力例:
 ```text
-src/main.rs	2 mins ago
-docs/README-ja.md	3 hours ago
+src/main.rs\t2 mins ago
+docs/README-ja.md\t3 hours ago
 ```
 
 ### JSON Lines
@@ -157,8 +157,8 @@ docs/README-ja.md	3 hours ago
 - 読み取り専用（ファイルの変更/削除はしない）
 
 ## 関連ドキュメント
-- ユーザーガイド: `docs/USER-GUIDE-ja.md`
-- CLI 詳細: `docs/CLI-ja.md`
-- 仕様: `docs/SPEC-ja.md`
-- 設計: `docs/ARCHITECTURE-ja.md`
-- テスト計画: `docs/TESTPLAN-ja.md`
+- ユーザーガイド: `USER-GUIDE-ja.md`
+- CLI 詳細: `CLI-ja.md`
+- 仕様: `SPEC-ja.md`
+- 設計: `ARCHITECTURE-ja.md`
+- テスト計画: `TESTPLAN-ja.md`

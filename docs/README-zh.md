@@ -94,7 +94,7 @@ ftime [OPTIONS] [PATH]
 - `FTIME_IGNORE`    ：覆盖全局 ignore 文件路径（默认：`~/.ftimeignore`）
 
 ### 时间分桶判定（边界）
-- Active：`now - mtime < 1 小时`
+- Active：`now - mtime < 1 小时`（即使 mtime 在未来也算 Active）
 - Today：非 Active，且 mtime 位于本地时区“今天 00:00:00”之后（含）
 - This Week：非 Today，且 `now - mtime < 7 天`（= 7×24 小时）
 - History：以上都不满足
@@ -138,8 +138,8 @@ ftime [OPTIONS] [PATH]
 
 输出示例：
 ```text
-src/main.rs	2 mins ago
-docs/README-zh.md	3 hours ago
+src/main.rs\t2 mins ago
+docs/README-zh.md\t3 hours ago
 ```
 
 ### JSON Lines
@@ -157,8 +157,8 @@ docs/README-zh.md	3 hours ago
 - 只读（不会修改/删除任何文件）
 
 ## 相关文档
-- 用户指南（日文）：`docs/USER-GUIDE-ja.md`
-- CLI 详细（日文）：`docs/CLI-ja.md`
-- 规格（日文）：`docs/SPEC-ja.md`
-- 架构（日文）：`docs/ARCHITECTURE-ja.md`
-- 测试计划（日文）：`docs/TESTPLAN-ja.md`
+- 用户指南（日文）：`USER-GUIDE-ja.md`
+- CLI 详细（日文）：`CLI-ja.md`
+- 规格（日文）：`SPEC-ja.md`
+- 架构（日文）：`ARCHITECTURE-ja.md`
+- 测试计划（日文）：`TESTPLAN-ja.md`

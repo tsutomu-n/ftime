@@ -1,6 +1,6 @@
 # ftime ユーザーガイド（エンドユーザー向け・詳細版）
 
-このガイドは、 **「何ができるか」「どう使うか」「出力をどう読むか」** を迷わず理解できる粒度でまとめた手引きです。仕様・設計の詳細は `docs/SPEC-ja.md` と `docs/ARCHITECTURE-ja.md` にあります。
+このガイドは、 **「何ができるか」「どう使うか」「出力をどう読むか」** を迷わず理解できる粒度でまとめた手引きです。仕様・設計の詳細は `SPEC-ja.md` と `ARCHITECTURE-ja.md` にあります。
 
 ---
 
@@ -26,6 +26,7 @@ ftime は **「最近更新したファイルを素早く見つける」** た�
 ---
 
 ## 2. インストール / セットアップ
+要件: Rust/Cargo 1.92+（edition 2024）
 
 ### 2.1 GitHub Releases からインストール（推奨）
 ```
@@ -349,7 +350,7 @@ A: 互換性と機械処理の安定性を優先。
 ---
 
 ## 18. 参考リンク
-- 仕様: `docs/SPEC-ja.md`
-- 設計: `docs/ARCHITECTURE-ja.md`
-- CLI詳細: `docs/CLI-ja.md`
-- テスト計画: `docs/TESTPLAN-ja.md`
+- 仕様: `SPEC-ja.md`
+- 設計: `ARCHITECTURE-ja.md`
+- CLI詳細: `CLI-ja.md`
+- テスト計画: `TESTPLAN-ja.md`
