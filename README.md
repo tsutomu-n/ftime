@@ -64,6 +64,7 @@ Common options:
 
 ## Docs
 - Japanese README: `docs/README-ja.md`
+- Chinese README: `docs/README-zh.md`
 - User guide (Japanese): `docs/USER-GUIDE-ja.md`
 - CLI contract: `docs/CLI.md`
 
