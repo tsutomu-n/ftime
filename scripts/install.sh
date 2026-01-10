@@ -28,9 +28,11 @@ esac
 
 version="${1:-latest}"
 if [[ "$version" == "latest" ]]; then
-    tag="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-        | sed -n 's/.*"tag_name": *"\\([^"]*\\)".*/\\1/p' \
-        | head -n1)"
+    tag="$(
+        curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+            | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
+            | head -n1
+    )"
     if [[ -z "${tag}" ]]; then
         echo "failed to resolve latest release tag" >&2
         exit 1
