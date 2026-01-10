@@ -41,6 +41,19 @@ ftime [OPTIONS] [PATH]
 - それ以外のコードは現時点では使用しない。
 
 ## 5. 基本の使い方
+まず `ftime` コマンドを実行できる状態にします（初回のみ）。
+
+```
+# リポジトリ内で使う場合
+./target/release/ftime
+
+# どのディレクトリでも `ftime` だけで使いたい場合
+cargo install --path .
+```
+
+- `cargo install --path .` のインストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\.cargo\bin`）。
+- そのディレクトリが PATH に通っていれば `ftime` だけで実行可能。
+
 ### 5.1 何も付けずに実行
 ```
 ftime
