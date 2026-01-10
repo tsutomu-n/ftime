@@ -31,11 +31,16 @@ ftime [OPTIONS] [PATH]
 *   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 
-## 5. Exit Codes
+## 5. Compatibility Policy (v1.0)
+*   CLI flags and behavior are frozen in v1.0; changes require a major version.
+*   Output formats (TTY/pipe/JSON) are stable; JSON field set is frozen for compatibility.
+*   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
+
+## 6. Exit Codes
 *   `0`: Success.
 *   `1`: General error (e.g., directory not found, permission denied on target root, target is a file). Per-entry I/O エラーはスキップし処理継続する。
 
-## 6. Usage Examples
+## 7. Usage Examples
 ```bash
 # Basic usage
 ftime

@@ -9,6 +9,13 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tsutomu-n/CLI-Tools"
 homepage = "https://github.com/tsutomu-n/CLI-Tools"
+exclude = [
+    ".ai_memory/**",
+    ".serena/**",
+    "次回/**",
+    "次の実装計画：*/**",
+    "Cargo.toml.orig",
+]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
