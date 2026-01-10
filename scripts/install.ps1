@@ -11,7 +11,6 @@ $Bin = "ftime"
 $Arch = $env:PROCESSOR_ARCHITECTURE
 switch ($Arch) {
     "AMD64" { $Arch = "x86_64" }
-    "ARM64" { $Arch = "aarch64" }
     default { throw "unsupported arch: $Arch" }
 }
 
