@@ -12,8 +12,15 @@ Recent-file viewer with time buckets. Depth=1, read-only, zero-panic設計。
 - 拡張子ホワイトリスト: `--ext rs,toml`（カンマ区切り・大小無視・ファイルのみ）
 - グローバル ignore: `~/.ftimeignore`（`FTIME_IGNORE` で指定、`--no-ignore` で無効化）
 
+## Requirements
+- Rust/Cargo 1.85+（edition 2024）
+
 ## Install / Build
 ```bash
+# Install from crates.io (v1.0+)
+cargo install ftime
+
+# Build from source
 cargo build
 # Nerd Fontアイコンを使う場合
 cargo build --features icons

@@ -2,9 +2,13 @@
 name = "ftime"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 authors = ["CLI Tools Team"]
 description = "Recent file listing CLI with time buckets"
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/tsutomu-n/CLI-Tools"
+homepage = "https://github.com/tsutomu-n/CLI-Tools"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }

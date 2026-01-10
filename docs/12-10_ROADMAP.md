@@ -258,6 +258,7 @@ Phase 1 では、以下を満たす実装を対象とします。
   * その意味
   * 将来的に互換性を壊す可能性があるかどうか
     を明文化する。
+* `NO_COLOR` の空文字扱いは標準仕様と異なる点があるため、v1.0 仕様に「空文字でも無効化する」方針を明記する。
 * JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
 * 残タスク（未着手/今後対応）を整理・管理するチェックリストを docs に付け、Phase 3 に向けて順次消化する。
 * 将来的に仕様変更の可能性があるものは、ドキュメント上で「Experimental」としてマークする。
@@ -296,6 +297,9 @@ Phase 1 では、以下を満たす実装を対象とします。
 
   * 1000件程度のディレクトリでの体感パフォーマンスを確認し、
     受忍ラインを README または docs に記載する。
+* ツールチェーン：
+
+  * Rust/Cargo の最低対応バージョン（edition 2024 に必要なバージョン）を README か docs に明記する。
 
 #### 5.2.5 配布とドキュメント
 
@@ -303,6 +307,8 @@ Phase 1 では、以下を満たす実装を対象とします。
 
   * `cargo install ftime` で利用可能な状態にする。
   * GitHub Releases で、Linux / macOS 向けのバイナリを提供する。
+  * crates.io 公開に必要なメタデータ（homepage / repository / readme 等）を `Cargo.toml` に揃える。
+  * `cargo publish --dry-run` と `cargo package --list` で公開内容を検証する。
 * ドキュメントの整備：
 
   * README を v1.0 仕様に更新（FS Universal Edition としての説明に寄せる）

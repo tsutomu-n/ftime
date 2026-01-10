@@ -1,7 +1,7 @@
-# ftime Architecture Proposal
+# ftime Architecture (v1.0)
 
 ## 1. Module Structure
-We recommend the following separation of concerns to support future Git integration.
+The current codebase separates concerns to keep FS mode stable while allowing future extensions (e.g., Git).
 
 ```text
 src/
@@ -43,17 +43,18 @@ pub enum TimeBucket {
 ## 3. Non-Functional Requirements
 *   **Zero Panic:** Use `Result` propagation. Handle `std::io::Error` gracefully.
 *   **Performance:**
-    *   Use `std::fs::read_dir` (sync I/O is fine for v0.1).
+    *   Use `std::fs::read_dir` (sync I/O is fine for v1.0).
     *   Avoid recursion to prevent stack overflow or massive delays.
 *   **Dependencies:**
     *   `clap` (derive feature)
     *   `colored` (simple coloring)
     *   `chrono` (time math)
 *   `std::io::IsTerminal` (TTY detection; `is-terminal` crate kept for compatibility)
+*   **Toolchain:** Rust edition 2024 (MSRV 1.85).
 
 ## 4. Responsibility Boundaries
 *   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。`ScanOptions` は `include_hidden` / `ext_filter` / ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化 を受け付ける。
 *   `util::time`: `classify_bucket`/`relative_time` など時間境界を集約し、境界テストをここに集中させる。
 *   `view::tty` / `view::text` / `view::json`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。
-*   `view::icon`（v0.1以降追加）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。
+*   `view::icon`（現行機能）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。
 *   `engine::ScanOptions` は `include_hidden`, `ext_filter`（拡張子ホワイトリスト）を受け取り、ファイル拡張子によるフィルタはスキャン段階で適用する（ディレクトリは除外）。

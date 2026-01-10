@@ -1,7 +1,7 @@
 # ftime 機能フルガイド（第三者向け・実装準拠）  
-更新日: 2025-12-10 / 対象バージョン: v0.2 系（FS Edition, Phase 2 前倒し分を含む）
+更新日: 2026-01-10 / 対象バージョン: v1.0 系（FS Edition）
 
-この文書は、開発者以外の第三者でも `ftime` の目的・仕様・出力・運用上の注意を短時間で把握できるよう、実装済み機能に基づいて詳細に説明します。設計・試験方針は `ARCHITECTURE.md` / `SPEC-v0.1.md` / `TESTPLAN-v0.1.md` を参照してください。本書はそれらの統合的な読み物です。
+この文書は、開発者以外の第三者でも `ftime` の目的・仕様・出力・運用上の注意を短時間で把握できるよう、実装済み機能に基づいて詳細に説明します。設計・試験方針は `ARCHITECTURE.md` / `SPEC-v1.0.md` / `TESTPLAN-v1.0.md` を参照してください。本書はそれらの統合的な読み物です。
 
 ---
 
@@ -12,7 +12,7 @@
 
 フトコロ事情：
 - 再帰やGit連携はあえて外し、「深さ1 + 時間バケット」の最小核に絞って高速性と明確さを担保。
-- Phase 2 の必須項目（`--json`）と拡張子フィルタ、簡易 ignore は実装済み。Phase 2 Optional のうち軽量出自ラベルは `Fresh` のみ実装済み（その他は未着手）。
+- v1.0 で `--json` / 拡張子フィルタ / ignore は実装済み。軽量出自ラベルは `Fresh` のみ実装済み（その他は未着手）。
 
 ---
 
@@ -152,10 +152,10 @@ PATH省略時はカレント。ファイルを渡すとエラー（終了コー�
 ---
 
 ## 12. 参考ドキュメント
-- 仕様: `docs/SPEC-v0.1.md` / `docs/SPEC-ja.md`
+- 仕様: `docs/SPEC-v1.0.md` / `docs/SPEC-ja.md`
 - 設計: `docs/ARCHITECTURE.md` / `docs/ARCHITECTURE-ja.md`
 - CLI契約: `docs/CLI.md` / `docs/CLI-ja.md`
-- 試験計画: `docs/TESTPLAN-v0.1.md` / `docs/TESTPLAN-ja.md`
+- 試験計画: `docs/TESTPLAN-v1.0.md` / `docs/TESTPLAN-ja.md`
 - ロードマップ: `docs/12-10_ROADMAP.md`
 
 ---

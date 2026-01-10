@@ -1,6 +1,6 @@
 # ftime とは？（概要と使い方）
 
-このドキュメントは、Rust製CLIツール「ftime」の目的と使い方を日本語で簡潔にまとめたものです。仕様の詳細は `docs/SPEC-v0.1.md`、設計は `docs/ARCHITECTURE.md`、試験方針は `docs/TESTPLAN-v0.1.md` を参照してください。
+このドキュメントは、Rust製CLIツール「ftime」の目的と使い方を日本語で簡潔にまとめたものです。仕様の詳細は `docs/SPEC-v1.0.md`、設計は `docs/ARCHITECTURE.md`、試験方針は `docs/TESTPLAN-v1.0.md` を参照してください。
 
 ## 目的
 - ローカルディレクトリ直下のファイル・ディレクトリを **更新時刻（mtime）** で並べ、最近の作業コンテキストを視覚化する。
@@ -22,6 +22,7 @@
 cargo build --release
 # 実行ファイルは target/release/ftime
 ```
+要件: Rust/Cargo 1.85+（edition 2024）
 
 ## 使い方
 ```bash
@@ -61,7 +62,7 @@ ftime [OPTIONS] [PATH]
 
 ## 制限・非対応
 - 再帰スキャンなし（深さ1固定）。
-- Git連携なし（v0.1時点）。
+- Git連携なし（v1.0時点）。
 - パフォーマンスのため余計な I/O を抑制（サマリ表示で20件上限）。
 
 ## テスト
@@ -73,7 +74,7 @@ cargo test
 ```
 
 ## 参考
-- 仕様: `docs/SPEC-v0.1.md`
+- 仕様: `docs/SPEC-v1.0.md`
 - 設計: `docs/ARCHITECTURE.md`
 - CLI契約: `docs/CLI.md`
-- 試験計画: `docs/TESTPLAN-v0.1.md`
+- 試験計画: `docs/TESTPLAN-v1.0.md`
