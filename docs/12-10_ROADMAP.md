@@ -252,69 +252,47 @@ Phase 1 では、以下を満たす実装を対象とします。
 
 #### 5.2.1 CLI と互換性ポリシーの確立
 
-* v1.0 時点でサポートするオプションを明示し、`docs/CLI.md` に凍結仕様として記載する。
-* 重要オプション（例: `--all`, `--hidden`, `--json`, `--no-color`）については、
-
-  * その意味
-  * 将来的に互換性を壊す可能性があるかどうか
-    を明文化する。
-* `NO_COLOR` の空文字扱いは標準仕様と異なる点があるため、v1.0 仕様に「空文字でも無効化する」方針を明記する。
-* JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
-* 残タスク（未着手/今後対応）を整理・管理するチェックリストを docs に付け、Phase 3 に向けて順次消化する。
-* 将来的に仕様変更の可能性があるものは、ドキュメント上で「Experimental」としてマークする。
+- [x] v1.0 時点でサポートするオプションを明示し、`docs/CLI.md` に凍結仕様として記載する。
+- [x] 重要オプション（例: `--all`, `--hidden`, `--json`, `--no-color`）について意味と互換性リスクを明文化する。
+- [x] `NO_COLOR` の空文字扱い（空文字でも無効化）を v1.0 仕様に明記する。
+- [x] JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
+- [x] 残タスク（未着手/今後対応）を整理・管理するチェックリストを docs に付け、Phase 3 に向けて順次消化する。
+- [x] 将来的に仕様変更の可能性があるものは、ドキュメント上で「Experimental」としてマークする（v1.0 時点では Experimental なし）。
 
 #### 5.2.2 プラットフォーム検証
 
-* 対象 OS を明示する（例：Linux (major distros), macOS）。
-* 主な確認ポイント：
-
-  * time バケットの境界（サマータイム／ローカルタイムの取り扱い）
-  * `IsTerminal` の挙動（TTY 判定）
-  * symlink／パーミッションエラー時の挙動の違い
+- [x] 対象 OS を明示する（例：Linux (major distros), macOS）。
+- [ ] time バケットの境界（サマータイム／ローカルタイムの取り扱い）を確認する。
+- [ ] `IsTerminal` の挙動（TTY 判定）を確認する。
+- [ ] symlink／パーミッションエラー時の挙動の違いを確認する。
 
 #### 5.2.3 ノイズ除外の整理
 
-* デフォルトで無視するファイルの最小セットを定義：
-
-  * `.DS_Store`
-  * `Thumbs.db`
-  * その他、明らかにノイズとなる一般的なシステムファイル
-* `~/.ftimeignore` は導入済み。今後は gitignore 互換や複数ルート対応など高度化の余地を残す。
+- [x] デフォルトで無視するファイルの最小セットを定義（`.DS_Store`, `Thumbs.db`）。
+- [ ] その他、明らかにノイズとなる一般的なシステムファイルの追加候補を整理する。
+- [x] `~/.ftimeignore` の導入と将来拡張余地（gitignore 互換等）を記述する。
 
 #### 5.2.4 品質基準の明確化
 
-* テスト：
-
-  * 時間バケットの境界ケース（1h・1日・7日のしきい値）
-  * 隠しファイル／ディレクトリの扱い
-  * symlink（正常／壊れ）の扱い
-  * TTY／非TTY での出力差分（snapshot テスト含む）
-* CI：
-
-  * `cargo fmt`, `clippy`, `test` の自動実行
-  * 最低限の lint 方針 (`-D warnings`) を維持
-* パフォーマンス：
-
-  * 1000件程度のディレクトリでの体感パフォーマンスを確認し、
-    受忍ラインを README または docs に記載する。
-* ツールチェーン：
-
-  * Rust/Cargo の最低対応バージョン（edition 2024 に必要なバージョン）を README か docs に明記する。
+- [x] テスト観点（1h/1d/7d境界、hidden、symlink、TTY/非TTY）を v1.0 テスト計画に明文化する。
+- [x] CI で `cargo fmt`, `clippy`, `test` を自動実行する方針を明記し、`-D warnings` を維持する。
+- [x] 1000件程度の体感パフォーマンス確認と受忍ライン記載を README / docs に反映する。
+- [x] Rust/Cargo の最低対応バージョン（edition 2024）を README / docs に明記する。
 
 #### 5.2.5 配布とドキュメント
 
 * 配布：
 
-  * `cargo install ftime` で利用可能な状態にする。
-  * GitHub Releases で、Linux / macOS 向けのバイナリを提供する。
-  * crates.io 公開に必要なメタデータ（homepage / repository / readme 等）を `Cargo.toml` に揃える。
-  * `cargo publish --dry-run` と `cargo package --list` で公開内容を検証する。
+  * [ ] `cargo install ftime` で利用可能な状態にする。
+  * [ ] GitHub Releases で、Linux / macOS 向けのバイナリを提供する。
+  * [x] crates.io 公開に必要なメタデータ（homepage / repository / readme 等）を `Cargo.toml` に揃える。
+  * [x] `cargo publish --dry-run` と `cargo package --list` で公開内容を検証する。
 * ドキュメントの整備：
 
-  * README を v1.0 仕様に更新（FS Universal Edition としての説明に寄せる）
-  * `docs/SPEC-v1.0.md` として FS モードの仕様を確定版として記録
-  * `docs/ARCHITECTURE.md` を v1.0 時点の構造に追従
-  * `docs/TESTPLAN-v1.0.md` を用意し、主要テスト観点を更新
+  * [x] README を v1.0 仕様に更新（FS Universal Edition としての説明に寄せる）
+  * [x] `docs/SPEC-v1.0.md` として FS モードの仕様を確定版として記録
+  * [x] `docs/ARCHITECTURE.md` を v1.0 時点の構造に追従
+  * [x] `docs/TESTPLAN-v1.0.md` を用意し、主要テスト観点を更新
 
 ### 5.3 Phase 3 の終了条件
 

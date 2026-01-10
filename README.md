@@ -41,7 +41,7 @@ ftime [OPTIONS] [PATH]
 - `--no-ignore` : デフォルト・ユーザーignoreを無効化
 
 環境変数:
-- `NO_COLOR`        : 色を無効化（最優先）
+- `NO_COLOR`        : 色を無効化（最優先、空文字でも無効扱い）
 - `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制（色の有無は NO_COLOR に従う）
 - `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（デフォルトは `~/.ftimeignore`）
 

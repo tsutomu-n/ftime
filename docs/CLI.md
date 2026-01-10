@@ -35,6 +35,7 @@ ftime [OPTIONS] [PATH]
 *   CLI flags and behavior are frozen in v1.0; changes require a major version.
 *   Output formats (TTY/pipe/JSON) are stable; JSON field set is frozen for compatibility.
 *   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
+*   Important flags: `--all`, `--hidden`, `--json` (behavior frozen). Color is controlled by `NO_COLOR` (no `--no-color` flag).
 
 ## 6. Exit Codes
 *   `0`: Success.

@@ -47,7 +47,16 @@ Last updated: 2026-01-10
 *   **Icons feature off:** `--icons` is a no-op when built without icons; CLI should not error.
 *   **PATH is file:** Should exit 1 before ignore/ext/label are applied.
 
-## 4. Platform Verification
+## 4. CI / Tooling
+*   **fmt:** `cargo fmt`
+*   **clippy:** `cargo clippy -- -D warnings`
+*   **test:** `cargo test`
+
+## 5. Performance Check
+*   Generate ~1000 files and verify runtime is within expected bounds.
+*   Record the baseline in README or docs when updated.
+
+## 6. Platform Verification
 *   **Target OS:** Linux (major distros), macOS.
 *   **Checkpoints:**
     *   Time bucket boundaries under local time and DST transitions.
