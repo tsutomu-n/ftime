@@ -17,8 +17,18 @@
 - 拡張子ホワイトリスト（`--ext rs,toml` など、大文字小文字無視、ファイルのみ対象）。
 - デフォルト除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）。
 
-## インストール（開発環境）
+## インストール
 ```bash
+# GitHub Releases からインストール（推奨）
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+
+# crates.io からインストール
+cargo install ftime
+
+# ソースからビルド
 cargo build --release
 # 実行ファイルは target/release/ftime
 ```

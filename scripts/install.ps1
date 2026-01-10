@@ -43,3 +43,8 @@ $BinPath = Join-Path $InstallDir "$Bin.exe"
 Copy-Item -Path (Join-Path $Tmp "$Bin.exe") -Destination $BinPath -Force
 
 Write-Host "$Bin installed to $InstallDir"
+$PathParts = $env:Path -split ";" | ForEach-Object { $_.TrimEnd("\") }
+$InstallDirNorm = $InstallDir.TrimEnd("\")
+if ($PathParts -notcontains $InstallDirNorm) {
+    Write-Host "PATHに $InstallDir を追加してください"
+}

@@ -44,6 +44,14 @@ ftime [OPTIONS] [PATH]
 まず `ftime` コマンドを実行できる状態にします（初回のみ）。
 
 ```
+# GitHub Releases からインストール（推奨）
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+```
+
+```
 # リポジトリ内で使う場合
 ./target/release/ftime
 

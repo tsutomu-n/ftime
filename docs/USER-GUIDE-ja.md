@@ -27,18 +27,27 @@ ftime は **「最近更新したファイルを素早く見つける」** た�
 
 ## 2. インストール / セットアップ
 
-### 2.1 crates.io からインストール
+### 2.1 GitHub Releases からインストール（推奨）
+```
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+```
+
+### 2.2 crates.io からインストール
 ```
 cargo install ftime
 ```
 
-### 2.2 ソースからビルド
+### 2.3 ソースからビルド
 ```
 cargo build --release
 ```
 生成物: `target/release/ftime`
 
-### 2.3 追加ビルドオプション
+### 2.4 追加ビルドオプション
 - **Nerd Fontアイコン**: `cargo build --release --features icons`
 - **JSON無効ビルド**: `cargo build --release --no-default-features`
   - JSONはデフォルトで有効（`json` feature）。

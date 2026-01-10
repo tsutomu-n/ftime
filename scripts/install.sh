@@ -57,3 +57,7 @@ fi
 install -m 0755 "$tmpdir/$BIN" "$install_dir/$BIN"
 
 printf '%s installed to %s\n' "$BIN" "$install_dir"
+case ":$PATH:" in
+    *":$install_dir:"*) ;;
+    *) printf 'PATHに %s を追加してください\n' "$install_dir" ;;
+esac
