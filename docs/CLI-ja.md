@@ -54,6 +54,32 @@ cargo install --path .
 - `cargo install --path .` のインストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\.cargo\bin`）。
 - そのディレクトリが PATH に通っていれば `ftime` だけで実行可能。
 
+ビルド方法は次のどちらかです。
+
+```
+# 速い方（タイミング + sccache/リンク高速化を自動で使う）
+./scripts/build-release-fast.sh
+
+# 標準
+cargo build --release
+```
+
+ビルドしただけでは **グローバル（`ftime` だけで実行）にはなりません**。  
+理由は、生成物が `target/release/ftime` に置かれるだけで PATH に入らないためです。
+
+グローバル化したい場合は次のどちらかが必要です。
+
+```
+# 公式のインストール方式（推奨）
+cargo install --path .
+
+# もしくはシンボリックリンク
+ln -s /home/tn/projects/CLI-Tools/target/release/ftime ~/bin/ftime
+```
+
+**1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  
+ただし PATH に `~/.cargo/bin`（Windowsなら `%USERPROFILE%\.cargo\bin`）が通っている場合のみ、直後に `ftime` と打って使えます。
+
 ### 5.1 何も付けずに実行
 ```
 ftime
