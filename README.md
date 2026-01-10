@@ -6,6 +6,8 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
 A tiny, read-only CLI that lists recently modified files and directories in time buckets (depth 1).
 
+![ftime demo](assets/ftime-demo.gif)
+
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
 ## Features
