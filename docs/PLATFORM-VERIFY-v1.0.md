@@ -9,11 +9,11 @@ Date: 2026-01-10
 ## Verification Steps (Linux)
 ### 1) TTY vs non-TTY output
 Commands:
-- `FTIME_FORCE_TTY=1 NO_COLOR=1 cargo run --quiet -- <temp_dir>`
+- `script -q -c "NO_COLOR=1 cargo run --quiet -- <temp_dir>" /tmp/ftime_tty_script.txt`
 - `cargo run --quiet -- <temp_dir>`
 
 Observed:
-- `FTIME_FORCE_TTY=1` in a non-TTY environment produces bucketed TTY output.
+- TTY output shows bucket headers and grouped entries (confirmed via `script`).
 - Default non-TTY output is TSV (`<path>\t<relative_time>`).
 
 ### 2) Symlink handling
@@ -30,14 +30,25 @@ Note:
 - Spec updated: `read_link` success prints the target string without existence check.
 
 ### 3) Time bucket boundaries / DST
-Observed:
-- Newly created files show `just now` as expected.
+Commands:
+- `TZ=America/New_York cargo run --quiet -- --json <temp_dir>`
+
+Observed (example):
+- `after_midnight` → `bucket: "today"`
+- `before_midnight` → `bucket: "this_week"`
+
 Pending:
-- DST/local-time boundary behavior is not validated in this environment.
+- DST transition-specific behavior not validated.
 
 ### 4) Permission errors
+Attempt:
+- Created a file with mode `000` under a temp directory and scanned it.
+
+Observed:
+- Entry still appears in output; metadata retrieval did not fail.
+
 Pending:
-- Unable to reproduce a per-entry permission error in this environment; not validated.
+- Per-entry permission error could not be reproduced in this environment.
 
 ## Cross-Platform Status
 - Linux: partially verified (TTY/non-TTY, symlink behavior).

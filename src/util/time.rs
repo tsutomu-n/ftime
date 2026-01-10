@@ -99,7 +99,28 @@ pub fn classify_label(now: SystemTime, mtime: SystemTime) -> Option<Label> {
 mod tests {
     use super::*;
     use crate::model::TimeBucket;
+    use chrono::Duration as ChronoDuration;
     use chrono::Utc;
+
+    fn find_dst_transition_in_year(year: i32) -> Option<(DateTime<Local>, DateTime<Local>)> {
+        let start = Local.with_ymd_and_hms(year, 1, 1, 0, 0, 0).single()?;
+        let end = Local
+            .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
+            .single()?;
+        let mut prev = start;
+        let mut prev_offset = prev.offset().local_minus_utc();
+        let mut cursor = start + ChronoDuration::hours(6);
+        while cursor < end {
+            let offset = cursor.offset().local_minus_utc();
+            if offset != prev_offset {
+                return Some((prev, cursor));
+            }
+            prev = cursor;
+            prev_offset = offset;
+            cursor = cursor + ChronoDuration::hours(6);
+        }
+        None
+    }
 
     #[test]
     fn test_classify_bucket_boundaries() {
@@ -133,6 +154,35 @@ mod tests {
             classify_bucket(now, now - Duration::from_secs(8 * 86_400)),
             TimeBucket::History
         );
+    }
+
+    #[test]
+    fn test_classify_bucket_around_dst_transition() {
+        let now_local = Local::now();
+        let year = now_local.year();
+        let transition =
+            find_dst_transition_in_year(year).or_else(|| find_dst_transition_in_year(year - 1));
+        let Some((_, after)) = transition else {
+            return;
+        };
+
+        let now_dt = after + ChronoDuration::hours(6);
+        let now: SystemTime = now_dt.into();
+
+        let mtime_dt = Local
+            .with_ymd_and_hms(now_dt.year(), now_dt.month(), now_dt.day(), 0, 30, 0)
+            .single()
+            .filter(|dt| *dt < now_dt)
+            .unwrap_or_else(|| now_dt - ChronoDuration::hours(2));
+
+        if mtime_dt.date_naive() == now_dt.date_naive() {
+            assert_eq!(classify_bucket(now, mtime_dt.into()), TimeBucket::Today);
+        }
+
+        let within = now - Duration::from_secs(7 * 24 * 3600 - 1);
+        assert_eq!(classify_bucket(now, within), TimeBucket::ThisWeek);
+        let outside = now - Duration::from_secs(7 * 24 * 3600 + 1);
+        assert_eq!(classify_bucket(now, outside), TimeBucket::History);
     }
 
     #[test]
