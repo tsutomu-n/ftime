@@ -72,3 +72,6 @@ JSON Lines:
 - symlink: TTYでは `name -> target`、Pipeではパスのみ。
 - ディレクトリ: TTYでは末尾`/`付き、Pipeではパスのみ。
 - デフォルトで除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
+
+## Development Notes
+- 作業再開用のチェックポイントは `.ai_memory/` に保存（Git管理外）。
