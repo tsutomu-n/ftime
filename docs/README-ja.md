@@ -25,8 +25,9 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/in
 # Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
 
-# crates.io からインストール
+# crates.io からインストール（公開済みの場合）
 cargo install ftime
+※ 未公開の場合は GitHub Releases またはソースからビルドを利用。
 
 # ソースからビルド
 cargo build --release
