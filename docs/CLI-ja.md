@@ -15,6 +15,7 @@ ftime [OPTIONS] [PATH]
 | 短 | 長 | 説明 | 使いどころ |
 | --- | --- | --- | --- |
 | `-a` | `--all` | History バケットを折り畳まず全表示（ただし各バケット20件上限は維持）。 | 昨日以前の作業を俯瞰したいとき |
+|  | `--json` | JSON Lines出力（1行1オブジェクト、固定フィールド、色/上限なし）。 | 機械処理したいとき |
 |  | `--ext` | 拡張子ホワイトリスト（カンマ区切り・大文字小文字無視）。ファイルのみ対象、ディレクトリ/拡張子なしは除外。 | 特定言語のファイルだけ見たいとき（例: `--ext rs,toml`） |
 | `-H` | `--hidden` | ドットファイルを含める | `.env` や `.gitignore` も確認したいとき |
 |  | `--no-ignore` | デフォルト / `~/.ftimeignore` を無効化 | ignoreが効いているか確認したいとき |
@@ -98,6 +99,11 @@ ftime | cut -f1 | head
 src/main.rs\t12 mins ago
 docs/notes.md\t3 hours ago
 scripts/cleanup.sh\t2024-11-02
+```
+
+### 6.4 JSON Lines
+```
+{"path":"src/main.rs","bucket":"active","mtime":"2025-12-10T12:00:00Z","relative_time":"just now","is_dir":false,"is_symlink":false,"label":"fresh"}
 ```
 
 ## 7. バケットと相対時間の要点（使用者向け）
