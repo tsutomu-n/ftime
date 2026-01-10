@@ -31,14 +31,13 @@ Note:
 
 ### 3) Time bucket boundaries / DST
 Commands:
-- `TZ=America/New_York cargo run --quiet -- --json <temp_dir>`
+- `TZ=America/New_York cargo test util::time::tests::test_classify_bucket_around_dst_transition -- --nocapture`
 
-Observed (example):
-- `after_midnight` → `bucket: "today"`
-- `before_midnight` → `bucket: "this_week"`
-
-Pending:
-- DST transition-specific behavior not validated.
+Observed:
+- DST transition unit test passes under `TZ=America/New_York` (2026-01-10).
+- Local midnight boundary check (example):
+  - `after_midnight` → `bucket: "today"`
+  - `before_midnight` → `bucket: "this_week"`
 
 ### 4) Permission errors
 Attempt:
@@ -51,5 +50,5 @@ Pending:
 - Per-entry permission error could not be reproduced in this environment.
 
 ## Cross-Platform Status
-- Linux: partially verified (TTY/non-TTY, symlink behavior).
+- Linux: partially verified (TTY/non-TTY, symlink behavior, DST unit test via TZ override; permission error not reproduced).
 - macOS: not verified.

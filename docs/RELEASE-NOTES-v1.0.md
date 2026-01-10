@@ -1,4 +1,4 @@
-# ftime v1.0.0 Release Notes (Draft)
+# ftime v1.0.0 Release Notes
 Date: 2026-01-10
 
 ## Summary
@@ -22,4 +22,3 @@ v1.0.0 is the stability release for the FS edition. CLI and output formats are f
 ## Documentation Updates
 - `docs/SPEC-v1.0.md` and `docs/TESTPLAN-v1.0.md` added as the canonical spec/test plan.
 - CLI contract updated for v1.0 freeze and compatibility policy.
-*** End Patch}
