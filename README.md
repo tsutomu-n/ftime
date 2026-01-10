@@ -8,16 +8,16 @@
  |_|   \__|_||_| |_| |_|\___|
 ```
 
-最近更新したファイルを、**時間バケット**で一気に見渡すCLI（深さ1 / read-only / zero-panic）。
+A tiny, read-only CLI that lists recently modified files and directories in time buckets (depth 1).
 
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
 ## Features
-- mtime降順で4バケット分類: Active (<1h) / Today / This Week (<7d) / History
-- TTY: カラー＆バケット表示、Historyはデフォルト折りたたみ（各バケット20件上限）
-- Pipe/リダイレクト: タブ区切りで全件出力（ヘッダ・色・アイコンなし）
-- JSON Lines: `--json`（1行1JSON、機械処理向け）
-- フィルタ: `--ext`（拡張子）/ ignore（`~/.ftimeignore`、`FTIME_IGNORE`、`--no-ignore`）
+- 4 time buckets by `mtime`: Active (<1h) / Today / This Week (<7d) / History
+- TTY output: color + buckets, History collapsed by default (`--all`), max 20 items per bucket
+- Pipe/redirect output: tab-separated plain text (no headers, no colors, no icons)
+- JSON Lines: `--json` (default build)
+- Filters: `--ext`, ignore rules (`~/.ftimeignore`, `<PATH>/.ftimeignore`, `FTIME_IGNORE`, `--no-ignore`)
 
 ## Quickstart
 ```bash
@@ -25,7 +25,7 @@ ftime
 ```
 
 ## Install
-### GitHub Releases（推奨）
+### GitHub Releases (recommended)
 ```bash
 # macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
@@ -34,58 +34,38 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/instal
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
-### crates.io（公開済みの場合）
+### crates.io (when published)
 ```bash
 cargo install ftime
 ```
 
-### Build from source
+### From source (build + install)
+Requires Rust/Cargo 1.85+ (edition 2024).
+
 ```bash
-cargo build --release
-./target/release/ftime
+cargo install --path .
+ftime --version
 ```
+
+> `cargo build --release` only builds `target/release/ftime` and does not add it to your `PATH`.
 
 ## Usage
 ```bash
 ftime [OPTIONS] [PATH]
 ```
 
-主なオプション:
-- `-a, --all`   : Historyも展開して表示
-- `-H, --hidden`: ドットファイルを含める
-- `--json`      : JSON Linesで出力
-- `--ext`       : 拡張子ホワイトリスト（例: `--ext rs,toml`）
-- `--no-ignore` : デフォルト・ユーザーignoreを無効化
-
-環境変数:
-- `NO_COLOR`        : 色を無効化
-- `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制
-- `FTIME_IGNORE`    : グローバル ignore のパス上書き
-
-## Output Examples
-TTY:
-```
-🔥 Active Context (< 1h)
-  • src/main.rs  12 mins ago
-```
-
-Pipe:
-```
-src/main.rs\t12 mins ago
-subdir\t2 hours ago
-link_to_file\t3 days ago
-```
-
-JSON Lines:
-```
-{"path":"src/main.rs","bucket":"active","mtime":"2025-12-10T12:00:00Z","relative_time":"just now","is_dir":false,"is_symlink":false}
-```
+Common options:
+- `-a, --all`     Show History bucket (TTY mode)
+- `-H, --hidden`  Include dotfiles
+- `--ext rs,toml` Filter by extensions (files only)
+- `--json`        JSON Lines output (if built with default features)
+- `--no-ignore`   Disable ignore rules
+- `--no-labels`   Disable best-effort labels (e.g. Fresh)
 
 ## Docs
-- 日本語ユーザーガイド: `docs/USER-GUIDE-ja.md`
-- CLI詳細: `docs/CLI-ja.md`
-- 仕様: `docs/SPEC-ja.md`
-- 設計: `docs/ARCHITECTURE-ja.md`
+- Japanese README: `docs/README-ja.md`
+- User guide (Japanese): `docs/USER-GUIDE-ja.md`
+- CLI contract: `docs/CLI.md`
 
 ## License
 MIT (see `LICENSE`)

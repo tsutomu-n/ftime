@@ -1,91 +1,120 @@
-# ftime とは？（概要と使い方）
+# ftime（日本語 README）
 
-このドキュメントは、Rust製CLIツール「ftime」の目的と使い方を日本語で簡潔にまとめたものです。仕様の詳細は `docs/SPEC-v1.0.md`、設計は `docs/ARCHITECTURE.md`、試験方針は `docs/TESTPLAN-v1.0.md` を参照してください。
+`ftime` は、指定ディレクトリ直下（深さ1）のエントリを更新時刻（mtime）で並べ、時間バケットで俯瞰する **読み取り専用** CLIです。
 
-## 目的
-- ローカルディレクトリ直下のファイル・ディレクトリを **更新時刻（mtime）** で並べ、最近の作業コンテキストを視覚化する。
-- 読み取り専用ツール（ファイルの変更や削除は行わない）。
+## できること
+- ファイル/ディレクトリ/シンボリックリンクを mtime 降順で一覧
+- 4つの時間バケット: Active (<1h) / 今日 / 7日以内 / それ以外（History）
+- TTY: バケット表示・色・（任意で）アイコン、Historyはデフォルト折りたたみ（`--all` で展開）
+- パイプ/リダイレクト: タブ区切りのプレーンテキストで全件出力（ヘッダ・色・アイコンなし）
+- JSON Lines: `--json`（機械処理向け）
+- フィルタ: `--ext`（拡張子）/ ignore（後述）
 
-## 主な特徴
-- 深さ1のスキャン（再帰なし）。
-- 更新時刻に基づき4つの時間バケットに分類：`<1h` / `今日` / `<7日` / `それ以外`。
-- TTY出力時はカラー・アイコン付きでバケット表示、Historyはデフォルト折り畳み（`--all` で展開）。
-- パイプ・リダイレクト時はタブ区切りのプレーンテキストで全件出力。
-- JSON Lines出力（`--json`、フィールド固定）で機械処理が容易。
-- シンボリックリンクはリンク自身のメタデータを用い、`name -> target` として表示。解決できない場合は `<unresolved>`。
-- 隠しファイルはデフォルト非表示（`--hidden` で表示）。
-- 拡張子ホワイトリスト（`--ext rs,toml` など、大文字小文字無視、ファイルのみ対象）。
-- デフォルト除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）。
+## クイックスタート
+```bash
+ftime              # カレントディレクトリを対象
+ftime /path/to/dir # 指定ディレクトリを対象
+```
 
 ## インストール
+要件: Rust/Cargo 1.85+（edition 2024）
+
+### GitHub Releases（推奨）
 ```bash
-# GitHub Releases からインストール（推奨）
+# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
-
-# crates.io からインストール（公開済みの場合）
-cargo install ftime
-※ 未公開の場合は GitHub Releases またはソースからビルドを利用。
-
-# ソースからビルド
-cargo build --release
-# 実行ファイルは target/release/ftime
 ```
-要件: Rust/Cargo 1.85+（edition 2024）
+
+### crates.io（公開済みの場合）
+```bash
+cargo install ftime
+```
+
+### ソースからインストール（ビルド＋グローバル化）
+```bash
+cargo install --path .
+ftime --version
+```
+
+- インストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\\.cargo\\bin`）。
+- `ftime` をそのまま実行できるのは、上記ディレクトリが `PATH` に通っている場合です。
+
+### ソースからビルド（成果物だけ欲しい）
+ビルドは次のどちらかです。
+
+```bash
+# 速い方（タイミング + sccache/リンク高速化を自動で使う）
+./scripts/build-release-fast.sh
+
+# 標準
+cargo build --release
+```
+
+ビルドしただけではグローバル（`ftime` だけで実行）にはなりません。生成物が `target/release/ftime` に置かれるだけで `PATH` に入らないからです。
+
+```bash
+./target/release/ftime
+```
+
+グローバル化したい場合は次のどちらかが必要です。
+
+```bash
+# 公式のインストール方式（推奨）
+cargo install --path .
+
+# もしくはシンボリックリンク（Linux/macOS）
+ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
+```
 
 ## 使い方
 ```bash
 ftime [OPTIONS] [PATH]
 ```
+
 - `PATH` 省略時はカレントディレクトリを対象。
 - パスがファイルだった場合はエラー終了（コード1）。
 
-### オプション
-- `--json`            : JSON Lines で出力（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target(解決時のみ), label(Fresh時のみ)。symlink_target/labelは該当時のみ出力）。
-- `--ext rs,toml`     : 拡張子ホワイトリスト（カンマ区切り・大小無視）。ファイルのみ対象。
-- `-a, --all`         : History バケットを展開して表示。
-- `-H, --hidden`      : 隠しファイルも含める。
-- `-I, --icons`       : Nerd Fontアイコンを表示（`--features icons` ビルド時）。
-- `-h, --help` / `-V, --version` : ヘルプ/バージョン表示。
+### オプション（よく使うもの）
+- `-a, --all`      : History バケットも展開（TTYモード）
+- `-H, --hidden`   : ドットファイルを含める
+- `--ext rs,toml`  : 拡張子ホワイトリスト（カンマ区切り・大小無視、ファイルのみ）
+- `--no-ignore`    : ignore（組み込み＋ユーザー設定）を無効化
+- `--no-labels`    : ラベル（例: Fresh）を無効化
+- `--json`         : JSON Lines で出力（デフォルトビルド。`--no-default-features` だと使えません）
+- `-I, --icons`    : Nerd Font アイコン（`--features icons` ビルド時のみ有効。未対応ビルドでは無害な no-op）
 
 ### 環境変数
-- `NO_COLOR` : 設定されていればカラー出力を無効化（空文字でも無効扱い）。
-- `FTIME_FORCE_TTY` : パイプ出力でもTTYスタイル（バケット・カラー）を強制。
+- `NO_COLOR`        : 色を無効化
+- `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制
+- `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（既定: `~/.ftimeignore`）
 
-## 出力イメージ
-- **TTY**:  
-  ```
-  🔥 Active Context (< 1h)
-    • src/main.rs  12 mins ago
-  ...
-  💤 History (25 files hidden)
-  ```
-- **パイプ**: `path/to/file.rs<TAB>3 days ago`
+## ignore ルール
+- 組み込みで除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
+- ユーザー ignore:
+  - グローバル: `~/.ftimeignore`（または `FTIME_IGNORE`）
+  - ローカル: `<PATH>/.ftimeignore`（スキャン対象ディレクトリ直下）
+- `--no-ignore` で上記をまとめて無効化
 
-## 時間バケット規則（ローカル時刻基準）
-1. `now - mtime < 1h` : Active Context  
-2. `mtime >= 今日の00:00` : Today's Session  
-3. `now - mtime < 7d` : This Week  
-4. それ以外 : History  
-未来時刻は Active 扱い。
+## 出力モード
+### TTY（通常）
+- バケットごとに表示、History はデフォルト折りたたみ（`--all` で展開）
 
-## 制限・非対応
-- 再帰スキャンなし（深さ1固定）。
-- Git連携なし（v1.0時点）。
-- パフォーマンスのため余計な I/O を抑制（サマリ表示で20件上限）。
+### パイプ / リダイレクト
+- `path<TAB>relative_time` を全件出力（ヘッダ/色/アイコンなし）
 
-## テスト
-開発時は以下を実行して整合を確認してください。
-```bash
-cargo fmt
-cargo clippy -- -D warnings
-cargo test
-```
+### JSON Lines
+- 1行1JSON。主なフィールド: `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（状況により `symlink_target`, `label`）
 
-## 参考
-- 仕様: `docs/SPEC-v1.0.md`
-- 設計: `docs/ARCHITECTURE.md`
-- CLI契約: `docs/CLI.md`
-- 試験計画: `docs/TESTPLAN-v1.0.md`
+## 制限
+- 深さ1固定（再帰しない）
+- 読み取り専用（ファイルの変更/削除はしない）
+
+## 関連ドキュメント
+- ユーザーガイド: `docs/USER-GUIDE-ja.md`
+- CLI 詳細: `docs/CLI-ja.md`
+- 仕様: `docs/SPEC-ja.md`
+- 設計: `docs/ARCHITECTURE-ja.md`
+- テスト計画: `docs/TESTPLAN-ja.md`
