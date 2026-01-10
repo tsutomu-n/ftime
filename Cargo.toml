@@ -7,8 +7,8 @@ authors = ["CLI Tools Team"]
 description = "Recent file listing CLI with time buckets"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/tsutomu-n/saikin"
-homepage = "https://github.com/tsutomu-n/saikin"
+repository = "https://github.com/tsutomu-n/ftime"
+homepage = "https://github.com/tsutomu-n/ftime"
 exclude = [
     ".ai_memory/**",
     ".serena/**",
