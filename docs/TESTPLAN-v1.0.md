@@ -46,3 +46,10 @@ Last updated: 2026-01-10
 *   **Symlink Display:** (TTY) Shows `name -> target` with the link colored and target dimmed.
 *   **Icons feature off:** `--icons` is a no-op when built without icons; CLI should not error.
 *   **PATH is file:** Should exit 1 before ignore/ext/label are applied.
+
+## 4. Platform Verification
+*   **Target OS:** Linux (major distros), macOS.
+*   **Checkpoints:**
+    *   Time bucket boundaries under local time and DST transitions.
+    *   TTY detection differences (`IsTerminal`).
+    *   Symlink and permission error handling across OSes.

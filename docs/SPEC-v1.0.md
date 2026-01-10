@@ -77,3 +77,7 @@ When `stdout` is **NOT** a terminal:
 *   `NO_COLOR`: Disable color output when set. Empty string is treated as set (intentional divergence from no-color.org).
 *   `FTIME_FORCE_TTY`: Force TTY mode (bucketed layout) even when stdout is not a terminal。色の有無は `NO_COLOR` に従う。
 *   `--icons` is a no-op when built without the `icons` feature (no error). If PATH is a file, the command fails with exit code 1; `--ext` is not applied in that case.
+
+## 10. Platform Support
+*   **Primary targets:** Linux (major distros), macOS.
+*   **Windows:** Build is possible, but symlink handling and ANSI colors depend on terminal capabilities.
