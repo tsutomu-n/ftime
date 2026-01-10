@@ -252,7 +252,7 @@ Phase 1 では、以下を満たす実装を対象とします。
   * その意味
   * 将来的に互換性を壊す可能性があるかどうか
     を明文化する。
-* JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
+* JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
 * 残タスク（未着手/今後対応）を整理・管理するチェックリストを docs に付け、Phase 3 に向けて順次消化する。
 * 将来的に仕様変更の可能性があるものは、ドキュメント上で「Experimental」としてマークする。
 

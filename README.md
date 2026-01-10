@@ -8,7 +8,7 @@ Recent-file viewer with time buckets. Depth=1, read-only, zero-panic設計。
 - Pipe/リダイレクト: タブ区切りで全件出力（ヘッダ・色・アイコンなし）。
 - 隠しファイルはデフォルト非表示、`-H/--hidden` で表示。
 - オプトインのNerd Fontアイコン: `--icons`（要 `cargo build --features icons`）。
-- JSON Lines出力: `--json` で1行1オブジェクト（フィールドは後方互換のため固定: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target）。
+- JSON Lines出力: `--json` で1行1オブジェクト（フィールドは後方互換のため固定: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label。symlink_target/labelは該当時のみ出力）。
 - 拡張子ホワイトリスト: `--ext rs,toml`（カンマ区切り・大小無視・ファイルのみ）
 - グローバル ignore: `~/.ftimeignore`（`FTIME_IGNORE` で指定、`--no-ignore` で無効化）
 

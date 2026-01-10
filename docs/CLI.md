@@ -14,7 +14,7 @@ ftime [OPTIONS] [PATH]
 ## 3. Options
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
-| `--json` | `--json` | Emit JSON Lines output (fields frozen for compatibility: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target). |
+| `--json` | `--json` | Emit JSON Lines output (fields frozen for compatibility: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label; symlink_target/label only when applicable). |
 |  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
 |  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
 |  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |

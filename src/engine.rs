@@ -100,8 +100,8 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         });
     }
 
-    // sort by mtime descending
-    entries.sort_by(|a, b| b.mtime.cmp(&a.mtime));
+    // sort by mtime descending, tie-break by name ascending
+    entries.sort_by(|a, b| b.mtime.cmp(&a.mtime).then_with(|| a.name.cmp(&b.name)));
 
     Ok(ScanResult { entries, now })
 }
@@ -210,6 +210,7 @@ impl Bucketed {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filetime::{set_file_mtime, FileTime};
     use std::fs::File;
     use std::path::PathBuf;
     use std::time::{Duration, SystemTime};
@@ -231,6 +232,33 @@ mod tests {
         let res = scan_dir(dir.path(), &opts)?;
         assert_eq!(res.entries.len(), 1);
         assert_eq!(res.entries[0].name, "visible");
+        Ok(())
+    }
+
+    #[test]
+    fn scan_sorts_by_mtime_then_name() -> Result<()> {
+        let dir = tempdir()?;
+        let a_path = dir.path().join("a");
+        let b_path = dir.path().join("b");
+        File::create(&b_path)?;
+        File::create(&a_path)?;
+
+        let t = SystemTime::now() - Duration::from_secs(60);
+        let ft = FileTime::from_system_time(t);
+        set_file_mtime(&a_path, ft)?;
+        set_file_mtime(&b_path, ft)?;
+
+        let opts = ScanOptions {
+            include_hidden: false,
+            ext_filter: None,
+            no_ignore: false,
+            ignore_patterns: Vec::new(),
+            no_labels: false,
+            local_ignore_patterns: Vec::new(),
+        };
+        let res = scan_dir(dir.path(), &opts)?;
+        let names: Vec<&str> = res.entries.iter().map(|e| e.name.as_str()).collect();
+        assert_eq!(names, vec!["a", "b"]);
         Ok(())
     }
 

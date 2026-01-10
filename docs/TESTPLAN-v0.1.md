@@ -11,6 +11,7 @@
     *   N mins (N>1): `{N} mins ago`
 *   **Sorting:**
     *   Verify files are strictly sorted by `mtime` descending.
+    *   When `mtime` is equal, verify sorting by `name` ascending for stability.
 *   **Labels (Fresh):**
     *   `now - mtime <= 5m` → `Some(Fresh)`
     *   `now - mtime > 5m` → `None`
@@ -30,7 +31,8 @@
     *   Run `ftime | cat`. Verify output is plain text (no color codes) and tab-separated.
 *   **JSON Output:**
     *   `ftime --json` returns JSON Lines with fields {path,bucket,mtime,relative_time,is_dir,is_symlink,symlink_target,label}
-    *   `label` is `"fresh"` or null; `symlink_target` null when non-symlink or unresolved.
+    *   `label` is `"fresh"` only when assigned; otherwise omitted.
+    *   `symlink_target` is present only for resolved symlinks; otherwise omitted.
 *   **Ignore Rules:**
     *   デフォルト除外: `.DS_Store` / `Thumbs.db`。
     *   グローバル ignore: `FTIME_IGNORE` で指すファイル、なければ `~/.ftimeignore`（`#`コメント・空行無視・簡易グロブ）。
