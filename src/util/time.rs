@@ -1,5 +1,5 @@
 use crate::model::Label;
-use chrono::{DateTime, Datelike, Local, NaiveDate, TimeZone};
+use chrono::{DateTime, Local, TimeZone};
 use std::time::{Duration, SystemTime};
 
 /// Freshラベル判定のウィンドウ（秒）
@@ -18,17 +18,7 @@ pub fn classify_bucket(now: SystemTime, mtime: SystemTime) -> crate::model::Time
 
     let now_local: DateTime<Local> = now.into();
     let m_local: DateTime<Local> = mtime.into();
-    let today_start = Local
-        .with_ymd_and_hms(
-            now_local.year(),
-            now_local.month(),
-            now_local.day(),
-            0,
-            0,
-            0,
-        )
-        .unwrap()
-        .with_timezone(&Local);
+    let today_start = start_of_local_day(now_local);
 
     if m_local >= today_start {
         return TimeBucket::Today;
@@ -78,11 +68,20 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
 #[allow(dead_code)]
 pub fn start_of_day(ts: SystemTime) -> SystemTime {
     let dt: DateTime<Local> = ts.into();
-    let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
-    let start = Local
-        .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
-        .unwrap();
-    start.into()
+    start_of_local_day(dt).into()
+}
+
+fn start_of_local_day(now: DateTime<Local>) -> DateTime<Local> {
+    let date = now.date_naive();
+    let Some(naive) = date.and_hms_opt(0, 0, 0) else {
+        return now;
+    };
+
+    match Local.from_local_datetime(&naive) {
+        chrono::LocalResult::Single(dt) => dt,
+        chrono::LocalResult::Ambiguous(dt, _) => dt,
+        chrono::LocalResult::None => now,
+    }
 }
 
 /// Best-effort label classification. Currently only `Fresh` with a small time window.
@@ -100,7 +99,7 @@ mod tests {
     use super::*;
     use crate::model::TimeBucket;
     use chrono::Duration as ChronoDuration;
-    use chrono::Utc;
+    use chrono::{Datelike, Utc};
 
     fn find_dst_transition_in_year(year: i32) -> Option<(DateTime<Local>, DateTime<Local>)> {
         let start = Local.with_ymd_and_hms(year, 1, 1, 0, 0, 0).single()?;
