@@ -36,7 +36,7 @@ cargo install ftime
 ```
 
 ### From source (build + install)
-Requires Rust/Cargo 1.85+ (edition 2024).
+Requires Rust/Cargo 1.92+ (edition 2024).
 
 ```bash
 cargo install --path .
