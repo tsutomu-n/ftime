@@ -11,7 +11,7 @@ v1.0.0 is the stability release for the FS edition. CLI and output formats are f
 - No experimental options exist in v1.0.
 
 ## Requirements
-- Rust/Cargo 1.85+ (edition 2024).
+- Rust/Cargo 1.92+ (edition 2024).
 
 ## Output Contracts
 - JSON Lines (`--json`): one object per line with fields:

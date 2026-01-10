@@ -1,6 +1,6 @@
 # ftime ユーザーガイド（エンドユーザー向け・詳細版）
 
-このガイドは、初見のジュニアSEが **「何ができるか」「どう使うか」「出力をどう読むか」** を迷わず理解できる粒度でまとめた実務向け手引きです。仕様・設計の詳細は `docs/SPEC-ja.md` と `docs/ARCHITECTURE-ja.md` にあります。
+このガイドは、 **「何ができるか」「どう使うか」「出力をどう読むか」** を迷わず理解できる粒度でまとめた手引きです。仕様・設計の詳細は `docs/SPEC-ja.md` と `docs/ARCHITECTURE-ja.md` にあります。
 
 ---
 
@@ -47,6 +47,17 @@ cargo install ftime
 cargo build --release
 ```
 生成物: `target/release/ftime`
+
+実行例:
+```
+./target/release/ftime
+```
+
+どのディレクトリでも `ftime` だけで使いたい場合は、次のどちらかを選びます（環境によりPATH設定が必要です）:
+```
+cargo install --path .
+# または（Linux/macOS）: ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
+```
 
 ### 2.4 追加ビルドオプション
 - **Nerd Fontアイコン**: `cargo build --release --features icons`
@@ -154,8 +165,10 @@ README.md\t3 hours ago
 | 経過時間 | 表示 |
 | --- | --- |
 | < 60秒 | `just now` |
-| < 60分 | `N mins ago` |
-| < 24時間 | `N hours ago` |
+| = 1分 | `1 min ago` |
+| 2–59分 | `N mins ago` |
+| = 1時間 | `1 hour ago` |
+| 2–23時間 | `N hours ago` |
 | = 1日 | `Yesterday` |
 | < 7日 | `N days ago` |
 | >= 7日 | `YYYY-MM-DD`（ローカル日付） |

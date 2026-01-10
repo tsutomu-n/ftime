@@ -1,11 +1,13 @@
 # ftime（日本語 README）
 
+[English](../README.md) | 日本語 | [中文](README-zh.md)
+
 `ftime` は、指定ディレクトリ直下（深さ1）のエントリを更新時刻（mtime）で並べ、時間バケットで俯瞰する **読み取り専用** CLIです。
 
 ## できること
 - ファイル/ディレクトリ/シンボリックリンクを mtime 降順で一覧
 - 4つの時間バケット: Active (<1h) / 今日 / 7日以内 / それ以外（History）
-- TTY: バケット表示・色・（任意で）アイコン、Historyはデフォルト折りたたみ（`--all` で展開）
+- TTY: バケット表示・色・アイコン（デフォルトは絵文字、`--icons` でNerd Fontに切替）、Historyはデフォルト折りたたみ（`--all` で展開）
 - パイプ/リダイレクト: タブ区切りのプレーンテキストで全件出力（ヘッダ・色・アイコンなし）
 - JSON Lines: `--json`（機械処理向け）
 - フィルタ: `--ext`（拡張子）/ ignore（後述）
@@ -17,7 +19,7 @@ ftime /path/to/dir # 指定ディレクトリを対象
 ```
 
 ## インストール
-要件: Rust/Cargo 1.85+（edition 2024）
+要件: Rust/Cargo 1.92+（edition 2024）
 
 ### GitHub Releases（推奨）
 ```bash
@@ -91,22 +93,64 @@ ftime [OPTIONS] [PATH]
 - `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制
 - `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（既定: `~/.ftimeignore`）
 
+### 時間バケットの判定（境界）
+- Active: `now - mtime < 1時間`
+- Today: Active 以外で、ローカル時刻の「今日 00:00:00」以降
+- This Week: Today 以外で、`now - mtime < 7日`（= 7×24時間）
+- History: 上記以外
+
 ## ignore ルール
 - 組み込みで除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
 - ユーザー ignore:
   - グローバル: `~/.ftimeignore`（または `FTIME_IGNORE`）
   - ローカル: `<PATH>/.ftimeignore`（スキャン対象ディレクトリ直下）
 - `--no-ignore` で上記をまとめて無効化
+- ignore ファイル形式:
+  - 1行1パターン（空行と `#` で始まる行は無視）
+  - ワイルドカードは `*`（任意長）/ `?`（1文字）のみ（`**`, `[]`, `!` などは未対応）
+  - パターンに `/` を含む場合は「`PATH` からの相対パス」にマッチ（例: `target/*`）
+  - `/` を含まない場合は「エントリ名（basename）」にマッチ（例: `*.log`）
 
 ## 出力モード
 ### TTY（通常）
 - バケットごとに表示、History はデフォルト折りたたみ（`--all` で展開）
+- 各バケットは最大20件まで表示し、超過分は `... and N more items` で要約
+
+出力例（色は省略した表示イメージ）:
+```text
+🔥 Active Context (< 1h)
+  • src/main.rs  2 mins ago  ✨ Fresh
+
+☕ Today's Session
+  • docs/README-ja.md  3 hours ago
+
+📅 This Week
+  • target/  Yesterday
+  • ftime -> target/release/ftime  3 days ago
+
+💤 History (12 files hidden)
+```
 
 ### パイプ / リダイレクト
 - `path<TAB>relative_time` を全件出力（ヘッダ/色/アイコンなし）
+- バケット表示や20件上限はなく、常に全件出力
+- `relative_time` は英語表記（例: `just now`, `Yesterday`, `YYYY-MM-DD`）
+
+出力例:
+```text
+src/main.rs	2 mins ago
+docs/README-ja.md	3 hours ago
+```
 
 ### JSON Lines
 - 1行1JSON。主なフィールド: `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（状況により `symlink_target`, `label`）
+- `bucket` は `active` / `today` / `this_week` / `history`
+- `mtime` は RFC 3339（UTC）
+
+出力例:
+```json
+{"path":"src/main.rs","bucket":"active","mtime":"2026-01-10T05:12:20.214004873+00:00","relative_time":"just now","is_dir":false,"is_symlink":false,"label":"fresh"}
+```
 
 ## 制限
 - 深さ1固定（再帰しない）

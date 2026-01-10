@@ -50,7 +50,7 @@ pub enum TimeBucket {
     *   `colored` (simple coloring)
     *   `chrono` (time math)
 *   `std::io::IsTerminal` (TTY detection; `is-terminal` crate kept for compatibility)
-*   **Toolchain:** Rust edition 2024 (MSRV 1.85).
+*   **Toolchain:** Rust edition 2024 (MSRV 1.92).
 
 ## 4. Responsibility Boundaries
 *   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。`ScanOptions` は `include_hidden` / `ext_filter` / ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化 を受け付ける。

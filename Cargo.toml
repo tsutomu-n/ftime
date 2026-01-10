@@ -2,7 +2,7 @@
 name = "ftime"
 version = "1.0.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.92"
 authors = ["CLI Tools Team"]
 description = "Recent file listing CLI with time buckets"
 license = "MIT"

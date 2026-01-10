@@ -1,12 +1,8 @@
 # ftime
 
-```text
-   __  _   _
-  / _|| |_(_) _ __ ___   ___
- | |_ | __| || '_ ` _ \ / _ \
- |  _|| |_| || | | | | |  __/
- |_|   \__|_||_| |_| |_|\___|
-```
+English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
+
+![header](https://capsule-render.vercel.app/api?type=waving&color=0:0f2027,50:203a43,100:2c5364&height=300&text=ftime&fontSize=150&fontFamily=Acme&fontColor=e2e2e2&animation=fadeIn)
 
 A tiny, read-only CLI that lists recently modified files and directories in time buckets (depth 1).
 
@@ -40,7 +36,7 @@ cargo install ftime
 ```
 
 ### From source (build + install)
-Requires Rust/Cargo 1.85+ (edition 2024).
+Requires Rust/Cargo 1.92+ (edition 2024).
 
 ```bash
 cargo install --path .
