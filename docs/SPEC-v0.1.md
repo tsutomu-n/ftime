@@ -28,7 +28,7 @@ Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation or
 
 *   **Display Limit:** Max **20 items** per bucket. If exceeded, show top 20 and append a summary line (e.g., `... and 42 more items`).
 *   **Empty Buckets:** Do not display headers for empty buckets.
-*   **Symlinks:** Show as `name -> target` and color the source name yellow. If target resolution fails, display `<unresolved>`.
+*   **Symlinks:** Show as `name -> target` and color the source name yellow. If `read_link` succeeds, show the returned target string (no existence check).
 
 ## 4. Sorting Strategy
 1.  Collect all valid entries in the target directory.
