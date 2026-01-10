@@ -4,6 +4,8 @@
 このドキュメントは、`ftime` の **ファイルシステム専用モード（FS-first）** に関する開発ロードマップをまとめたものです。  
 対象範囲は **v0.1.0 のMVP** から **v1.0.0 (Filesystem Universal Edition)** までとし、その後に予定している Git 統合や TUI については、本書では「将来の拡張」としてのみ触れます。
 
+注: 現行の実装は v1.0 系（例: v1.0.1）で運用しており、本書は「v1.0.0 までに何を固めたか／何を先送りしたか」の方針メモとして残しています。
+
 ---
 
 ## 0. 背景とコンセプト
@@ -119,11 +121,11 @@ Phase 1 では、以下を満たす実装を対象とします。
 * TTY出力
 
   * バケットごとの見出し（🔥 Active / ☕ Today / 📅 This Week / 💤 History）
-  * 相対時間表示（`12 mins ago`, `Yesterday`, `5 days ago` 等）
-  * ディレクトリは末尾 `/` ＋ 色（例: 青）で強調
-  * シンボリックリンクは `name -> target` 形式で表示
-    （解決不可の場合は `<unresolved>`）
-* 非TTY出力（パイプ／リダイレクト）
+	  * 相対時間表示（`12 mins ago`, `Yesterday`, `5 days ago` 等）
+	  * ディレクトリは末尾 `/` ＋ 色（例: 青）で強調
+	  * シンボリックリンクは `name -> target` 形式で表示
+	    （`read_link` 失敗の場合は `<unresolved>`）
+	* 非TTY出力（パイプ／リダイレクト）
 
   * `path<TAB>relative_time` 形式の TSV を1行1エントリで出力
   * バケットヘッダ・色は一切出さない
@@ -139,10 +141,10 @@ Phase 1 では、以下を満たす実装を対象とします。
 
   * 読み取り権限がないファイル／ディレクトリがあっても panic しない
   * 致命的でないエラーは `stderr` に警告を出しつつ、処理継続を優先
-* コード品質
+	* コード品質
 
-  * `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test` を CI で通す
-  * 明らかな N+1 I/O や無駄な再スキャンを入れない
+	  * `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test` を開発時に通す（CIはリリース用ワークフロー中心）
+	  * 明らかな N+1 I/O や無駄な再スキャンを入れない
 
 ### 3.4 Dogfooding で確認したいポイント
 
@@ -198,6 +200,7 @@ Phase 1 では、以下を満たす実装を対象とします。
   ftime *.log
   ftime *.rs *.toml
   ```
+  ※現状のCLIは `[PATH]` を1つだけ受け取るため、上記（複数引数/グロブ入力）は将来拡張の扱い。
 * オプション形式のフィルタ（`--ext rs,toml`）は実装済み。将来的な拡張（複数条件や正規表現など）が必要なら、CLIとの整合性を検討する。
 
 #### 4.2.3 ツール・AI フレンドリな出力
@@ -208,10 +211,10 @@ Phase 1 では、以下を満たす実装を対象とします。
   ftime --json
   ```
 
-  * TimeBucket / path / mtime / relative_time / is_dir / is_symlink / symlink_target / label を **後方互換のため固定フィールド** として出力（symlink_target/label は該当時のみ。必要な追加情報は Optional フィールドで拡張）。
-  * 将来の TUI や外部ツールが、`ftime` の出力をそのまま取り込めるようにする。
-  * ベンチマーク目安（devビルド, 約2,000件, /dev/null）：TTY/TSV ~0.06s, JSON ~0.25s。線形スケール想定。
-* 既存の TSV 出力（非TTY）との整合性は維持する。
+	  * TimeBucket / path / mtime / relative_time / is_dir / is_symlink / symlink_target / label を **後方互換のため固定フィールド** として出力（symlink_target/label は該当時のみ。必要な追加情報は Optional フィールドで拡張）。
+	  * 将来の TUI や外部ツールが、`ftime` の出力をそのまま取り込めるようにする。
+	  * ベンチマーク目安（参考値・環境依存、devビルド, 約2,000件, /dev/null）：TTY/TSV ~0.06s, JSON ~0.25s。
+	* 既存の TSV 出力（非TTY）との整合性は維持する。
 
 #### 4.2.4 symlink の扱い強化（余力があれば）
 
@@ -232,7 +235,7 @@ Phase 1 では、以下を満たす実装を対象とします。
 - [x] v0.1.x で集めた「FSツールとして欲しい機能」のうち、優先度の高いものが一定数解決されている。
 - [x] JSON 出力（必須）や TSV 出力を用いたスクリプト／ツール連携のサンプルが、README や docs に載っている。
 - [x] FS モードだけを見ても、「単なる `ls -lt` の砂糖がけ」以上の価値が明確になっている。
-- [x] ベンチマーク目安（devビルド, 約2,000件, /dev/null）：TTY/TSV ~0.06s、JSON ~0.25s を達成し、線形スケールで問題ないことを確認。
+- [x] ベンチマーク目安（参考値・環境依存、devビルド, 約2,000件, /dev/null）：TTY/TSV ~0.06s、JSON ~0.25s を参考として記録。
 
 ### 4.5 Phase 2 完了宣言
 
@@ -252,8 +255,8 @@ Phase 1 では、以下を満たす実装を対象とします。
 
 #### 5.2.1 CLI と互換性ポリシーの確立
 
-- [x] v1.0 時点でサポートするオプションを明示し、`docs/CLI.md` に凍結仕様として記載する。
-- [x] 重要オプション（例: `--all`, `--hidden`, `--json`, `--no-color`）について意味と互換性リスクを明文化する。
+- [x] v1.0 時点でサポートするオプションを明示し、`CLI.md` に凍結仕様として記載する。
+- [x] 重要オプション/スイッチ（例: `--all`, `--hidden`, `--json`, `NO_COLOR`）について意味と互換性リスクを明文化する。
 - [x] `NO_COLOR` の空文字扱い（空文字でも無効化）を v1.0 仕様に明記する。
 - [x] JSON 出力フィールド（path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label）は **v1.0 で凍結**し、変更はメジャーアップデートでのみ行う方針を共有する。
 - [x] 残タスク（未着手/今後対応）を整理・管理するチェックリストを docs に付け、Phase 3 に向けて順次消化する。
@@ -265,7 +268,7 @@ Phase 1 では、以下を満たす実装を対象とします。
 - [x] time バケットの境界（サマータイム／ローカルタイムの取り扱い）を確認する。※DST遷移は `TZ=America/New_York` で単体テスト確認済み（2026-01-10）
 - [x] `IsTerminal` の挙動（TTY 判定）を確認する。
 - [ ] symlink／パーミッションエラー時の挙動の違いを確認する。※symlinkは確認済み、権限エラーは未確認（再現不可）
-- 検証記録: `docs/PLATFORM-VERIFY-v1.0.md`
+- 検証記録: `PLATFORM-VERIFY-v1.0.md`
 
 #### 5.2.3 ノイズ除外の整理
 
@@ -277,7 +280,7 @@ Phase 1 では、以下を満たす実装を対象とします。
 #### 5.2.4 品質基準の明確化
 
 - [x] テスト観点（1h/1d/7d境界、hidden、symlink、TTY/非TTY）を v1.0 テスト計画に明文化する。
-- [x] CI で `cargo fmt`, `clippy`, `test` を自動実行する方針を明記し、`-D warnings` を維持する。
+- [x] `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test` を運用上の必須チェックとして明記する（CIでの自動実行は今後の改善余地）。
 - [x] 1000件程度の体感パフォーマンス確認と受忍ライン記載を README / docs に反映する。
 - [x] Rust/Cargo の最低対応バージョン（edition 2024）を README / docs に明記する。
 
@@ -289,12 +292,12 @@ Phase 1 では、以下を満たす実装を対象とします。
   * [ ] GitHub Releases で、Linux / macOS 向けのバイナリを提供する。
   * [x] crates.io 公開に必要なメタデータ（homepage / repository / readme 等）を `Cargo.toml` に揃える。
   * [x] `cargo publish --dry-run` と `cargo package --list` で公開内容を検証する。
-* ドキュメントの整備：
+ * ドキュメントの整備：
 
-  * [x] README を v1.0 仕様に更新（FS Universal Edition としての説明に寄せる）
-  * [x] `docs/SPEC-v1.0.md` として FS モードの仕様を確定版として記録
-  * [x] `docs/ARCHITECTURE.md` を v1.0 時点の構造に追従
-  * [x] `docs/TESTPLAN-v1.0.md` を用意し、主要テスト観点を更新
+	  * [x] README を v1.0 仕様に更新（FS Universal Edition としての説明に寄せる）
+	  * [x] `SPEC-v1.0.md` として FS モードの仕様を確定版として記録
+	  * [x] `ARCHITECTURE.md` を v1.0 時点の構造に追従
+	  * [x] `TESTPLAN-v1.0.md` を用意し、主要テスト観点を更新
 
 ### 5.3 Phase 3 の終了条件
 
@@ -322,9 +325,9 @@ Phase 1 では、以下を満たす実装を対象とします。
 * `ftime --explore` による TUI モード
 * プロジェクト横断のセッションビュー（過去の作業チャンクの一覧）
 
-これらは別のドキュメント（`ROADMAP-git-and-tui.md` 等）で扱います。
+これらは別ドキュメントに切り出して扱う想定です（現時点では未作成）。
 
 ---
 
-この `ROADMAP.md` は、ftime の FS Edition 開発における「共通の地図」として利用してください。
+このロードマップは、ftime の FS Edition 開発における「共通の地図」として利用してください。
 実装・設計・レビュー・フィードバックのどの場面でも、「いま自分たちはどのフェーズにいて、何を増やす／増やさないのか」を判断する基準になります。
