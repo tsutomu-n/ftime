@@ -45,10 +45,10 @@ ftime [OPTIONS] [PATH]
 
 ```
 # GitHub Releases からインストール（推奨）
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
 ```
@@ -82,7 +82,7 @@ cargo build --release
 cargo install --path .
 
 # もしくはシンボリックリンク
-ln -s /home/tn/projects/CLI-Tools/target/release/ftime ~/bin/ftime
+ln -s /path/to/saikin/target/release/ftime ~/bin/ftime
 ```
 
 **1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  

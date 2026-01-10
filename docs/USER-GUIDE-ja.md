@@ -30,10 +30,10 @@ ftime は **「最近更新したファイルを素早く見つける」** た�
 ### 2.1 GitHub Releases からインストール（推奨）
 ```
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
 ### 2.2 crates.io からインストール（公開済みの場合）

@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "tsutomu-n/CLI-Tools"
+$Repo = "tsutomu-n/saikin"
 $Bin = "ftime"
 
 $Arch = $env:PROCESSOR_ARCHITECTURE

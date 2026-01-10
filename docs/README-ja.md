@@ -20,10 +20,10 @@
 ## インストール
 ```bash
 # GitHub Releases からインストール（推奨）
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/saikin/main/scripts/install.ps1 -UseBasicParsing | iex"
 
 # crates.io からインストール（公開済みの場合）
 cargo install ftime

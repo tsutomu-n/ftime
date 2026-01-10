@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="tsutomu-n/CLI-Tools"
+REPO="tsutomu-n/saikin"
 BIN="ftime"
 
 os="$(uname -s)"

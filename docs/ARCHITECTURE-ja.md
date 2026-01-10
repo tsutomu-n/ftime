@@ -240,7 +240,7 @@ cargo build --release
 cargo install --path .
 
 # もしくはシンボリックリンク
-ln -s /home/tn/projects/CLI-Tools/target/release/ftime ~/bin/ftime
+ln -s /path/to/saikin/target/release/ftime ~/bin/ftime
 ```
 
 **1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  
