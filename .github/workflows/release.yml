@@ -1,0 +1,61 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    name: build-${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-13
+            target: x86_64-apple-darwin
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.85.0"
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }} --bin ftime
+
+      - name: Package (unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          version="${VERSION#v}"
+          tar -C "target/${{ matrix.target }}/release" \
+            -czf "dist/ftime-${version}-${{ matrix.target }}.tar.gz" \
+            ftime
+
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          $version = $env:VERSION -replace '^v',''
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path "target\\${{ matrix.target }}\\release\\ftime.exe" `
+            -DestinationPath "dist\\ftime-$version-${{ matrix.target }}.zip"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

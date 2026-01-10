@@ -17,6 +17,12 @@ Recent-file viewer with time buckets. Depth=1, read-only, zero-panic設計。
 
 ## Install / Build
 ```bash
+# Install from GitHub Releases (recommended)
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/CLI-Tools/main/scripts/install.ps1 -UseBasicParsing | iex"
+
 # Install from crates.io (v1.0+)
 cargo install ftime
 
