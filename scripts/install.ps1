@@ -8,24 +8,29 @@ $ErrorActionPreference = "Stop"
 $Repo = "tsutomu-n/ftime"
 $Bin = "ftime"
 
-$Arch = $env:PROCESSOR_ARCHITECTURE
-switch ($Arch) {
-    "AMD64" { $Arch = "x86_64" }
-    default { throw "unsupported arch: $Arch" }
+function Resolve-Tag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][string]$Repo
+    )
+
+    if ($Version -eq "latest") {
+        $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
+        if (-not $Release.tag_name) { throw "failed to resolve latest release tag" }
+        return $Release.tag_name
+    }
+
+    return "v$($Version.TrimStart('v'))"
 }
 
-$Target = "x86_64-pc-windows-msvc"
-if ($Arch -ne "x86_64") {
+$Arch = $env:PROCESSOR_ARCHITECTURE
+if ($Arch -ne "AMD64") {
     throw "unsupported arch: $Arch"
 }
 
-if ($Version -eq "latest") {
-    $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
-    $Tag = $Release.tag_name
-    if (-not $Tag) { throw "failed to resolve latest release tag" }
-} else {
-    $Tag = "v$($Version.TrimStart('v'))"
-}
+$Target = "x86_64-pc-windows-msvc"
+
+$Tag = Resolve-Tag -Version $Version -Repo $Repo
 
 $Asset = "$Bin-$($Tag.TrimStart('v'))-$Target.zip"
 $Url = "https://github.com/$Repo/releases/download/$Tag/$Asset"
