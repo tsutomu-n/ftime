@@ -219,6 +219,33 @@ pub fn bucketize(entries: &[FileEntry], now: SystemTime) -> Bucketed {
 - `engine::scan_dir` を返り値の型でフィルタ有無を明確化し、再帰対応時に拡張しやすくする。
 - 相対時間関数を「丸め戦略」を引数化し、将来「1.4時間→1.5時間」表記などに切り替えやすくする。
 
+## 31. ビルド運用（ローカル最短）
+ビルド方法は次のどちらかです。
+
+```
+# 速い方（タイミング + sccache/リンク高速化を自動で使う）
+./scripts/build-release-fast.sh
+
+# 標準
+cargo build --release
+```
+
+ビルドしただけでは **グローバル（`ftime` だけで実行）にはなりません**。  
+理由は、生成物が `target/release/ftime` に置かれるだけで PATH に入らないためです。
+
+グローバル化したい場合は次のどちらかが必要です。
+
+```
+# 公式のインストール方式（推奨）
+cargo install --path .
+
+# もしくはシンボリックリンク
+ln -s /home/tn/projects/CLI-Tools/target/release/ftime ~/bin/ftime
+```
+
+**1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  
+ただし PATH に `~/.cargo/bin`（Windowsなら `%USERPROFILE%\.cargo\bin`）が通っている場合のみ、直後に `ftime` と打って使えます。
+
 ## 22. まとめ
 ftime は「直近作業の地図」を即座に提供するための最小構成CLIである。アーキテクチャはモジュールの責務を明確に分け、将来拡張に耐えるようシンプルかつ疎結合に保っている。利用者にとっては短い起動時間と読みやすい出力が価値であり、開発者にとってはテストしやすさと変更容易性が価値となる。
 

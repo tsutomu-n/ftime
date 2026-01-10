@@ -211,4 +211,31 @@ else: render_text(entries, now, path)
 ## 25. 変更履歴（この日本語版）
 - 2025-12-10: 初版作成。原文に加え、利用シナリオ・FAQ・エラー表・擬似コード等を大幅拡張。
 
+## 26. ビルドと導入（運用メモ）
+ビルド方法は次のどちらかです。
+
+```
+# 速い方（タイミング + sccache/リンク高速化を自動で使う）
+./scripts/build-release-fast.sh
+
+# 標準
+cargo build --release
+```
+
+ビルドしただけでは **グローバル（`ftime` だけで実行）にはなりません**。  
+理由は、生成物が `target/release/ftime` に置かれるだけで PATH に入らないためです。
+
+グローバル化したい場合は次のどちらかが必要です。
+
+```
+# 公式のインストール方式（推奨）
+cargo install --path .
+
+# もしくはシンボリックリンク
+ln -s /home/tn/projects/CLI-Tools/target/release/ftime ~/bin/ftime
+```
+
+**1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  
+ただし PATH に `~/.cargo/bin`（Windowsなら `%USERPROFILE%\.cargo\bin`）が通っている場合のみ、直後に `ftime` と打って使えます。
+
 （本文は原文より詳細化しており、実装・テストと矛盾しないよう随時アップデートすること。）
