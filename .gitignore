@@ -14,3 +14,9 @@
 
 # Session-specific or scratch files
 .ai_memory
+
+# Local-only demo generation assets
+/scripts/demo.sh
+/scripts/record-demo.sh
+/scripts/demo.tape
+/scripts/demo-simple.tape
