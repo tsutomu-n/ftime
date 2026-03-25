@@ -11,6 +11,15 @@ use std::time::SystemTime;
 
 const LIMIT: usize = 20;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TimeTone {
+    Skew,
+    Active,
+    Today,
+    ThisWeek,
+    History,
+}
+
 pub fn render(
     buckets: &Bucketed,
     now: SystemTime,
@@ -34,6 +43,7 @@ pub fn render(
             "Active Context (< 1h)",
         ),
         &buckets.active,
+        TimeBucket::Active,
         now,
         base,
         use_absolute,
@@ -41,6 +51,7 @@ pub fn render(
     render_bucket(
         &header(provider.as_ref(), TimeBucket::Today, "Today's Session"),
         &buckets.today,
+        TimeBucket::Today,
         now,
         base,
         use_absolute,
@@ -48,6 +59,7 @@ pub fn render(
     render_bucket(
         &header(provider.as_ref(), TimeBucket::ThisWeek, "This Week"),
         &buckets.week,
+        TimeBucket::ThisWeek,
         now,
         base,
         use_absolute,
@@ -57,6 +69,7 @@ pub fn render(
         render_bucket(
             &header(provider.as_ref(), TimeBucket::History, "History"),
             &buckets.history,
+            TimeBucket::History,
             now,
             base,
             use_absolute,
@@ -77,6 +90,7 @@ pub fn render(
 fn render_bucket(
     header: &str,
     entries: &[FileEntry],
+    bucket: TimeBucket,
     now: SystemTime,
     base: &Path,
     use_absolute: bool,
@@ -99,11 +113,7 @@ fn render_bucket(
         } else {
             relative_time(now, entry.mtime)
         };
-        let display_time = if time_str.contains("[Skew]") {
-            time_str.yellow().bold().to_string()
-        } else {
-            time_str
-        };
+        let display_time = style_time_text(bucket, &time_str);
         println!(
             "  • {} | {} | {}{}",
             format_name(entry, base),
@@ -143,6 +153,29 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
         format!("{} -> {}", rel.normal().yellow(), target.dimmed())
     } else {
         rel.normal().to_string()
+    }
+}
+
+fn classify_time_tone(bucket: TimeBucket, time_str: &str) -> TimeTone {
+    if time_str.contains("[Skew]") {
+        TimeTone::Skew
+    } else {
+        match bucket {
+            TimeBucket::Active => TimeTone::Active,
+            TimeBucket::Today => TimeTone::Today,
+            TimeBucket::ThisWeek => TimeTone::ThisWeek,
+            TimeBucket::History => TimeTone::History,
+        }
+    }
+}
+
+fn style_time_text(bucket: TimeBucket, time_str: &str) -> String {
+    match classify_time_tone(bucket, time_str) {
+        TimeTone::Skew => time_str.yellow().bold().to_string(),
+        TimeTone::Active => time_str.green().bold().to_string(),
+        TimeTone::Today => time_str.normal().to_string(),
+        TimeTone::ThisWeek => time_str.truecolor(180, 180, 180).to_string(),
+        TimeTone::History => time_str.truecolor(100, 100, 100).to_string(),
     }
 }
 
@@ -200,4 +233,37 @@ fn select_provider(use_icons: bool) -> Box<dyn IconProvider> {
     #[cfg(not(feature = "icons"))]
     let _ = use_icons;
     Box::new(DefaultIconProvider)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn classify_time_tone_prefers_skew_over_bucket_colors() {
+        assert_eq!(
+            classify_time_tone(TimeBucket::History, "+5m [Skew]"),
+            TimeTone::Skew
+        );
+    }
+
+    #[test]
+    fn classify_time_tone_uses_bucket_heatmap_for_non_skew_values() {
+        assert_eq!(
+            classify_time_tone(TimeBucket::Active, "just now"),
+            TimeTone::Active
+        );
+        assert_eq!(
+            classify_time_tone(TimeBucket::Today, "2 hours ago"),
+            TimeTone::Today
+        );
+        assert_eq!(
+            classify_time_tone(TimeBucket::ThisWeek, "3 days ago"),
+            TimeTone::ThisWeek
+        );
+        assert_eq!(
+            classify_time_tone(TimeBucket::History, "2026-03-01"),
+            TimeTone::History
+        );
+    }
 }

@@ -192,6 +192,27 @@ fn tty_output_shows_skew_warning_and_timezone_footer() {
 }
 
 #[test]
+fn tty_output_with_no_color_keeps_text_contract_without_ansi() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("future-file");
+    File::create(&file_path).unwrap();
+    let future = SystemTime::now() + Duration::from_secs(5 * 60);
+    set_file_mtime(&file_path, FileTime::from_system_time(future)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("[Skew]"));
+    assert!(stdout.contains("Current Timezone: "));
+    assert!(!stdout.contains("\u{1b}["));
+}
+
+#[test]
 fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("file");
