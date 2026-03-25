@@ -1,3 +1,8 @@
+> Archived
+>
+> この文書は履歴資料です。現行の開発計画としては扱いません。
+> 現在は `main` と最新の checkpoint / task plan を優先してください。
+
 12/10_20:59更新
 # ftime ROADMAP (FS Edition v0.1.0 – v1.0.0)
 

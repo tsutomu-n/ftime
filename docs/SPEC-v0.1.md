@@ -1,3 +1,12 @@
+# Archived Document
+
+この文書は履歴資料です。現行仕様ではありません。
+現行の参照先:
+- `docs/SPEC-ja.md`
+- `docs/SPEC-v1.0.md`
+- `docs/CLI.md`
+- `docs/CLI-ja.md`
+
 # ftime v0.1.0 Behavior Specification
 
 ## 1. Scope
