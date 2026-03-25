@@ -18,7 +18,7 @@ ftime [OPTIONS] [PATH]
 |  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
 |  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
 |  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
-| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS` format for TTY and pipe output. |
+| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS ±HHMM` format for TTY and pipe output. |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 |  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |

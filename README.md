@@ -54,7 +54,7 @@ ftime [OPTIONS] [PATH]
 
 Common options:
 - `-a, --all`     Show History bucket (TTY mode)
-- `-A, --absolute` Show absolute local timestamps (`YYYY-MM-DD HH:MM:SS`)
+- `-A, --absolute` Show absolute local timestamps (`YYYY-MM-DD HH:MM:SS ±HHMM`)
 - `--exclude-dots` Exclude dotfiles
 - `--ext rs,toml` Filter by extensions (files only)
 - `--json`        JSON Lines output (if built with default features)

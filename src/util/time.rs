@@ -74,7 +74,7 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
 /// Render a local absolute timestamp string for CLI output.
 pub fn absolute_time(mtime: SystemTime) -> String {
     let dt: DateTime<Local> = mtime.into();
-    dt.format("%Y-%m-%d %H:%M:%S").to_string()
+    dt.format("%Y-%m-%d %H:%M:%S %z").to_string()
 }
 
 /// Return the local timezone offset for the current environment, e.g. `+0900`.
@@ -237,7 +237,19 @@ mod tests {
         let rendered = absolute_time(ts);
         assert!(rendered.contains('-'));
         assert!(rendered.contains(':'));
-        assert_eq!(rendered.len(), 19);
+        assert_eq!(rendered.len(), 25);
+        assert!(rendered.contains(' '));
+        assert!(
+            rendered.ends_with("+0000")
+                || rendered.ends_with("+0900")
+                || rendered.ends_with("-0400")
+                || rendered.ends_with("-0500")
+                || rendered
+                    .chars()
+                    .rev()
+                    .take(5)
+                    .all(|ch| ch.is_ascii_digit() || ch == '+' || ch == '-')
+        );
     }
 
     #[test]
