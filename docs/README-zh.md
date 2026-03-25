@@ -7,10 +7,10 @@
 ## 能做什么
 - 按 mtime 降序列出：文件 / 目录 / 符号链接
 - 4 个时间分桶：Active (<1h) / Today（今天） / This Week（7 天内） / History（其他）
-- TTY：分桶展示 + 颜色 + 图标（默认 emoji，`--icons` 可切换为 Nerd Font）；History 默认折叠（用 `--all` 展开）
-- 管道/重定向：输出 `TAB` 分隔的纯文本（无标题、无颜色、无图标）
+- TTY：分桶展示 + 颜色 + 图标（默认 emoji，`--icons` 可切换为 Nerd Font）；带大小列、时间列 heatmap，History 默认折叠（用 `--all` 展开）
+- 管道/重定向：输出 `TAB` 分隔的纯文本（无标题、无颜色、无图标；`-A/--absolute` 时输出绝对时间）
 - JSON Lines：`--json`（便于脚本处理）
-- 过滤：`--ext`（扩展名白名单）/ ignore（见下文）
+- 过滤：`--ext`（扩展名白名单）/ `--exclude-dots` / ignore（见下文）
 
 ## 快速开始
 ```bash
@@ -81,7 +81,8 @@ ftime [OPTIONS] [PATH]
 
 ### 常用选项
 - `-a, --all`      ：展开 History 分桶（TTY 模式）
-- `-H, --hidden`   ：包含以 `.` 开头的隐藏项
+- `-A, --absolute` ：输出绝对本地时间（`YYYY-MM-DD HH:MM:SS ±HHMM`）
+- `--exclude-dots` ：排除以 `.` 开头的隐藏项
 - `--ext rs,toml`  ：扩展名白名单（逗号分隔、大小写不敏感，仅对文件生效）
 - `--no-ignore`    ：禁用 ignore（内置 + 用户配置）
 - `--no-labels`    ：禁用标签（例如 Fresh）
@@ -90,17 +91,18 @@ ftime [OPTIONS] [PATH]
 
 ### 环境变量
 - `NO_COLOR`        ：禁用彩色输出
-- `FTIME_FORCE_TTY` ：即使 stdout 被 pipe/redirect，也强制使用 TTY 分桶布局
+- `FTIME_FORCE_TTY` ：即使 stdout 被 pipe/redirect，也强制使用 TTY 分桶布局（便于查看 Skew、timezone footer、时间列 heatmap）
 - `FTIME_IGNORE`    ：覆盖全局 ignore 文件路径（默认：`~/.ftimeignore`）
 
 ### 时间分桶判定（边界）
-- Active：`now - mtime < 1 小时`（即使 mtime 在未来也算 Active）
+- Active：`now - mtime < 1 小时`（即使 mtime 在未来也算 Active，显示为 `+Ns [Skew]` 或 `+Nm [Skew]`）
 - Today：非 Active，且 mtime 位于本地时区“今天 00:00:00”之后（含）
 - This Week：非 Today，且 `now - mtime < 7 天`（= 7×24 小时）
 - History：以上都不满足
 
 ## ignore 规则
-- 内置忽略：`.DS_Store`、`Thumbs.db`（即使使用 `--hidden` 也会忽略）
+- dotfile 默认显示；如果不想看，用 `--exclude-dots`
+- 内置忽略：`.DS_Store`、`Thumbs.db`（可被 `--no-ignore` 整体禁用）
 - 用户 ignore：
   - 全局：`~/.ftimeignore`（或 `FTIME_IGNORE` 指定）
   - 本地：`<PATH>/.ftimeignore`（目标目录直下）
@@ -115,26 +117,31 @@ ftime [OPTIONS] [PATH]
 ### TTY（默认）
 - 按分桶展示；History 默认折叠（`--all` 展开）
 - 每个分桶最多显示 20 条；超过部分用 `... and N more items` 汇总
+- 每行采用 `name | size | time` 形式；时间列按分桶着色，未来 mtime 以 `Skew` 高亮
+- 末尾追加 `Current Timezone: ±HHMM`
 
 输出示例（省略颜色后的效果示意）：
 ```text
 🔥 Active Context (< 1h)
-  • src/main.rs  2 mins ago  ✨ Fresh
+  • src/main.rs | 4 KB | 2 mins ago  ✨ Fresh
 
 ☕ Today's Session
-  • docs/README-zh.md  3 hours ago
+  • docs/README-zh.md | 8 KB | 3 hours ago
 
 📅 This Week
-  • target/  Yesterday
-  • ftime -> target/release/ftime  3 days ago
+  • target/ | - | Yesterday
+  • ftime -> target/release/ftime | - | 3 days ago
 
 💤 History (12 files hidden)
+
+Current Timezone: +0900
 ```
 
 ### 管道 / 重定向
-- 输出 `path<TAB>relative_time` 的全量列表（无标题/颜色/图标）
+- 输出 `path<TAB>time` 的全量列表（无标题/颜色/图标）
 - 不分桶、无 20 条上限，始终输出全部条目
-- `relative_time` 为英文（例如：`just now`, `Yesterday`, `YYYY-MM-DD`）
+- 默认 `time` 为英文相对时间（例如：`just now`, `Yesterday`, `YYYY-MM-DD`）
+- `-A/--absolute` 时输出 `YYYY-MM-DD HH:MM:SS ±HHMM`
 
 输出示例：
 ```text
@@ -143,9 +150,10 @@ docs/README-zh.md\t3 hours ago
 ```
 
 ### JSON Lines
-- 一行一个 JSON。主要字段：`path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（按情况包含 `symlink_target`, `label`）
+- 一行一个 JSON。主要字段：`path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（按情况包含 `symlink_target`, `label`, `size`）
 - `bucket` 取值：`active` / `today` / `this_week` / `history`
 - `mtime` 为 RFC 3339（UTC）
+- `size` 仅对常规文件输出
 
 输出示例：
 ```json

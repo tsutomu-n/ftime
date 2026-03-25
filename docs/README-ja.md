@@ -7,10 +7,10 @@
 ## できること
 - ファイル/ディレクトリ/シンボリックリンクを mtime 降順で一覧
 - 4つの時間バケット: Active (<1h) / 今日 / 7日以内 / それ以外（History）
-- TTY: バケット表示・色・アイコン（デフォルトは絵文字、`--icons` でNerd Fontに切替）、Historyはデフォルト折りたたみ（`--all` で展開）
-- パイプ/リダイレクト: タブ区切りのプレーンテキストで全件出力（ヘッダ・色・アイコンなし）
+- TTY: バケット表示・色・アイコン（デフォルトは絵文字、`--icons` でNerd Fontに切替）、サイズ列、時間列の heatmap、History はデフォルト折りたたみ（`--all` で展開）
+- パイプ/リダイレクト: タブ区切りのプレーンテキストで全件出力（ヘッダ・色・アイコンなし、`-A/--absolute` なら絶対時刻）
 - JSON Lines: `--json`（機械処理向け）
-- フィルタ: `--ext`（拡張子）/ ignore（後述）
+- フィルタ: `--ext`（拡張子）/ `--exclude-dots` / ignore（後述）
 
 ## クイックスタート
 ```bash
@@ -81,7 +81,8 @@ ftime [OPTIONS] [PATH]
 
 ### オプション（よく使うもの）
 - `-a, --all`      : History バケットも展開（TTYモード）
-- `-H, --hidden`   : ドットファイルを含める
+- `-A, --absolute` : 絶対時刻を表示（`YYYY-MM-DD HH:MM:SS ±HHMM`）
+- `--exclude-dots` : ドットファイルを除外
 - `--ext rs,toml`  : 拡張子ホワイトリスト（カンマ区切り・大小無視、ファイルのみ）
 - `--no-ignore`    : ignore（組み込み＋ユーザー設定）を無効化
 - `--no-labels`    : ラベル（例: Fresh）を無効化
@@ -90,17 +91,18 @@ ftime [OPTIONS] [PATH]
 
 ### 環境変数
 - `NO_COLOR`        : 色を無効化
-- `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制
+- `FTIME_FORCE_TTY` : パイプ先でもTTYレイアウトを強制（Skew 表示 / timezone footer / 時間列 heatmap の確認に使える）
 - `FTIME_IGNORE`    : グローバル ignore ファイルのパスを上書き（既定: `~/.ftimeignore`）
 
 ### 時間バケットの判定（境界）
-- Active: `now - mtime < 1時間`（mtimeが未来でもActive）
+- Active: `now - mtime < 1時間`（mtime が未来でも Active。表示は `+Ns [Skew]` / `+Nm [Skew]`）
 - Today: Active 以外で、ローカル時刻の「今日 00:00:00」以降
 - This Week: Today 以外で、`now - mtime < 7日`（= 7×24時間）
 - History: 上記以外
 
 ## ignore ルール
-- 組み込みで除外: `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
+- ドットファイルはデフォルトで表示。不要なら `--exclude-dots` で除外
+- 組み込みで除外: `.DS_Store`, `Thumbs.db`（`--no-ignore` で無効化可能）
 - ユーザー ignore:
   - グローバル: `~/.ftimeignore`（または `FTIME_IGNORE`）
   - ローカル: `<PATH>/.ftimeignore`（スキャン対象ディレクトリ直下）
@@ -114,27 +116,32 @@ ftime [OPTIONS] [PATH]
 ## 出力モード
 ### TTY（通常）
 - バケットごとに表示、History はデフォルト折りたたみ（`--all` で展開）
+- 各行は `name | size | time` 形式。時間列はバケットに応じた色分けで、future mtime は `Skew` として強調
 - 各バケットは最大20件まで表示し、超過分は `... and N more items` で要約
+- 末尾に `Current Timezone: ±HHMM` を表示
 
 出力例（色は省略した表示イメージ）:
 ```text
 🔥 Active Context (< 1h)
-  • src/main.rs  2 mins ago  ✨ Fresh
+  • src/main.rs | 4 KB | 2 mins ago  ✨ Fresh
 
 ☕ Today's Session
-  • docs/README-ja.md  3 hours ago
+  • docs/README-ja.md | 8 KB | 3 hours ago
 
 📅 This Week
-  • target/  Yesterday
-  • ftime -> target/release/ftime  3 days ago
+  • target/ | - | Yesterday
+  • ftime -> target/release/ftime | - | 3 days ago
 
 💤 History (12 files hidden)
+
+Current Timezone: +0900
 ```
 
 ### パイプ / リダイレクト
-- `path<TAB>relative_time` を全件出力（ヘッダ/色/アイコンなし）
+- `path<TAB>time` を全件出力（ヘッダ/色/アイコンなし）
 - バケット表示や20件上限はなく、常に全件出力
-- `relative_time` は英語表記（例: `just now`, `Yesterday`, `YYYY-MM-DD`）
+- 既定は相対時刻（例: `just now`, `Yesterday`, `YYYY-MM-DD`）
+- `-A/--absolute` 指定時は `YYYY-MM-DD HH:MM:SS ±HHMM`
 
 出力例:
 ```text
@@ -143,9 +150,10 @@ docs/README-ja.md\t3 hours ago
 ```
 
 ### JSON Lines
-- 1行1JSON。主なフィールド: `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（状況により `symlink_target`, `label`）
+- 1行1JSON。主なフィールド: `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`（状況により `symlink_target`, `label`, `size`）
 - `bucket` は `active` / `today` / `this_week` / `history`
 - `mtime` は RFC 3339（UTC）
+- `size` は regular file のみ出力
 
 出力例:
 ```json

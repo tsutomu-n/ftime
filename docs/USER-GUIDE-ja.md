@@ -8,7 +8,7 @@
 - **非再帰（深さ1）** の最新ファイル一覧ツール。
 - **読み取り専用**、ディレクトリ配下のファイルを **mtime降順** で並べる。
 - **Active / Today / This Week / History** の4バケットで視認性を高める。
-- TTY時は色・見出し・折り畳み、パイプ時は **タブ区切り** の機械向け出力。
+- TTY時は色・見出し・折り畳み・サイズ列・時間列 heatmap、パイプ時は **タブ区切り** の機械向け出力。
 - JSON Lines出力に対応（`--json`）。
 
 ---
@@ -90,30 +90,35 @@ ftime [OPTIONS] [PATH]
 例:
 ```
 🔥 Active Context (< 1h)
-  • src/main.rs  12 mins ago  ✨ Fresh
-  • docs/CLI.md  2 hours ago
+  • src/main.rs | 4 KB | 12 mins ago  ✨ Fresh
+  • docs/CLI.md | 6 KB | 2 hours ago
 
 ☕ Today's Session
-  • README.md  3 hours ago
+  • README.md | 8 KB | 3 hours ago
 
 📅 This Week
-  • tests/cli.rs  2 days ago
+  • tests/cli.rs | 9 KB | 2 days ago
   ... and 5 more items
 
 💤 History (42 files hidden)
+
+Current Timezone: +0900
 ```
 
 ポイント:
 - **バケット順固定**: Active → Today → This Week → History
 - **1バケット最大20件**。超過分は `... and N more items` と表示。
 - **Historyはデフォルト折り畳み**。件数だけ表示。`-a` で展開。
+- **時間列は bucket-aware な色分け**。future mtime は `Skew` として強調。
+- **末尾に `Current Timezone: ±HHMM`** を表示。
 - ディレクトリは末尾 `/` 付きで表示。
 - シンボリックリンクは `name -> target`。
 
 ### 4.2 Pipe出力（機械向け）
-- 形式: `<path>\t<relative_time>`
+- 形式: `<path>\t<time>`
 - **見出しなし / 色なし / 件数制限なし**
 - **全ファイルをmtime降順で出力**
+- `-A` 指定時は `time` が `YYYY-MM-DD HH:MM:SS ±HHMM` になる
 
 例:
 ```
@@ -165,6 +170,7 @@ README.md\t3 hours ago
 
 | 経過時間 | 表示 |
 | --- | --- |
+| `mtime` が未来 | `+Ns [Skew]` / `+Nm [Skew]` |
 | < 60秒 | `just now` |
 | = 1分 | `1 min ago` |
 | 2–59分 | `N mins ago` |
@@ -189,7 +195,8 @@ README.md\t3 hours ago
 | オプション | 内容 | 使いどころ |
 | --- | --- | --- |
 | `-a, --all` | Historyを展開 | 7日以上前も一覧したい |
-| `-H, --hidden` | ドットファイルを含める | `.env` や `.gitignore` を含めたい |
+| `-A, --absolute` | 絶対時刻を表示（`YYYY-MM-DD HH:MM:SS ±HHMM`） | 相対時間ではなく時刻そのものを確認したい |
+| `--exclude-dots` | ドットファイルを除外 | 通常ファイルだけを見たい |
 | `--no-ignore` | built-in / ignoreファイルを無効化 | `.DS_Store` なども含めたい |
 | `--no-labels` | Freshラベルを無効化 | 出力を簡潔にしたい |
 | `--ext rs,toml` | 拡張子フィルタ（ファイルのみ） | 特定拡張子だけ見たい |
@@ -205,7 +212,7 @@ README.md\t3 hours ago
 
 ### 9.1 built-in ignore
 - デフォルトで **`.DS_Store` と `Thumbs.db` を除外**。
-- `--hidden` を付けても除外のまま。
+- dotfile 自体はデフォルトで表示される。
 - `--no-ignore` を付けると **built-in も含めて無効化**。
 
 ### 9.2 グローバル ignore（`~/.ftimeignore`）
@@ -230,7 +237,7 @@ README.md\t3 hours ago
 | 変数 | 内容 |
 | --- | --- |
 | `NO_COLOR` | 色出力を無効化（空文字でも無効扱い） |
-| `FTIME_FORCE_TTY` | パイプ時でもTTY書式を強制 |
+| `FTIME_FORCE_TTY` | パイプ時でもTTY書式を強制（Skew / timezone footer / 時間色の確認にも使える） |
 | `FTIME_IGNORE` | グローバル ignore ファイルのパスを上書き |
 | `TZ` | タイムゾーンを明示（ローカル境界確認用） |
 
@@ -282,25 +289,31 @@ ftime -a
 ```
 Historyも含めて一覧。
 
-### 14.3 dotfileを含める
+### 14.3 dotfileを除外する
 ```
-ftime -H
+ftime --exclude-dots
 ```
-`.env` や `.gitignore` の変更確認に有効。
+通常ファイルだけを見たいときに有効。
 
-### 14.4 拡張子フィルタ
+### 14.4 absolute time で確認
+```
+ftime -A
+```
+TTY / Pipe ともに timezone 付き絶対時刻に切り替える。
+
+### 14.5 拡張子フィルタ
 ```
 ftime --ext rs,toml
 ```
 Rustや設定ファイルだけ抽出。
 
-### 14.5 パイプ連携
+### 14.6 パイプ連携
 ```
 ftime | head -n 10
 ```
 最初の10件だけ確認。
 
-### 14.6 JSONで収集
+### 14.7 JSONで収集
 ```
 ftime --json | head -n 5
 ```
@@ -342,7 +355,8 @@ A: 互換性と機械処理の安定性を優先。
 | --- | --- |
 | 直近を見る | `ftime` |
 | Historyまで全部 | `ftime -a` |
-| 隠しファイル込み | `ftime -H` |
+| dotfiles を除外 | `ftime --exclude-dots` |
+| 絶対時刻で見る | `ftime -A` |
 | 拡張子フィルタ | `ftime --ext rs,toml` |
 | パイプ処理 | `ftime | head -n 10` |
 | JSON取得 | `ftime --json` |
