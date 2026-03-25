@@ -75,6 +75,31 @@ cargo install --path .
 ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
 ```
 
+## 卸载
+### GitHub Releases 安装
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
+```
+
+如果安装到了自定义目录，卸载时也要再次指定同一路径。macOS / Linux 使用 `INSTALL_DIR`，Windows 使用 `-InstallDir`。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
+```
+
+### `cargo install` / `cargo install --path .` 安装
+```bash
+cargo uninstall ftime
+```
+
 ## 用法
 ```bash
 ftime [OPTIONS] [PATH]

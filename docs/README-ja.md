@@ -58,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninst
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
-custom な install 先を使った場合は、同じ場所を `INSTALL_DIR` で渡します。
+custom な install 先を使った場合は、同じ場所を再指定します。macOS / Linux は `INSTALL_DIR`、Windows は `-InstallDir` を使います。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash

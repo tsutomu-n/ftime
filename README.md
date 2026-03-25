@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninst
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
-If you installed to a custom directory, pass the same location again:
+If you installed to a custom directory, pass the same location again. Use `INSTALL_DIR` on macOS / Linux and `-InstallDir` on Windows:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
