@@ -12,9 +12,9 @@ A tiny, read-only CLI that lists recently modified files and directories in time
 
 ## Features
 - 4 time buckets by `mtime`: Active (<1h) / Today / This Week (<7d) / History
-- TTY output: color + buckets, History collapsed by default (`--all`), max 20 items per bucket
-- Pipe/redirect output: tab-separated plain text (no headers, no colors, no icons)
-- JSON Lines: `--json` (default build)
+- TTY output: color + buckets, History collapsed only when it exceeds 20 items, file sizes, optional absolute timestamps
+- Pipe/redirect output: tab-separated plain text with 2 columns (`path<TAB>time`)
+- JSON Lines: `--json` (default build), with optional `size` for regular files
 - Filters: `--ext`, ignore rules (`~/.ftimeignore`, `<PATH>/.ftimeignore`, `FTIME_IGNORE`, `--no-ignore`)
 
 ## Quickstart
@@ -54,7 +54,8 @@ ftime [OPTIONS] [PATH]
 
 Common options:
 - `-a, --all`     Show History bucket (TTY mode)
-- `-H, --hidden`  Include dotfiles
+- `-A, --absolute` Show absolute local timestamps (`YYYY-MM-DD HH:MM:SS`)
+- `--exclude-dots` Exclude dotfiles
 - `--ext rs,toml` Filter by extensions (files only)
 - `--json`        JSON Lines output (if built with default features)
 - `--no-ignore`   Disable ignore rules

@@ -1,6 +1,6 @@
 use crate::engine::Bucketed;
 use crate::model::{FileEntry, TimeBucket};
-use crate::util::time::relative_time;
+use crate::util::time::{absolute_time, relative_time};
 #[cfg(feature = "icons")]
 use crate::view::icon::NerdIconProvider;
 use crate::view::icon::{DefaultIconProvider, IconProvider};
@@ -17,6 +17,7 @@ pub fn render(
     base: &Path,
     show_all_history: bool,
     use_icons: bool,
+    use_absolute: bool,
 ) -> Result<()> {
     if buckets.total() == 0 {
         println!("No recent files found");
@@ -34,26 +35,30 @@ pub fn render(
         &buckets.active,
         now,
         base,
+        use_absolute,
     );
     render_bucket(
         &header(provider.as_ref(), TimeBucket::Today, "Today's Session"),
         &buckets.today,
         now,
         base,
+        use_absolute,
     );
     render_bucket(
         &header(provider.as_ref(), TimeBucket::ThisWeek, "This Week"),
         &buckets.week,
         now,
         base,
+        use_absolute,
     );
 
-    if show_all_history {
+    if show_all_history || buckets.history.len() <= LIMIT {
         render_bucket(
             &header(provider.as_ref(), TimeBucket::History, "History"),
             &buckets.history,
             now,
             base,
+            use_absolute,
         );
     } else if !buckets.history.is_empty() {
         println!(
@@ -66,7 +71,13 @@ pub fn render(
     Ok(())
 }
 
-fn render_bucket(header: &str, entries: &[FileEntry], now: SystemTime, base: &Path) {
+fn render_bucket(
+    header: &str,
+    entries: &[FileEntry],
+    now: SystemTime,
+    base: &Path,
+    use_absolute: bool,
+) {
     if entries.is_empty() {
         return;
     }
@@ -80,10 +91,16 @@ fn render_bucket(header: &str, entries: &[FileEntry], now: SystemTime, base: &Pa
 
     for entry in list {
         let label = format_label(entry);
+        let time_str = if use_absolute {
+            absolute_time(entry.mtime)
+        } else {
+            relative_time(now, entry.mtime)
+        };
         println!(
-            "  • {}  {}{}",
+            "  • {} | {} | {}{}",
             format_name(entry, base),
-            relative_time(now, entry.mtime),
+            format_size(entry.size),
+            time_str,
             label
         );
     }
@@ -125,6 +142,34 @@ fn format_label(entry: &FileEntry) -> String {
     match entry.label {
         Some(crate::model::Label::Fresh) => "  ✨ Fresh".to_string(),
         None => "".to_string(),
+    }
+}
+
+fn format_size(size: Option<u64>) -> String {
+    let Some(size) = size else {
+        return "-".to_string();
+    };
+
+    if size < 1024 {
+        return format!("{size} B");
+    }
+
+    const UNITS: [&str; 4] = ["KiB", "MiB", "GiB", "TiB"];
+    let mut value = size as f64;
+    let mut unit = "B";
+
+    for next in UNITS {
+        value /= 1024.0;
+        unit = next;
+        if value < 1024.0 {
+            break;
+        }
+    }
+
+    if value >= 10.0 {
+        format!("{value:.0} {unit}")
+    } else {
+        format!("{value:.1} {unit}")
     }
 }
 

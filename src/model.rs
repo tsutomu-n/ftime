@@ -7,6 +7,7 @@ pub struct FileEntry {
     pub name: String,
     pub is_dir: bool,
     pub mtime: SystemTime,
+    pub size: Option<u64>,
     pub is_symlink: bool,
     #[allow(dead_code)]
     pub symlink_target: Option<PathBuf>,

@@ -50,6 +50,8 @@ struct JsonEntry {
     is_dir: bool,
     is_symlink: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     symlink_target: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     label: Option<String>,
@@ -83,6 +85,7 @@ impl JsonEntry {
             relative_time: relative_time(now, entry.mtime),
             is_dir: entry.is_dir,
             is_symlink: entry.is_symlink,
+            size: entry.size,
             symlink_target,
             label: entry.label.map(|l| match l {
                 crate::model::Label::Fresh => "fresh".to_string(),

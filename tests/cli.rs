@@ -130,11 +130,7 @@ fn absolute_time_flag_changes_pipe_output_format() {
     let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
     set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--absolute")
-        .output()
-        .unwrap();
+    let output = bin().arg(dir.path()).arg("--absolute").output().unwrap();
     let stdout = String::from_utf8(output.stdout).unwrap();
     let line = stdout.lines().next().unwrap();
     let cols: Vec<&str> = line.split('\t').collect();
@@ -299,7 +295,7 @@ fn global_ignore_file_is_respected_and_no_ignore_overrides() {
     let mut f = File::create(&ig_path).unwrap();
     writeln!(f, "*.tmp").unwrap();
     writeln!(f, "# comment").unwrap();
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
 
     let out = bin()
         .current_dir(dir.path())

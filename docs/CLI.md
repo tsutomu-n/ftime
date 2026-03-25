@@ -14,13 +14,14 @@ ftime [OPTIONS] [PATH]
 ## 3. Options
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
-| `--json` | `--json` | Emit JSON Lines output (fields frozen for compatibility: path, bucket, mtime, relative_time, is_dir, is_symlink, symlink_target, label; symlink_target/label only when applicable). |
+| `--json` | `--json` | Emit JSON Lines output (fields: path, bucket, mtime, relative_time, is_dir, is_symlink, optional size, optional symlink_target, optional label). |
 |  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
 |  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
 |  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
+| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS` format for TTY and pipe output. |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
-| `-H` | `--hidden` | Include hidden files (starting with `.`). |
+|  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |
 | `-h` | `--help` | Print help message. |
 | `-V` | `--version` | Print version information. |
 |  |  | Note: `--icons` is a no-op when the binary is built without the `icons` feature (no error). |
@@ -33,9 +34,9 @@ ftime [OPTIONS] [PATH]
 
 ## 5. Compatibility Policy (v1.0)
 *   CLI flags and behavior are frozen in v1.0; changes require a major version.
-*   Output formats (TTY/pipe/JSON) are stable; JSON field set is frozen for compatibility.
+*   Output formats (TTY/pipe/JSON) are stable; pipe output remains 2 columns, and JSON may omit optional fields when not applicable.
 *   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
-*   Important flags: `--all`, `--hidden`, `--json` (behavior frozen). Color is controlled by `NO_COLOR` (no `--no-color` flag).
+*   Important flags: `--all`, `--absolute`, `--exclude-dots`, `--json`. Color is controlled by `NO_COLOR` (no `--no-color` flag).
 
 ## 6. Exit Codes
 *   `0`: Success.
@@ -49,8 +50,11 @@ ftime
 # Scan specific directory
 ftime ~/Downloads
 
-# Show everything including dotfiles and history
-ftime -a -H
+# Show history bucket and absolute timestamps
+ftime -a -A
+
+# Exclude dotfiles
+ftime --exclude-dots
 
 # Build with Nerd Font icons feature and enable icons at runtime
 cargo build --features icons

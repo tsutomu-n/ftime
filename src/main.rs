@@ -3,9 +3,9 @@ mod model;
 mod util;
 mod view;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
-use engine::{bucketize, scan_dir, ScanOptions};
+use engine::{ScanOptions, bucketize, scan_dir};
 use std::env;
 use std::fs;
 use std::io::IsTerminal;
@@ -44,9 +44,13 @@ struct Cli {
     #[arg(short = 'I', long = "icons")]
     use_icons: bool,
 
-    /// Include dotfiles
-    #[arg(short = 'H', long = "hidden")]
-    include_hidden: bool,
+    /// Emit absolute local timestamps instead of relative time
+    #[arg(short = 'A', long = "absolute")]
+    absolute_time: bool,
+
+    /// Exclude dotfiles from scan results
+    #[arg(long = "exclude-dots")]
+    exclude_dots: bool,
 
     /// Target directory (defaults to current directory)
     path: Option<PathBuf>,
@@ -78,7 +82,7 @@ fn run() -> Result<()> {
     }
 
     let scan_opts = ScanOptions {
-        include_hidden: cli.include_hidden,
+        exclude_dots: cli.exclude_dots,
         ext_filter: cli.ext.as_ref().map(|s| {
             s.split(',')
                 .map(|p| p.trim().to_lowercase())
@@ -115,9 +119,10 @@ fn run() -> Result<()> {
             &path,
             cli.show_all_history,
             cli.use_icons,
+            cli.absolute_time,
         )?;
     } else {
-        view::text::render(&scan.entries, scan.now, &path)?;
+        view::text::render(&scan.entries, scan.now, &path, cli.absolute_time)?;
     }
     Ok(())
 }

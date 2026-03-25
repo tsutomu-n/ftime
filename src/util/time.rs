@@ -64,6 +64,12 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
     }
 }
 
+/// Render a local absolute timestamp string for CLI output.
+pub fn absolute_time(mtime: SystemTime) -> String {
+    let dt: DateTime<Local> = mtime.into();
+    dt.format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
 /// Truncate time to date for comparisons.
 #[allow(dead_code)]
 pub fn start_of_day(ts: SystemTime) -> SystemTime {
@@ -103,9 +109,7 @@ mod tests {
 
     fn find_dst_transition_in_year(year: i32) -> Option<(DateTime<Local>, DateTime<Local>)> {
         let start = Local.with_ymd_and_hms(year, 1, 1, 0, 0, 0).single()?;
-        let end = Local
-            .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
-            .single()?;
+        let end = Local.with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0).single()?;
         let mut prev = start;
         let mut prev_offset = prev.offset().local_minus_utc();
         let mut cursor = start + ChronoDuration::hours(6);
@@ -116,7 +120,7 @@ mod tests {
             }
             prev = cursor;
             prev_offset = offset;
-            cursor = cursor + ChronoDuration::hours(6);
+            cursor += ChronoDuration::hours(6);
         }
         None
     }
@@ -199,5 +203,14 @@ mod tests {
         assert_eq!(relative_time(now, m), "Yesterday");
         let m = now - Duration::from_secs(3 * 86_400);
         assert_eq!(relative_time(now, m), "3 days ago");
+    }
+
+    #[test]
+    fn test_absolute_time_format() {
+        let ts = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+        let rendered = absolute_time(ts);
+        assert!(rendered.contains('-'));
+        assert!(rendered.contains(':'));
+        assert_eq!(rendered.len(), 19);
     }
 }

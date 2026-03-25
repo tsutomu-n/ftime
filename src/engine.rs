@@ -6,7 +6,7 @@ use std::path::Path;
 use std::time::SystemTime;
 
 pub struct ScanOptions {
-    pub include_hidden: bool,
+    pub exclude_dots: bool,
     pub ext_filter: Option<Vec<String>>,
     pub no_ignore: bool,
     pub ignore_patterns: Vec<String>,
@@ -48,7 +48,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         {
             continue;
         }
-        if !opts.include_hidden && name.starts_with('.') {
+        if opts.exclude_dots && name.starts_with('.') {
             continue;
         }
 
@@ -62,6 +62,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
         };
 
         let is_dir = metadata.is_dir();
+        let size = metadata.is_file().then_some(metadata.len());
         let is_symlink = metadata.file_type().is_symlink();
         let symlink_target = if is_symlink {
             fs::read_link(entry.path()).ok()
@@ -94,6 +95,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
             name,
             is_dir,
             mtime,
+            size,
             is_symlink,
             symlink_target,
             label: None,
@@ -124,10 +126,10 @@ fn is_ignored(
     {
         let has_slash = pat.contains('/');
         if has_slash {
-            if let Some(rel) = &rel_str {
-                if glob_match(pat, rel) {
-                    return true;
-                }
+            if let Some(rel) = &rel_str
+                && glob_match(pat, rel)
+            {
+                return true;
             }
         } else if glob_match(pat, name) {
             return true;
@@ -210,19 +212,19 @@ impl Bucketed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use filetime::{set_file_mtime, FileTime};
+    use filetime::{FileTime, set_file_mtime};
     use std::fs::File;
     use std::path::PathBuf;
     use std::time::{Duration, SystemTime};
     use tempfile::tempdir;
 
     #[test]
-    fn scan_skips_hidden_by_default() -> Result<()> {
+    fn scan_includes_hidden_by_default_and_excludes_with_flag() -> Result<()> {
         let dir = tempdir()?;
         File::create(dir.path().join("visible"))?;
         File::create(dir.path().join(".hidden"))?;
         let opts = ScanOptions {
-            include_hidden: false,
+            exclude_dots: false,
             ext_filter: None,
             no_ignore: false,
             ignore_patterns: Vec::new(),
@@ -230,6 +232,17 @@ mod tests {
             local_ignore_patterns: Vec::new(),
         };
         let res = scan_dir(dir.path(), &opts)?;
+        assert_eq!(res.entries.len(), 2);
+        assert!(res.entries.iter().any(|entry| entry.name == "visible"));
+        assert!(res.entries.iter().any(|entry| entry.name == ".hidden"));
+
+        let res = scan_dir(
+            dir.path(),
+            &ScanOptions {
+                exclude_dots: true,
+                ..opts
+            },
+        )?;
         assert_eq!(res.entries.len(), 1);
         assert_eq!(res.entries[0].name, "visible");
         Ok(())
@@ -249,7 +262,7 @@ mod tests {
         set_file_mtime(&b_path, ft)?;
 
         let opts = ScanOptions {
-            include_hidden: false,
+            exclude_dots: false,
             ext_filter: None,
             no_ignore: false,
             ignore_patterns: Vec::new(),
@@ -270,6 +283,7 @@ mod tests {
             name: "x".to_string(),
             is_dir: false,
             mtime: now - Duration::from_secs(delta_secs),
+            size: Some(0),
             is_symlink: false,
             symlink_target: None,
             label: None,
@@ -281,7 +295,7 @@ mod tests {
             mk(8 * 24 * 3600), // history
         ];
         let opts = ScanOptions {
-            include_hidden: false,
+            exclude_dots: false,
             ext_filter: None,
             no_ignore: false,
             ignore_patterns: Vec::new(),
