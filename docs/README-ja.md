@@ -58,6 +58,12 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninst
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
+custom な install 先を使った場合は、同じ場所を `INSTALL_DIR` で渡します。
+
+```bash
+INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+```
+
 ### `cargo install` / `cargo install --path .` で入れた場合
 ```bash
 cargo uninstall ftime

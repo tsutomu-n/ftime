@@ -62,6 +62,12 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninst
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
+If you installed to a custom directory, pass the same location again:
+
+```bash
+INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+```
+
 ### cargo install / cargo install --path .
 ```bash
 cargo uninstall ftime
