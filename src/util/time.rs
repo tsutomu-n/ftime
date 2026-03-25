@@ -34,7 +34,14 @@ pub fn classify_bucket(now: SystemTime, mtime: SystemTime) -> crate::model::Time
 /// Render a human-readable relative time string.
 pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
     let Ok(elapsed) = now.duration_since(mtime) else {
-        return "just now".to_string();
+        let future_secs = mtime
+            .duration_since(now)
+            .unwrap_or(Duration::ZERO)
+            .as_secs();
+        if future_secs < 60 {
+            return format!("+{future_secs}s [Skew]");
+        }
+        return format!("+{}m [Skew]", future_secs / 60);
     };
     let mins = elapsed.as_secs() / 60;
     let hours = elapsed.as_secs() / 3600;
@@ -68,6 +75,12 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
 pub fn absolute_time(mtime: SystemTime) -> String {
     let dt: DateTime<Local> = mtime.into();
     dt.format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
+/// Return the local timezone offset for the current environment, e.g. `+0900`.
+pub fn current_timezone_offset() -> String {
+    let now: DateTime<Local> = Local::now();
+    now.format("%z").to_string()
 }
 
 /// Truncate time to date for comparisons.
@@ -206,11 +219,35 @@ mod tests {
     }
 
     #[test]
+    fn test_relative_time_strings_for_future_skew() {
+        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000);
+        assert_eq!(
+            relative_time(now, now + Duration::from_secs(45)),
+            "+45s [Skew]"
+        );
+        assert_eq!(
+            relative_time(now, now + Duration::from_secs(125)),
+            "+2m [Skew]"
+        );
+    }
+
+    #[test]
     fn test_absolute_time_format() {
         let ts = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
         let rendered = absolute_time(ts);
         assert!(rendered.contains('-'));
         assert!(rendered.contains(':'));
         assert_eq!(rendered.len(), 19);
+    }
+
+    #[test]
+    fn test_current_timezone_offset_format() {
+        let offset = current_timezone_offset();
+        assert_eq!(offset.len(), 5);
+        assert!(
+            offset.starts_with('+') || offset.starts_with('-'),
+            "unexpected offset sign: {offset}"
+        );
+        assert!(offset[1..].chars().all(|ch| ch.is_ascii_digit()));
     }
 }

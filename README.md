@@ -12,7 +12,7 @@ A tiny, read-only CLI that lists recently modified files and directories in time
 
 ## Features
 - 4 time buckets by `mtime`: Active (<1h) / Today / This Week (<7d) / History
-- TTY output: color + buckets, History collapsed only when it exceeds 20 items, file sizes, optional absolute timestamps
+- TTY output: color + buckets, History collapsed only when it exceeds 20 items, file sizes, optional absolute timestamps, `Skew` warning for future mtimes, timezone footer
 - Pipe/redirect output: tab-separated plain text with 2 columns (`path<TAB>time`)
 - JSON Lines: `--json` (default build), with optional `size` for regular files
 - Filters: `--ext`, ignore rules (`~/.ftimeignore`, `<PATH>/.ftimeignore`, `FTIME_IGNORE`, `--no-ignore`)
@@ -60,6 +60,10 @@ Common options:
 - `--json`        JSON Lines output (if built with default features)
 - `--no-ignore`   Disable ignore rules
 - `--no-labels`   Disable best-effort labels (e.g. Fresh)
+
+TTY notes:
+- Future mtimes are shown as `+Ns [Skew]` or `+Nm [Skew]`
+- TTY output ends with `Current Timezone: ±HHMM`
 
 ## Docs
 - Japanese README: `docs/README-ja.md`

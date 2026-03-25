@@ -1,6 +1,6 @@
 use crate::engine::Bucketed;
 use crate::model::{FileEntry, TimeBucket};
-use crate::util::time::{absolute_time, relative_time};
+use crate::util::time::{absolute_time, current_timezone_offset, relative_time};
 #[cfg(feature = "icons")]
 use crate::view::icon::NerdIconProvider;
 use crate::view::icon::{DefaultIconProvider, IconProvider};
@@ -25,6 +25,7 @@ pub fn render(
     }
 
     let provider = select_provider(use_icons);
+    let tz_offset = current_timezone_offset();
 
     render_bucket(
         &header(
@@ -68,6 +69,8 @@ pub fn render(
         );
     }
 
+    println!("Current Timezone: {}", tz_offset.dimmed());
+
     Ok(())
 }
 
@@ -96,11 +99,16 @@ fn render_bucket(
         } else {
             relative_time(now, entry.mtime)
         };
+        let display_time = if time_str.contains("[Skew]") {
+            time_str.yellow().bold().to_string()
+        } else {
+            time_str
+        };
         println!(
             "  • {} | {} | {}{}",
             format_name(entry, base),
             format_size(entry.size),
-            time_str,
+            display_time,
             label
         );
     }
