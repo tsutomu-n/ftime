@@ -14,6 +14,10 @@ fn run_uninstall(home: &Path, install_dir: &Path) -> std::process::Output {
         .unwrap()
 }
 
+fn read_repo_file(path: &str) -> String {
+    fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
+}
+
 #[test]
 fn uninstall_removes_binary_from_install_dir() {
     let home = tempdir().unwrap();
@@ -52,4 +56,38 @@ fn uninstall_succeeds_when_binary_is_missing() {
 
     assert!(output.status.success());
     assert!(stdout.contains("not installed"));
+}
+
+#[test]
+fn uninstall_docs_use_bash_side_install_dir_for_custom_unix_paths() {
+    for path in ["README.md", "docs/README-ja.md"] {
+        let content = read_repo_file(path);
+
+        assert!(
+            !content.contains(
+                "INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash"
+            ),
+            "broken custom uninstall example remains in {path}"
+        );
+        assert!(
+            content.contains(
+                "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash"
+            ),
+            "missing fixed custom uninstall example in {path}"
+        );
+    }
+}
+
+#[test]
+fn uninstall_docs_show_custom_windows_install_dir_example() {
+    for path in ["README.md", "docs/README-ja.md"] {
+        let content = read_repo_file(path);
+
+        assert!(
+            content.contains(
+                "powershell -ExecutionPolicy Bypass -Command \"& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\\custom\\bin'\""
+            ),
+            "missing custom Windows uninstall example in {path}"
+        );
+    }
 }

@@ -61,7 +61,11 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.c
 custom な install 先を使った場合は、同じ場所を `INSTALL_DIR` で渡します。
 
 ```bash
-INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
 ```
 
 ### `cargo install` / `cargo install --path .` で入れた場合
