@@ -1,5 +1,5 @@
 use assert_cmd::Command;
-use filetime::{set_file_mtime, FileTime};
+use filetime::{FileTime, set_file_mtime};
 use predicates::prelude::*;
 use serde_json::Value;
 use std::fs::File;
@@ -26,32 +26,43 @@ fn fails_when_path_is_file() {
 }
 
 #[test]
-fn hidden_files_excluded_by_default_and_included_with_flag() {
+fn hidden_files_included_by_default_and_excluded_with_flag() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("visible")).unwrap();
     File::create(dir.path().join(".hidden")).unwrap();
 
-    // default: hidden excluded
     bin()
         .current_dir(dir.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("visible"))
-        .stdout(predicate::str::is_match("\\.hidden").unwrap().not());
+        .stdout(predicate::str::contains(".hidden"));
 
-    // with -H: hidden included
+    bin()
+        .current_dir(dir.path())
+        .arg("--exclude-dots")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("visible"))
+        .stdout(predicate::str::is_match("\\.hidden").unwrap().not());
+}
+
+#[test]
+fn removed_hidden_flag_is_rejected() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+
     bin()
         .current_dir(dir.path())
         .arg("-H")
         .assert()
-        .success()
-        .stdout(predicate::str::contains(".hidden"));
+        .failure()
+        .stderr(predicate::str::contains("-H"));
 }
 
 #[test]
 fn history_bucket_collapses_and_expands() {
     let dir = tempdir().unwrap();
-    // create 25 old files (>7 days)
     let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
     for i in 0..25 {
         let path = dir.path().join(format!("old-{i}"));
@@ -59,7 +70,6 @@ fn history_bucket_collapses_and_expands() {
         set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
     }
 
-    // default: collapsed
     bin()
         .arg(dir.path())
         .env("FTIME_FORCE_TTY", "1")
@@ -67,7 +77,6 @@ fn history_bucket_collapses_and_expands() {
         .success()
         .stdout(predicate::str::contains("History (25 files hidden)"));
 
-    // expanded with -a: shows list and summary line because >20
     bin()
         .arg(dir.path())
         .arg("-a")
@@ -84,7 +93,6 @@ fn icons_flag_keeps_output_stable() {
     let file_path = dir.path().join("f1");
     File::create(&file_path).unwrap();
 
-    // add a history item to exercise the History header
     let old_path = dir.path().join("old");
     File::create(&old_path).unwrap();
     let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
@@ -100,16 +108,68 @@ fn icons_flag_keeps_output_stable() {
 }
 
 #[test]
-fn pipe_mode_outputs_tab_separated_without_headers() {
+fn pipe_mode_outputs_two_tsv_columns_without_headers() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("f1");
     File::create(&file_path).unwrap();
 
     let output = bin().arg(dir.path()).output().unwrap();
-
     let stdout = String::from_utf8(output.stdout).unwrap();
+    let line = stdout.lines().next().unwrap();
+
+    assert_eq!(line.split('\t').count(), 2);
     assert!(stdout.contains("f1\t"));
     assert!(!stdout.contains("Active Context"));
+}
+
+#[test]
+fn absolute_time_flag_changes_pipe_output_format() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--absolute")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let line = stdout.lines().next().unwrap();
+    let cols: Vec<&str> = line.split('\t').collect();
+
+    assert_eq!(cols.len(), 2);
+    assert!(
+        predicate::str::is_match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+            .unwrap()
+            .eval(cols[1])
+    );
+}
+
+#[test]
+fn tty_output_shows_size_column_and_absolute_time() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--absolute")
+        .env("FTIME_FORCE_TTY", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("0 B"));
+    assert!(stdout.contains("|"));
+    assert!(
+        predicate::str::is_match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+            .unwrap()
+            .eval(&stdout)
+    );
 }
 
 #[test]
@@ -127,7 +187,6 @@ fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
     #[cfg(windows)]
     std::os::windows::fs::symlink_file(&file_path, &link_path).unwrap();
 
-    // ensure deterministic ordering by setting mtimes
     let now = SystemTime::now();
     set_file_mtime(&file_path, FileTime::from_system_time(now)).unwrap();
     set_file_mtime(
@@ -142,43 +201,32 @@ fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
     .unwrap();
 
     let output = bin().current_dir(dir.path()).output().unwrap();
-
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("file\t")); // plain file
-    assert!(stdout.contains("subdir\t")); // directory without trailing slash
-    assert!(stdout.contains("link_to_file\t")); // symlink path only
-    assert!(!stdout.contains("->")); // no target shown in pipe mode
+
+    assert!(stdout.contains("file\t"));
+    assert!(stdout.contains("subdir\t"));
+    assert!(stdout.contains("link_to_file\t"));
+    assert!(!stdout.contains("->"));
 }
 
 #[test]
-fn ignores_ds_store_and_thumbs_db_even_with_hidden() {
+fn ignores_ds_store_and_thumbs_db_even_with_hidden_default() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("visible")).unwrap();
     File::create(dir.path().join(".DS_Store")).unwrap();
     File::create(dir.path().join("Thumbs.db")).unwrap();
     File::create(dir.path().join(".hidden")).unwrap();
 
-    // default: .DS_Store, Thumbs.db excluded
     let out_default = bin().current_dir(dir.path()).output().unwrap();
     let stdout = String::from_utf8(out_default.stdout).unwrap();
     assert!(stdout.contains("visible"));
+    assert!(stdout.contains(".hidden"));
     assert!(!stdout.contains(".DS_Store"));
     assert!(!stdout.contains("Thumbs.db"));
-
-    // even with --hidden they stay excluded, but hidden file is shown
-    let out_hidden = bin()
-        .current_dir(dir.path())
-        .arg("--hidden")
-        .output()
-        .unwrap();
-    let stdout_h = String::from_utf8(out_hidden.stdout).unwrap();
-    assert!(stdout_h.contains(".hidden"));
-    assert!(!stdout_h.contains(".DS_Store"));
-    assert!(!stdout_h.contains("Thumbs.db"));
 }
 
 #[test]
-fn json_output_contains_expected_fields() {
+fn json_output_contains_expected_fields_including_size_for_files() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("f1");
     File::create(&file_path).unwrap();
@@ -198,7 +246,26 @@ fn json_output_contains_expected_fields() {
     assert!(v.get("mtime").is_some());
     assert!(v.get("relative_time").is_some());
     assert_eq!(v.get("is_dir").unwrap(), false);
-    assert!(v.get("label").is_some());
+    assert_eq!(v.get("size").and_then(Value::as_u64), Some(0));
+}
+
+#[test]
+fn json_output_omits_size_for_directories() {
+    let dir = tempdir().unwrap();
+    std::fs::create_dir(dir.path().join("subdir")).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let mut lines = stdout.lines();
+    let first = lines.next().expect("one line present");
+    let v: Value = serde_json::from_str(first).unwrap();
+    assert_eq!(v.get("is_dir").unwrap(), true);
+    assert!(v.get("size").is_none());
 }
 
 #[test]
@@ -227,7 +294,6 @@ fn global_ignore_file_is_respected_and_no_ignore_overrides() {
     File::create(dir.path().join("keep.log")).unwrap();
     File::create(dir.path().join("skip.tmp")).unwrap();
 
-    // create temporary ignore file
     let ig = tempdir().unwrap();
     let ig_path = ig.path().join("ignore");
     let mut f = File::create(&ig_path).unwrap();
@@ -235,7 +301,6 @@ fn global_ignore_file_is_respected_and_no_ignore_overrides() {
     writeln!(f, "# comment").unwrap();
     writeln!(f, "").unwrap();
 
-    // default: skip.tmp should be hidden
     let out = bin()
         .current_dir(dir.path())
         .env("FTIME_IGNORE", &ig_path)
@@ -245,7 +310,6 @@ fn global_ignore_file_is_respected_and_no_ignore_overrides() {
     assert!(stdout.contains("keep.log"));
     assert!(!stdout.contains("skip.tmp"));
 
-    // with --no-ignore it should appear
     let out_no = bin()
         .current_dir(dir.path())
         .env("FTIME_IGNORE", &ig_path)
@@ -262,7 +326,6 @@ fn fresh_label_shows_and_can_be_disabled() {
     let file_path = dir.path().join("newfile");
     File::create(&file_path).unwrap();
 
-    // label should appear in TTY with FTIME_FORCE_TTY
     let out = bin()
         .current_dir(dir.path())
         .env("FTIME_FORCE_TTY", "1")
@@ -271,7 +334,6 @@ fn fresh_label_shows_and_can_be_disabled() {
     let stdout = String::from_utf8(out.stdout).unwrap();
     assert!(stdout.contains("Fresh"));
 
-    // --no-labels should remove it
     let out2 = bin()
         .current_dir(dir.path())
         .env("FTIME_FORCE_TTY", "1")
