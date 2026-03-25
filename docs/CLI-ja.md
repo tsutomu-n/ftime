@@ -1,6 +1,6 @@
 # ftime CLI 契約（日本語版・詳細）
 
-このドキュメントは `CLI.md` を日本語で詳細に書いたものです。コマンドの書式、オプションや環境変数の意味、出力例、利用シナリオ別の使い方、トラブルシューティングをまとめています。仕様の根拠は `SPEC-v1.0.md` / `SPEC-ja.md` にあります。
+このドキュメントは `CLI.md` を日本語で詳細に書いたものです。コマンドの書式、オプションや環境変数の意味、出力例、利用シナリオ別の使い方、トラブルシューティングをまとめています。仕様の根拠は `SPEC-v2.0.md` / `SPEC-ja.md` にあります。
 
 ---
 
@@ -46,19 +46,22 @@ ftime [OPTIONS] [PATH]
 まず `ftime` コマンドを実行できる状態にします（初回のみ）。
 
 ```
-# GitHub Releases からインストール（推奨）
+# GitHub Releases からインストール（推奨: 最新 release）
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
+- この経路は **最新 release** を入れる。未リリースの `main` は入らない。
+
 ```
 # リポジトリ内で使う場合
 ./target/release/ftime
 
-# どのディレクトリでも `ftime` だけで使いたい場合
-cargo install --path .
+# 手元の checkout をそのままインストールしたい場合
+cargo install --path . --force
+hash -r
 ```
 
 - `cargo install --path .` のインストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\.cargo\bin`）。
@@ -246,10 +249,10 @@ scripts/cleanup.sh\t2024-11-02
 - `ftime -a` : 包括的に出力したい場合。ただし大量出力になるため `head` などで制限を。
 
 ## 16. バージョンポリシー
-- v1.0 はCLIインターフェースを凍結するフェーズ。互換性を重視し、オプション追加時は後方互換に配慮する。
+- v2.0 は、v1.x からの breaking change（`-H` 廃止、dotfiles 既定表示、`-A` 追加など）を取り込んだ現行CLI契約である。
 - メジャーアップ時は `--all` など既存フラグの動作変更を避けるか、非推奨段階を設ける。
 - CLIや出力フォーマットの変更はメジャーアップデートに限定する。
-- v1.0 時点で Experimental なオプションは存在しない（将来追加時は明記する）。
+- v2.0 時点で Experimental なオプションは存在しない（将来追加時は明記する）。
 - 重要フラグ（`--all`, `--absolute`, `--exclude-dots`, `--json`）の挙動は凍結。色は `NO_COLOR` で制御し、`--no-color` フラグは存在しない。
 
 ## 17. 例外・非対応事項

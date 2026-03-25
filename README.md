@@ -24,6 +24,8 @@ ftime
 
 ## Install
 ### GitHub Releases (recommended)
+Installs the latest published release. This path does **not** install unreleased `main`.
+
 ```bash
 # macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
@@ -37,15 +39,33 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.c
 cargo install ftime
 ```
 
-### From source (build + install)
+### From source (developer / unreleased main)
 Requires Rust/Cargo 1.92+ (edition 2024).
 
 ```bash
-cargo install --path .
+cargo install --path . --force
+hash -r
 ftime --version
 ```
 
 > `cargo build --release` only builds `target/release/ftime` and does not add it to your `PATH`.
+
+Use this path when you want the current checkout instead of the latest release.
+
+## Uninstall
+### GitHub Releases install
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
+```
+
+### cargo install / cargo install --path .
+```bash
+cargo uninstall ftime
+```
 
 ## Usage
 ```bash

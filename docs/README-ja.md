@@ -22,6 +22,8 @@ ftime /path/to/dir # 指定ディレクトリを対象
 要件: Rust/Cargo 1.92+（edition 2024）
 
 ### GitHub Releases（推奨）
+公開済みの **最新 release** を入れる経路です。未リリースの `main` は入りません。
+
 ```bash
 # macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
@@ -35,14 +37,31 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.c
 cargo install ftime
 ```
 
-### ソースからインストール（ビルド＋グローバル化）
+### ソースからインストール（開発者向け / 未リリース `main`）
 ```bash
-cargo install --path .
+cargo install --path . --force
+hash -r
 ftime --version
 ```
 
 - インストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\\.cargo\\bin`）。
 - `ftime` をそのまま実行できるのは、上記ディレクトリが `PATH` に通っている場合です。
+- 手元の checkout をそのまま使いたいときはこちらを使います。stable release とは別経路です。
+
+## アンインストール
+### GitHub Releases 経由で入れた場合
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
+```
+
+### `cargo install` / `cargo install --path .` で入れた場合
+```bash
+cargo uninstall ftime
+```
 
 ### ソースからビルド（成果物だけ欲しい）
 ビルドは次のどちらかです。

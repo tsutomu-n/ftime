@@ -1,12 +1,12 @@
-# ftime v1.0.0 テスト計画（日本語版・詳細）
+# ftime v2.0.0 テスト計画（日本語版・詳細）
 
-本書は `TESTPLAN-v1.0.md` の日本語拡張版です。テスト観点、シナリオ、環境設定、リスクベースの優先度、実行手順、期待結果、判定基準を7000文字超で整理し、誰でも再現できるようにします。
+本書は `TESTPLAN-v2.0.md` の日本語拡張版です。テスト観点、シナリオ、環境設定、リスクベースの優先度、実行手順、期待結果、判定基準を整理し、誰でも再現できるようにします。
 
 ---
 
 ## 1. テストの目的
-- 仕様（`SPEC-v1.0.md` / `SPEC-ja.md`）に定義された挙動を確認し、回帰を防ぐ。
-- CLIユーザーが想定する代表的なユースケース（TTY表示、パイプ、隠しファイル、折り畳み等）が壊れていないことを保証。
+- 仕様（`SPEC-v2.0.md` / `SPEC-ja.md`）に定義された挙動を確認し、回帰を防ぐ。
+- CLIユーザーが想定する代表的なユースケース（TTY表示、パイプ、dotfiles、absolute time、Skew、折り畳み等）が壊れていないことを保証。
 - エッジケース（空ディレクトリ、権限エラー、壊れたシンボリックリンク）でパニックしないことを確認。
 
 ## 2. テスト対象とスコープ
@@ -38,7 +38,8 @@
 
 ### 3.2 統合テスト（CLI）
 - **デフォルト挙動**: バケットが表示され、Historyが折り畳まれる。
-- **隠しファイル**: `-H` で表示され、デフォルトでは表示されない。
+- **dotfiles**: デフォルトで表示され、`--exclude-dots` で除外される。
+- **absolute / skew / timezone**: `-A` の形式、TTY の `Skew` 表示、timezone footer、`NO_COLOR` 時の ANSI 非出力。
 - **History折り畳み/展開**: 21件以上のHistoryで折り畳み表示、`-a` で展開＋ `... and N more items`。
 - **パイプ出力**: タブ区切り、ヘッダなし、全件出力、カラーなし。
 - **ルートがファイル**: エラー終了（コード1）、メッセージ包含。
@@ -94,10 +95,10 @@
    - 準備: 空ディレクトリ内に `a.txt` を作成  
    - コマンド: `ftime a.txt`  
    - 期待: 終了コード1、stderrに `not a directory`
-2. **hidden_files_excluded_by_default_and_included_with_flag**  
+2. **hidden_files_included_by_default_and_excluded_with_flag**  
    - 準備: `visible`, `.hidden` を作成  
-   - コマンド: `ftime` → `.hidden` が出ない  
-   - コマンド: `ftime -H` → `.hidden` が出る
+   - コマンド: `ftime` → `.hidden` が出る  
+   - コマンド: `ftime --exclude-dots` → `.hidden` が出ない
 3. **history_bucket_collapses_and_expands**  
    - 準備: 9日前のファイルを25個（mtimeを設定）  
    - コマンド: `FTIME_FORCE_TTY=1 ftime dir` → `History (25 files hidden)`  

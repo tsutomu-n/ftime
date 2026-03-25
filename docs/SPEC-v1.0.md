@@ -1,3 +1,11 @@
+# Archived Document
+
+This document is historical and reflects the v1.x contract.
+Current canonical references:
+- `docs/SPEC-v2.0.md`
+- `docs/TESTPLAN-v2.0.md`
+- `docs/RELEASE-NOTES-v2.0.md`
+
 # ftime v1.0.0 Behavior Specification
 Last updated: 2026-01-10
 

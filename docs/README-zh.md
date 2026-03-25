@@ -22,6 +22,8 @@ ftime /path/to/dir # 指定目标目录
 要求：Rust/Cargo 1.92+（edition 2024）
 
 ### GitHub Releases（推荐）
+这条路径安装的是 **最新已发布 release**，不会安装未发布的 `main`。
+
 ```bash
 # macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
@@ -35,14 +37,16 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.c
 cargo install ftime
 ```
 
-### 从源码安装（构建 + 全局化）
+### 从源码安装（开发者 / 未发布的 `main`）
 ```bash
-cargo install --path .
+cargo install --path . --force
+hash -r
 ftime --version
 ```
 
 - 默认安装到 `~/.cargo/bin`（Windows 为 `%USERPROFILE%\\.cargo\\bin`）。
 - 只有当上述目录在 `PATH` 中时，才能直接输入 `ftime` 运行。
+- 如果你想直接使用当前 checkout 的代码，而不是最新 release，就走这条路径。
 
 ### 从源码构建（只要产物）
 构建有两种方式：

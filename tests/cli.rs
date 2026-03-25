@@ -61,6 +61,15 @@ fn removed_hidden_flag_is_rejected() {
 }
 
 #[test]
+fn version_reports_v2_0_0() {
+    bin()
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("ftime 2.0.0"));
+}
+
+#[test]
 fn history_bucket_collapses_and_expands() {
     let dir = tempdir().unwrap();
     let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);

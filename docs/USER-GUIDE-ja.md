@@ -37,13 +37,15 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/instal
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
+- この経路は **最新 release** を入れる。未リリースの `main` は入らない。
+
 ### 2.2 crates.io からインストール（公開済みの場合）
 ```
 cargo install ftime
 ```
 未公開の場合は、**GitHub Releases** または **ソースからビルド** を利用してください。
 
-### 2.3 ソースからビルド
+### 2.3 ソースからビルド / 開発版インストール
 ```
 cargo build --release
 ```
@@ -56,9 +58,12 @@ cargo build --release
 
 どのディレクトリでも `ftime` だけで使いたい場合は、次のどちらかを選びます（環境によりPATH設定が必要です）:
 ```
-cargo install --path .
+cargo install --path . --force
+hash -r
 # または（Linux/macOS）: ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
 ```
+
+- `cargo install --path . --force` は、手元の checkout をそのまま使いたい開発者向けの経路です。
 
 ### 2.4 追加ビルドオプション
 - **Nerd Fontアイコン**: `cargo build --release --features icons`
