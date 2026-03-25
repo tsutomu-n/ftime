@@ -237,18 +237,9 @@ mod tests {
         let rendered = absolute_time(ts);
         assert!(rendered.contains('-'));
         assert!(rendered.contains(':'));
-        assert_eq!(rendered.len(), 25);
-        assert!(rendered.contains(' '));
         assert!(
-            rendered.ends_with("+0000")
-                || rendered.ends_with("+0900")
-                || rendered.ends_with("-0400")
-                || rendered.ends_with("-0500")
-                || rendered
-                    .chars()
-                    .rev()
-                    .take(5)
-                    .all(|ch| ch.is_ascii_digit() || ch == '+' || ch == '-')
+            chrono::DateTime::parse_from_str(&rendered, "%Y-%m-%d %H:%M:%S %z").is_ok()
+                || chrono::DateTime::parse_from_str(&rendered, "%Y-%m-%d %H:%M:%S %:z").is_ok()
         );
     }
 
