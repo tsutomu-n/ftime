@@ -1,32 +1,27 @@
-# Archived Document
-
-This document is historical and describes the v1.0.0 release.
-Current canonical references:
-- `docs/SPEC-v2.0.md`
-- `docs/TESTPLAN-v2.0.md`
-- `docs/RELEASE-NOTES-v2.0.md`
-
 # ftime v1.0.0 Release Notes
-Date: 2026-01-10
+Date: 2026-03-25
 
 ## Summary
-v1.0.0 is the stability release for the FS edition. CLI and output formats are frozen, and the v1.0 specification is now the source of truth.
+v1.0.0 is the first stable public release of the current `ftime` CLI. It promotes the current `main` behavior to the published release line.
 
-## Compatibility Policy
-- CLI flags and behavior are frozen in v1.0; changes require a major version.
-- Output formats (TTY/pipe/JSON) are stable.
-- JSON field set is frozen for compatibility.
-- No experimental options exist in v1.0.
+## Public Contract
+- Dotfiles are included by default.
+- `--exclude-dots` is the opt-out flag for dotfiles.
+- `-H/--hidden` is not part of the public v1.0.0 CLI.
 
-## Requirements
-- Rust/Cargo 1.92+ (edition 2024).
+## New Behavior
+- Added `-A/--absolute` for timezone-aware absolute timestamps in TTY and pipe output.
+- TTY output now includes a size column.
+- Future mtimes are rendered as `+Ns [Skew]` / `+Nm [Skew]`.
+- TTY output appends `Current Timezone: ±HHMM`.
+- TTY time column uses a bucket-aware heatmap.
+- JSON now includes optional `size` for regular files.
 
-## Output Contracts
-- JSON Lines (`--json`): one object per line with fields:
-  `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`, `symlink_target`, `label`
-- `symlink_target` and `label` are only emitted when applicable.
-- `NO_COLOR` disables color output even if set to an empty string (intentional divergence from no-color.org).
+## Install Guidance
+- `scripts/install.sh` and `scripts/install.ps1` continue to install the latest published release.
+- Developers who want the current checkout should use `cargo install --path . --force`.
 
-## Documentation Updates
-- `docs/SPEC-v1.0.md` and `docs/TESTPLAN-v1.0.md` added as the canonical spec/test plan.
-- CLI contract updated for v1.0 freeze and compatibility policy.
+## Canonical Docs
+- `docs/SPEC-v1.0.md`
+- `docs/TESTPLAN-v1.0.md`
+- `docs/CLI.md`

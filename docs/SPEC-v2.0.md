@@ -1,3 +1,11 @@
+# Archived Draft Document
+
+This document is historical and records an abandoned v2.0.0 renumbering plan.
+Current canonical references:
+- `docs/SPEC-v1.0.md`
+- `docs/TESTPLAN-v1.0.md`
+- `docs/RELEASE-NOTES-v1.0.md`
+
 # ftime v2.0.0 Behavior Specification
 Last updated: 2026-03-25
 

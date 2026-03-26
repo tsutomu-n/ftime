@@ -1,91 +1,83 @@
-# Archived Document
-
-This document is historical and reflects the v1.x contract.
-Current canonical references:
-- `docs/SPEC-v2.0.md`
-- `docs/TESTPLAN-v2.0.md`
-- `docs/RELEASE-NOTES-v2.0.md`
-
 # ftime v1.0.0 Behavior Specification
-Last updated: 2026-01-10
+Last updated: 2026-03-25
 
 ## 1. Scope
 *   **Target:** Local filesystem visualization.
 *   **Mode:** Read-only CLI tool.
 *   **Limitations:**
-    *   No Git integration (v1.0).
+    *   No Git integration.
     *   No recursive scanning (depth=1 only).
-    *   Heuristic provenance labels are limited to `Fresh` (within ~5 minutes). Other labels such as Imported remain out of scope.
+    *   Heuristic provenance labels remain limited to `Fresh`.
 
 ## 2. Input Model
-*   **Source:** Single directory path provided via CLI argument. (Defaults to current directory `.`).
+*   **Source:** Single directory path provided via CLI argument. Defaults to current directory `.`.
 *   **Entry Handling:**
-    *   Symlinks: Follow metadata of the link itself (`lstat`), not target.
-    *   Broken Links: Treat as regular files (do not panic).
-    *   Permissions: Skip entries with permission errors silently (or log to stderr if verbose).
-    *   Default ignore (always skipped): `.DS_Store`, `Thumbs.db`（`--hidden` でも除外）
+    *   Symlinks use metadata of the link itself (`lstat`-style behavior), not the target.
+    *   Broken links do not panic and may render as `<unresolved>` in TTY output.
+    *   Per-entry permission or metadata failures are skipped silently.
+    *   Built-in ignore entries are `.DS_Store` and `Thumbs.db`; they are disabled only by `--no-ignore`.
+    *   Dotfiles are included by default and can be excluded with `--exclude-dots`.
 
-## 3. Time Bucketing Logic
-Files are sorted by `mtime` (descending) and grouped into buckets. Evaluation order is strictly top-to-bottom.
+## 3. Time Buckets
+Evaluation order is fixed: Active → Today → This Week → History.
 
-| Bucket Name | Condition |
+| Bucket | Condition |
 | :--- | :--- |
-| **🔥 Active Context** | `now - mtime < 1 hour` |
-| **☕ Today's Session** | `mtime >= Today 00:00:00` (Local Time) |
-| **📅 This Week** | `now - mtime < 7 days` |
-| **💤 History** | Everything else |
+| **Active** | `now - mtime < 1 hour`, or `mtime` is in the future |
+| **Today** | `mtime >= Today 00:00:00` (local time) and not Active |
+| **This Week** | `now - mtime < 7 days` and not Today |
+| **History** | Everything else |
 
-*   **Display Limit:** Max **20 items** per bucket. If exceeded, show top 20 and append a summary line (e.g., `... and 42 more items`).
-*   **Empty Buckets:** Do not display headers for empty buckets.
-*   **Symlinks:** Show as `name -> target` and color the source name yellow. If `read_link` succeeds, show the returned target string (no existence check).
+Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 
-## 4. Sorting Strategy
-1.  Collect all valid entries in the target directory.
-2.  Sort all entries by `mtime` DESC (newest first). When `mtime` is equal, sort by `name` ASC for stability.
-3.  Distribute into buckets preserving the sort order.
+## 4. Output Contracts
+### TTY
+*   Bucketed output with icons/colors.
+*   Entry format is `name | size | time`.
+*   `time` is relative by default, or absolute with `-A/--absolute`.
+*   Time column uses a bucket-aware heatmap.
+*   `Skew` styling takes precedence over bucket heatmap.
+*   History is collapsed by default; `-a/--all` expands it.
+*   A `Current Timezone: ±HHMM` footer is appended.
 
-## 5. Output Format (TTY Mode)
-When `stdout` is a terminal:
-*   **Headers:** Display bucket icon and name (e.g., `🔥 Active Context (< 1h)`).
-*   **Entries:**
-    *   Format: `<padding> <icon> <filename> <padding> <relative_time>`; symlinks include `-> target`.
-    *   Directory distinction: Append `/` to directory names and apply **Bold Blue** color. Symlinks are Yellow, targets are dimmed.
-    *   Time format: `just now` (<60s), `1 min ago`, `12 mins ago`, `3 hours ago`, `Yesterday`, `YYYY-MM-DD`.
-*   **Empty Directory:** If no entries are found, print `No recent files found`.
-*   **History:** By default, collapse "History" bucket (show only count, e.g., `💤 History (128 files hidden)`). Expand if `--all` is set.
+### Pipe / redirected output
+*   Plain two-column TSV: `<path>\t<time>`.
+*   No colors, headers, icons, bucket grouping, or item limit.
+*   `time` is relative by default, or `YYYY-MM-DD HH:MM:SS ±HHMM` with `-A/--absolute`.
 
-## 6. Output Format (Pipe/File Mode)
-When `stdout` is **NOT** a terminal:
-*   **Disable:** All colors, headers, icons, and bucket groupings.
-*   **Content:** List all files (sorted by mtime desc). Symlink targets are not shown;ディレクトリも末尾`/`なしでパスのみ。
-*   **Format:** `<path>\t<relative_time>` (Tab-separated).
-*   **Limit:** Do NOT apply the 20-item limit (output all).
-
-## 7. Output Format (JSON Mode)
+### JSON Lines
 *   Triggered by `--json`.
-*   Emits one JSON object per line (JSON Lines).
-*   Fields (**frozen for compatibility**):
-    * `path`: string（可能なら基準ディレクトリ相対）
-    * `bucket`: `"active" | "today" | "this_week" | "history"`
-    * `mtime`: string (RFC3339, UTC)
-    * `relative_time`: string（TTY/pipeと同じ表記）
-    * `is_dir`: bool
-    * `is_symlink`: bool
-    * `symlink_target`: string（is_symlink=true かつ解決成功時のみ）。それ以外は出力しない。
-    * `label`: string（現状は `"fresh"` のみ）。該当しない場合は出力しない。
-*   Colors/icons/20件制限は無効。TTY/非TTYに依存しない。
+*   One object per line.
+*   Stable fields:
+    * `path`
+    * `bucket`
+    * `mtime`
+    * `relative_time`
+    * `is_dir`
+    * `is_symlink`
+*   Optional fields:
+    * `symlink_target`
+    * `label`
+    * `size` (regular files only)
 
-## 8. Filtering
-*   **Hidden Files:** Ignore entries starting with `.` by default. Include them if `--hidden` is passed.
-*   **Extension Filter:** `--ext ext1,ext2` で拡張子ホワイトリスト（case-insensitive）。対象はファイルのみで、ディレクトリ/拡張子なしファイルは除外される。
-*   **Ignore Files:** Global ignore `~/.ftimeignore` (overridable via `FTIME_IGNORE`) is applied unless `--no-ignore` is set. One glob pattern per line; `#` comments and empty lines ignored. Default ignores `.DS_Store`, `Thumbs.db` are part of this set. If PATH is a file, the command exits with code 1 before ignores are applied.
-*   **Labels:** Best-effort label assignment (currently `Fresh` within ~5 minutes). Disable with `--no-labels`. TSV output does not include labels; TTY shows a badge; JSON includes `label` when assigned.
+## 5. Filters and Flags
+*   `-a, --all`: Expand History in TTY mode.
+*   `-A, --absolute`: Render absolute local timestamps in TTY and pipe modes.
+*   `--exclude-dots`: Exclude dotfiles from scan results.
+*   `--ext ext1,ext2`: File-only extension whitelist, case-insensitive.
+*   `--no-ignore`: Disable built-in ignores and ignore files.
+*   `--no-labels`: Disable labels such as `Fresh`.
+*   `-I, --icons`: Opt-in Nerd Font icons when the binary supports the `icons` feature.
 
-## 9. Environment Overrides
-*   `NO_COLOR`: Disable color output when set. Empty string is treated as set (intentional divergence from no-color.org).
-*   `FTIME_FORCE_TTY`: Force TTY mode (bucketed layout) even when stdout is not a terminal。色の有無は `NO_COLOR` に従う。
-*   `--icons` is a no-op when built without the `icons` feature (no error). If PATH is a file, the command fails with exit code 1; `--ext` is not applied in that case.
+`-H/--hidden` is not part of the public v1.0.0 CLI contract.
 
-## 10. Platform Support
-*   **Primary targets:** Linux (major distros), macOS.
-*   **Windows:** Build is possible, but symlink handling and ANSI colors depend on terminal capabilities.
+## 6. Environment
+*   `NO_COLOR`: Disable colors even if set to an empty string.
+*   `FTIME_FORCE_TTY`: Force TTY layout even when stdout is not a terminal.
+*   `FTIME_IGNORE`: Override the global ignore file path.
+
+## 7. Compatibility Policy
+*   v1.0.0 freezes the current public CLI contract for future compatibility.
+*   The public v1.0.0 contract includes dotfiles by default and uses `--exclude-dots` as the opt-out flag.
+*   Pipe output remains 2 columns.
+*   JSON remains JSON Lines and may omit optional fields when not applicable.

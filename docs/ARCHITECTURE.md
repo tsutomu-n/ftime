@@ -1,4 +1,4 @@
-# ftime Architecture (v2.0)
+# ftime Architecture (v1.0)
 
 ## 1. Module Structure
 The current codebase separates concerns to keep FS mode stable while allowing future extensions (e.g., Git).
@@ -43,7 +43,7 @@ pub enum TimeBucket {
 ## 3. Non-Functional Requirements
 *   **Zero Panic:** Use `Result` propagation. Handle `std::io::Error` gracefully.
 *   **Performance:**
-    *   Use `std::fs::read_dir` (sync I/O is fine for v2.0).
+    *   Use `std::fs::read_dir` (sync I/O is fine for v1.0).
     *   Avoid recursion to prevent stack overflow or massive delays.
 *   **Dependencies:**
     *   `clap` (derive feature)

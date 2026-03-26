@@ -61,12 +61,12 @@ fn removed_hidden_flag_is_rejected() {
 }
 
 #[test]
-fn version_reports_v2_0_0() {
+fn version_reports_v1_0_0() {
     bin()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("ftime 2.0.0"));
+        .stdout(predicate::str::contains("ftime 1.0.0"));
 }
 
 #[test]

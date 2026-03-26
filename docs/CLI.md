@@ -1,4 +1,4 @@
-# ftime v2.0.0 CLI Contract
+# ftime v1.0.0 CLI Contract
 
 ## 1. Command Signature
 ```bash
@@ -32,11 +32,11 @@ ftime [OPTIONS] [PATH]
 *   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 
-## 5. Compatibility Policy (v2.0)
-*   v2.0 establishes the current CLI contract after the breaking changes from v1.x.
+## 5. Compatibility Policy (v1.0)
+*   v1.0 establishes the first public CLI contract for the current implementation.
 *   Future CLI flag removals or default-behavior changes require a new major version.
 *   Output formats (TTY/pipe/JSON) are stable; pipe output remains 2 columns, and JSON may omit optional fields when not applicable.
-*   No experimental options are defined in v2.0 (future experiments must be marked explicitly).
+*   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
 *   Important flags: `--all`, `--absolute`, `--exclude-dots`, `--json`. Color is controlled by `NO_COLOR` (no `--no-color` flag).
 
 ## 6. Exit Codes
