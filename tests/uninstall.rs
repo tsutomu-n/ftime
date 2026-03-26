@@ -18,6 +18,10 @@ fn read_repo_file(path: &str) -> String {
     fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
 }
 
+fn current_release_tag() -> String {
+    "v1.0.0".to_string()
+}
+
 fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
     for snippet in snippets {
         assert!(
@@ -69,6 +73,7 @@ fn uninstall_succeeds_when_binary_is_missing() {
 
 #[test]
 fn uninstall_docs_cover_release_and_cargo_paths() {
+    let tag = current_release_tag();
     for path in ["README.md", "docs/README-ja.md", "docs/README-zh.md"] {
         let content = read_repo_file(path);
 
@@ -78,13 +83,31 @@ fn uninstall_docs_cover_release_and_cargo_paths() {
             ),
             "broken custom uninstall example remains in {path}"
         );
+        assert!(
+            !content.contains(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh"
+            ),
+            "main-based uninstall.sh URL remains in {path}"
+        );
+        assert!(
+            !content.contains(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1"
+            ),
+            "main-based uninstall.ps1 URL remains in {path}"
+        );
         assert_contains_all(
             &content,
             path,
             &[
-                "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash",
-                "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+                &format!(
+                    "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh | bash"
+                ),
+                &format!(
+                    "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash"
+                ),
+                &format!(
+                    "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
+                ),
                 "-InstallDir 'C:\\custom\\bin'",
                 "cargo uninstall ftime",
             ],

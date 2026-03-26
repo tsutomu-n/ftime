@@ -15,13 +15,13 @@
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
-### crates.io
+### crates.io（公開済みの場合）
 
 ```bash
 cargo install ftime
@@ -35,6 +35,8 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
+
+Windows installer は現状 x86_64 / AMD64 を対象にしています。
 
 アンインストール手順は下の `## アンインストール` にまとめています。custom install 先を使った場合の戻し方もそこにあります。
 
@@ -62,23 +64,23 @@ ftime --json
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash
 ```
 
 custom な install 先を使った場合は、同じ場所を macOS / Linux では `INSTALL_DIR`、Windows では `-InstallDir` で再指定します。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
 ```
 
 ### `cargo install` / `cargo install --path .`
@@ -89,9 +91,9 @@ cargo uninstall ftime
 
 ## 詳細ドキュメント
 
-- 読み分け案内: `ftime-overview-ja.md`
-- 使い方ガイド: `USER-GUIDE-ja.md`
-- CLI リファレンス: `CLI-ja.md`
-- 仕様の正本: `CLI.md`
+- [読み分け案内](ftime-overview-ja.md)
+- [使い方ガイド](USER-GUIDE-ja.md)
+- [CLI リファレンス](CLI-ja.md)
+- [仕様の正本](CLI.md)
 
 最初に全体像だけ知りたいなら `README-ja.md`、実際の使い方を追いたいなら `USER-GUIDE-ja.md`、フラグや出力契約を確認したいなら `CLI-ja.md` を開いてください。

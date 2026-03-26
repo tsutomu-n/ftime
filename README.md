@@ -17,13 +17,13 @@ Installs the latest published release, not unreleased `main`.
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
-### crates.io
+### crates.io (when published)
 
 ```bash
 cargo install ftime
@@ -37,6 +37,8 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
+
+Windows installer currently targets x86_64 / AMD64.
 
 Uninstall steps are documented in `## Uninstall`, including custom install directories.
 
@@ -63,23 +65,23 @@ Common flags:
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash
 ```
 
 If you installed to a custom directory, pass the same location again:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
 ```
 
 ### `cargo install` / `cargo install --path .`
@@ -90,11 +92,11 @@ cargo uninstall ftime
 
 ## Learn More
 
-- Japanese README: `docs/README-ja.md`
-- Chinese README: `docs/README-zh.md`
-- Japanese docs router: `docs/ftime-overview-ja.md`
-- User guide (Japanese): `docs/USER-GUIDE-ja.md`
-- CLI contract: `docs/CLI.md`
+- [日本語](docs/README-ja.md)
+- [中文](docs/README-zh.md)
+- [Japanese docs router](docs/ftime-overview-ja.md)
+- [User guide (Japanese)](docs/USER-GUIDE-ja.md)
+- [CLI contract](docs/CLI.md)
 
 ## License
 

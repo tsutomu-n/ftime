@@ -5,6 +5,10 @@ fn read_repo_file(path: &str) -> String {
     fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
 }
 
+fn current_release_tag() -> String {
+    "v1.0.0".to_string()
+}
+
 fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
     for snippet in snippets {
         assert!(
@@ -67,18 +71,35 @@ fn v2_docs_are_archived_after_renumbering() {
 
 #[test]
 fn readme_surfaces_link_only_to_current_primary_docs() {
+    let tag = current_release_tag();
     let root = read_repo_file("README.md");
     assert_contains_all(
         &root,
         "README.md",
         &[
             "## Install",
+            "### crates.io (when published)",
+            "Windows installer currently targets x86_64 / AMD64.",
             "## Quick Usage",
             "Uninstall steps are documented in `## Uninstall`, including custom install directories.",
             "## Learn More",
-            "docs/CLI.md",
-            "docs/README-ja.md",
-            "docs/README-zh.md",
+            "[CLI contract](docs/CLI.md)",
+            "[日本語](docs/README-ja.md)",
+            "[中文](docs/README-zh.md)",
+        ],
+    );
+    assert_contains_all(
+        &root,
+        "README.md",
+        &[
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
+            ),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
+            ),
         ],
     );
 
@@ -88,12 +109,28 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-ja.md",
         &[
             "## インストール",
+            "### crates.io（公開済みの場合）",
+            "Windows installer は現状 x86_64 / AMD64 を対象にしています。",
             "## クイックスタート",
             "アンインストール手順は下の `## アンインストール` にまとめています。",
             "## 詳細ドキュメント",
-            "USER-GUIDE-ja.md",
-            "CLI-ja.md",
-            "ftime-overview-ja.md",
+            "[使い方ガイド](USER-GUIDE-ja.md)",
+            "[CLI リファレンス](CLI-ja.md)",
+            "[読み分け案内](ftime-overview-ja.md)",
+        ],
+    );
+    assert_contains_all(
+        &ja,
+        "docs/README-ja.md",
+        &[
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
+            ),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
+            ),
         ],
     );
 
@@ -103,10 +140,26 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-zh.md",
         &[
             "## 安装",
+            "### crates.io（已发布时）",
+            "Windows installer 目前仅覆盖 x86_64 / AMD64。",
             "## 快速开始",
             "卸载步骤写在下方的 `## 卸载`，也包含自定义安装目录的情况。",
             "## 详细文档",
-            "CLI.md",
+            "[CLI contract](CLI.md)",
+        ],
+    );
+    assert_contains_all(
+        &zh,
+        "docs/README-zh.md",
+        &[
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
+            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
+            ),
+            &format!(
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
+            ),
         ],
     );
 
@@ -123,6 +176,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "TESTPLAN-v2.0.md",
                 "RELEASE-NOTES-v2.0.md",
                 "12-10_ROADMAP.md",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
             ],
         );
     }
