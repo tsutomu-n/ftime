@@ -85,10 +85,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &root,
         "README.md",
         &[
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
         ],
     );
 
@@ -111,10 +111,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &ja,
         "docs/README-ja.md",
         &[
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
         ],
     );
 
@@ -135,10 +135,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &zh,
         "docs/README-zh.md",
         &[
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
-            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
         ],
     );
 
@@ -155,6 +155,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "TESTPLAN-v2.0.md",
                 "RELEASE-NOTES-v2.0.md",
                 "12-10_ROADMAP.md",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh",
@@ -164,6 +168,24 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             ],
         );
     }
+}
+
+#[test]
+fn release_workflow_publishes_latest_bootstrap_assets() {
+    let workflow = support::read_repo_file(".github/workflows/release.yml");
+
+    assert_contains_all(
+        &workflow,
+        ".github/workflows/release.yml",
+        &[
+            "ftime-install.sh",
+            "ftime-install.ps1",
+            "ftime-uninstall.sh",
+            "ftime-uninstall.ps1",
+            "ftime-${{ matrix.target }}.tar.gz",
+            "ftime-${{ matrix.target }}.zip",
+        ],
+    );
 }
 
 #[test]

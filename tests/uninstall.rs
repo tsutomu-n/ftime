@@ -92,9 +92,9 @@ fn uninstall_docs_cover_release_and_cargo_paths() {
             &content,
             path,
             &[
-                "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash",
-                "curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+                "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash",
+                "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | env INSTALL_DIR=/custom/bin bash",
+                "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
                 "-InstallDir 'C:\\custom\\bin'",
                 "cargo uninstall ftime",
             ],

@@ -39,28 +39,23 @@ detect_target() {
     esac
 }
 
-resolve_tag() {
-    local version api tag
+resolve_download() {
+    local version target asset url
 
     version="${1:-latest}"
-    if [[ "$version" != "latest" ]]; then
-        echo "v${version#v}"
+    target="$2"
+
+    if [[ "$version" == "latest" ]]; then
+        asset="${BIN}-${target}.tar.gz"
+        url="https://github.com/${REPO}/releases/latest/download/${asset}"
+        printf '%s\n%s\n' "latest" "$url"
         return 0
     fi
 
-    api="https://api.github.com/repos/${REPO}/releases/latest"
-    if command -v jq >/dev/null 2>&1; then
-        tag="$(curl -fsSL "$api" | jq -r '.tag_name // empty')"
-    else
-        tag="$(curl -fsSL "$api" \
-            | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' \
-            | head -n1)"
-    fi
-
-    if [[ -z "${tag}" ]]; then
-        die "failed to resolve latest release tag"
-    fi
-    echo "$tag"
+    version="v${version#v}"
+    asset="${BIN}-${version#v}-${target}.tar.gz"
+    url="https://github.com/${REPO}/releases/download/${version}/${asset}"
+    printf '%s\n%s\n' "$version" "$url"
 }
 
 need_cmd curl
@@ -68,10 +63,10 @@ need_cmd tar
 need_cmd install
 
 target="$(detect_target)"
-tag="$(resolve_tag "${1:-latest}")"
-
-asset="${BIN}-${tag#v}-${target}.tar.gz"
-url="https://github.com/${REPO}/releases/download/${tag}/${asset}"
+mapfile -t release_info < <(resolve_download "${1:-latest}" "$target")
+tag="${release_info[0]}"
+url="${release_info[1]}"
+asset="${url##*/}"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT

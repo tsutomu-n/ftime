@@ -8,19 +8,24 @@ $ErrorActionPreference = "Stop"
 $Repo = "tsutomu-n/ftime"
 $Bin = "ftime"
 
-function Resolve-Tag {
+function Resolve-Download {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
         [Parameter(Mandatory = $true)][string]$Repo
     )
 
     if ($Version -eq "latest") {
-        $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
-        if (-not $Release.tag_name) { throw "failed to resolve latest release tag" }
-        return $Release.tag_name
+        return @{
+            Tag = "latest"
+            Url = "https://github.com/$Repo/releases/latest/download/$Bin-$Target.zip"
+        }
     }
 
-    return "v$($Version.TrimStart('v'))"
+    $Tag = "v$($Version.TrimStart('v'))"
+    return @{
+        Tag = $Tag
+        Url = "https://github.com/$Repo/releases/download/$Tag/$Bin-$($Tag.TrimStart('v'))-$Target.zip"
+    }
 }
 
 $Arch = $env:PROCESSOR_ARCHITECTURE
@@ -30,10 +35,10 @@ if ($Arch -ne "AMD64") {
 
 $Target = "x86_64-pc-windows-msvc"
 
-$Tag = Resolve-Tag -Version $Version -Repo $Repo
-
-$Asset = "$Bin-$($Tag.TrimStart('v'))-$Target.zip"
-$Url = "https://github.com/$Repo/releases/download/$Tag/$Asset"
+$Download = Resolve-Download -Version $Version -Repo $Repo
+$Tag = $Download.Tag
+$Url = $Download.Url
+$Asset = Split-Path $Url -Leaf
 
 $Tmp = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Force -Path $Tmp | Out-Null

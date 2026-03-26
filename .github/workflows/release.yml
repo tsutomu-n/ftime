@@ -47,6 +47,8 @@ jobs:
           tar -C "target/${{ matrix.target }}/release" \
             -czf "dist/ftime-${version}-${{ matrix.target }}.tar.gz" \
             ftime
+          cp "dist/ftime-${version}-${{ matrix.target }}.tar.gz" \
+            "dist/ftime-${{ matrix.target }}.tar.gz"
 
       - name: Package (windows)
         if: runner.os == 'Windows'
@@ -57,6 +59,19 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           Compress-Archive -Path "target\\${{ matrix.target }}\\release\\ftime.exe" `
             -DestinationPath "dist\\ftime-$version-${{ matrix.target }}.zip"
+          Copy-Item "dist\\ftime-$version-${{ matrix.target }}.zip" `
+            "dist\\ftime-${{ matrix.target }}.zip"
+
+      - name: Package bootstrap scripts
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp scripts/install.sh dist/ftime-install.sh
+          cp scripts/install.ps1 dist/ftime-install.ps1
+          cp scripts/uninstall.sh dist/ftime-uninstall.sh
+          cp scripts/uninstall.ps1 dist/ftime-uninstall.ps1
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
