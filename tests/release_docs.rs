@@ -78,7 +78,6 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "README.md",
         &[
             "## Install",
-            "### crates.io (when published)",
             "Windows installer currently targets x86_64 / AMD64.",
             "## Quick Usage",
             "Uninstall steps are documented in `## Uninstall`, including custom install directories.",
@@ -109,7 +108,6 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-ja.md",
         &[
             "## インストール",
-            "### crates.io（公開済みの場合）",
             "Windows installer は現状 x86_64 / AMD64 を対象にしています。",
             "## クイックスタート",
             "アンインストール手順は下の `## アンインストール` にまとめています。",
@@ -140,7 +138,6 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-zh.md",
         &[
             "## 安装",
-            "### crates.io（已发布时）",
             "Windows installer 目前仅覆盖 x86_64 / AMD64。",
             "## 快速开始",
             "卸载步骤写在下方的 `## 卸载`，也包含自定义安装目录的情况。",
@@ -180,6 +177,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+                "crates.io",
+                "cargo install ftime",
             ],
         );
     }

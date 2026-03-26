@@ -21,12 +21,6 @@ curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/inst
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
-### crates.io（已发布时）
-
-```bash
-cargo install ftime
-```
-
 ### 从源码安装
 需要 Rust/Cargo 1.92+。
 
