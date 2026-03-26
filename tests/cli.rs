@@ -4,8 +4,10 @@ use assert_cmd::Command;
 use filetime::{FileTime, set_file_mtime};
 use predicates::prelude::*;
 use serde_json::Value;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -72,6 +74,55 @@ fn version_reports_current_package_version() {
             "ftime {}",
             support::package_version()
         )));
+}
+
+#[cfg(unix)]
+#[test]
+fn self_update_runs_installer_for_current_binary_dir() {
+    let dir = tempdir().unwrap();
+    let script_path = dir.path().join("install.sh");
+    let marker_path = dir.path().join("marker.txt");
+
+    fs::write(
+        &script_path,
+        "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$INSTALL_DIR\" > \"$FTIME_SELF_UPDATE_MARKER\"\n",
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg("--self-update")
+        .env(
+            "FTIME_SELF_UPDATE_URL",
+            format!("file://{}", script_path.display()),
+        )
+        .env("FTIME_SELF_UPDATE_MARKER", &marker_path)
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("self-update completed"));
+
+    let install_dir = PathBuf::from(assert_cmd::cargo::cargo_bin!("ftime"))
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    let recorded = fs::read_to_string(marker_path).unwrap();
+    assert_eq!(recorded.trim(), install_dir.display().to_string());
+}
+
+#[test]
+fn self_update_rejects_scan_arguments() {
+    let dir = tempdir().unwrap();
+
+    bin()
+        .arg("--self-update")
+        .arg(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "--self-update cannot be combined with scan options or PATH",
+        ));
 }
 
 #[test]

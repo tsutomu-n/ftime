@@ -48,6 +48,10 @@ struct Cli {
     #[arg(short = 'A', long = "absolute")]
     absolute_time: bool,
 
+    /// Update the current installed binary to the latest published release
+    #[arg(long = "self-update")]
+    self_update: bool,
+
     /// Exclude dotfiles from scan results
     #[arg(long = "exclude-dots")]
     exclude_dots: bool,
@@ -65,6 +69,27 @@ fn main() {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
+
+    if cli.self_update {
+        if cli.path.is_some()
+            || cli.no_ignore
+            || cli.no_labels
+            || cli.show_all_history
+            || cli.ext.is_some()
+            || cli.use_icons
+            || cli.absolute_time
+            || cli.exclude_dots
+        {
+            bail!("--self-update cannot be combined with scan options or PATH");
+        }
+
+        #[cfg(feature = "json")]
+        if cli.json {
+            bail!("--self-update cannot be combined with scan options or PATH");
+        }
+
+        return util::update::self_update();
+    }
 
     let path = match cli.path {
         Some(p) => p,

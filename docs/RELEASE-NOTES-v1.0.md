@@ -17,6 +17,7 @@ v1.0.1 is a patch release focused on clearer absolute timestamps and a safer lat
 - TTY time column uses a bucket-aware heatmap.
 - JSON now includes optional `size` for regular files.
 - GitHub Releases now publish stable installer assets such as `ftime-install.sh` and stable latest-download binary asset names.
+- Added `--self-update` to refresh the current installed binary in place via the latest installer asset.
 
 ## Install Guidance
 - GitHub Releases expose stable installer assets via `releases/latest/download/ftime-install.sh` and `ftime-install.ps1`.

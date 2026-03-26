@@ -19,6 +19,7 @@ ftime [OPTIONS] [PATH]
 | `-a` | `--all` | TTY で `History` を展開 | 20 件上限は維持 |
 | `-A` | `--absolute` | 時刻を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` で表示 | TTY / 非TTY 共通 |
 |  | `--json` | JSON Lines 出力 | デフォルトビルドで有効 |
+|  | `--self-update` | 現在のインストール先を最新の公開版へ更新 | PATH や走査系オプションとは併用不可 |
 |  | `--ext rs,toml` | 拡張子ホワイトリスト | ファイルのみ対象 |
 |  | `--exclude-dots` | dotfiles を除外 | 既定では表示 |
 |  | `--no-ignore` | built-in / ignore ファイルを無効化 | 挙動確認向け |

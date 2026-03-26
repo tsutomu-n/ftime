@@ -49,6 +49,7 @@ ftime --json
 
 - `-a, --all`：在 TTY 中展开 `History`
 - `-A, --absolute`：显示绝对本地时间
+- `--self-update`：把当前安装位置更新到最新公开版
 - `--exclude-dots`：隐藏 dotfiles
 - `--no-ignore`：禁用 built-in / `.ftimeignore`
 
