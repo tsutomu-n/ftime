@@ -66,7 +66,6 @@ fn v2_docs_are_archived_after_renumbering() {
 
 #[test]
 fn readme_surfaces_link_only_to_current_primary_docs() {
-    let tag = support::release_tag();
     let root = support::read_repo_file("README.md");
     assert_contains_all(
         &root,
@@ -86,14 +85,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &root,
         "README.md",
         &[
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
-            ),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
-            ),
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
         ],
     );
 
@@ -116,14 +111,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &ja,
         "docs/README-ja.md",
         &[
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
-            ),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
-            ),
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
         ],
     );
 
@@ -144,14 +135,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &zh,
         "docs/README-zh.md",
         &[
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.sh"),
-            &format!("https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/install.ps1"),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.sh"
-            ),
-            &format!(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/{tag}/scripts/uninstall.ps1"
-            ),
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
         ],
     );
 
@@ -168,10 +155,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "TESTPLAN-v2.0.md",
                 "RELEASE-NOTES-v2.0.md",
                 "12-10_ROADMAP.md",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh",
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh",
+                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1",
                 "crates.io",
                 "cargo install ftime",
             ],

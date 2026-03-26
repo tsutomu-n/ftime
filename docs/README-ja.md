@@ -11,14 +11,14 @@
 ## インストール
 
 ### GitHub Releases（推奨）
-公開済みの最新 release を入れます。未リリースの `main` は入りません。
+`main` 上の最新 installer script を取得し、その script が公開済みの最新 release を入れます。未リリースの `main` は入りません。
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
 ### ソースから入れる
@@ -58,23 +58,23 @@ ftime --json
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
 ```
 
 custom な install 先を使った場合は、同じ場所を macOS / Linux では `INSTALL_DIR`、Windows では `-InstallDir` で再指定します。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
 ```
 
 ### `cargo install` / `cargo install --path .`

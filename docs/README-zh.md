@@ -11,14 +11,14 @@
 ## 安装
 
 ### GitHub Releases（推荐）
-安装最新已发布的 release，不会安装未发布的 `main`。
+先获取 `main` 上最新的 installer script，再由这个 script 安装最新已发布的 release，不会安装未发布的 `main`。
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
 
 # Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
 ### 从源码安装
@@ -58,23 +58,23 @@ ftime --json
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | bash
 ```
 
 如果你安装到了自定义目录，卸载时需要再次传入同一路径。macOS / Linux 使用 `INSTALL_DIR`，Windows 使用 `-InstallDir`。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
+curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing | iex"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing | iex"
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/uninstall.ps1 -UseBasicParsing).Content)) -InstallDir 'C:\custom\bin'"
 ```
 
 ### `cargo install` / `cargo install --path .` 安装
