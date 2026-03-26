@@ -74,6 +74,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &[
             "## Install",
             "## Quick Usage",
+            "Uninstall steps are documented in `## Uninstall`, including custom install directories.",
             "## Learn More",
             "docs/CLI.md",
             "docs/README-ja.md",
@@ -88,6 +89,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &[
             "## インストール",
             "## クイックスタート",
+            "アンインストール手順は下の `## アンインストール` にまとめています。",
             "## 詳細ドキュメント",
             "USER-GUIDE-ja.md",
             "CLI-ja.md",
@@ -99,7 +101,13 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
     assert_contains_all(
         &zh,
         "docs/README-zh.md",
-        &["## 安装", "## 快速开始", "## 详细文档", "CLI.md"],
+        &[
+            "## 安装",
+            "## 快速开始",
+            "卸载步骤写在下方的 `## 卸载`，也包含自定义安装目录的情况。",
+            "## 详细文档",
+            "CLI.md",
+        ],
     );
 
     for (path, content) in [

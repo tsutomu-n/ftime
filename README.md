@@ -38,6 +38,8 @@ hash -r
 ftime --version
 ```
 
+Uninstall steps are documented in `## Uninstall`, including custom install directories.
+
 ## Quick Usage
 
 ```bash
