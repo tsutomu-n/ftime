@@ -1,13 +1,4 @@
-use std::fs;
-use std::path::Path;
-
-fn read_repo_file(path: &str) -> String {
-    fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
-}
-
-fn current_release_tag() -> String {
-    "v1.0.0".to_string()
-}
+mod support;
 
 fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
     for snippet in snippets {
@@ -28,9 +19,9 @@ fn assert_contains_none(content: &str, path: &str, snippets: &[&str]) {
 }
 
 #[test]
-fn current_release_docs_are_v1_0_0() {
-    let cargo_toml = read_repo_file("Cargo.toml");
-    assert!(cargo_toml.contains("version = \"1.0.0\""));
+fn current_release_docs_match_current_package_version() {
+    let cargo_toml = support::read_repo_file("Cargo.toml");
+    assert!(cargo_toml.contains(&format!("version = \"{}\"", support::package_version())));
 
     for path in [
         "docs/CLI.md",
@@ -38,8 +29,12 @@ fn current_release_docs_are_v1_0_0() {
         "docs/TESTPLAN-v1.0.md",
         "docs/RELEASE-NOTES-v1.0.md",
     ] {
-        let content = read_repo_file(path);
-        assert!(content.contains("v1.0.0"), "{path} must describe v1.0.0");
+        let content = support::read_repo_file(path);
+        assert!(
+            content.contains(&format!("v{}", support::package_version())),
+            "{path} must describe v{}",
+            support::package_version()
+        );
         assert!(
             !content.contains("v2.0.0"),
             "{path} should not describe v2.0.0 as current"
@@ -54,7 +49,7 @@ fn v2_docs_are_archived_after_renumbering() {
         "docs/TESTPLAN-v2.0.md",
         "docs/RELEASE-NOTES-v2.0.md",
     ] {
-        let content = read_repo_file(path);
+        let content = support::read_repo_file(path);
         assert_contains_all(
             &content,
             path,
@@ -71,8 +66,8 @@ fn v2_docs_are_archived_after_renumbering() {
 
 #[test]
 fn readme_surfaces_link_only_to_current_primary_docs() {
-    let tag = current_release_tag();
-    let root = read_repo_file("README.md");
+    let tag = support::release_tag();
+    let root = support::read_repo_file("README.md");
     assert_contains_all(
         &root,
         "README.md",
@@ -102,7 +97,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         ],
     );
 
-    let ja = read_repo_file("docs/README-ja.md");
+    let ja = support::read_repo_file("docs/README-ja.md");
     assert_contains_all(
         &ja,
         "docs/README-ja.md",
@@ -132,7 +127,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         ],
     );
 
-    let zh = read_repo_file("docs/README-zh.md");
+    let zh = support::read_repo_file("docs/README-zh.md");
     assert_contains_all(
         &zh,
         "docs/README-zh.md",
@@ -186,7 +181,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
 
 #[test]
 fn japanese_docs_have_separated_roles() {
-    let guide = read_repo_file("docs/USER-GUIDE-ja.md");
+    let guide = support::read_repo_file("docs/USER-GUIDE-ja.md");
     assert_contains_all(
         &guide,
         "docs/USER-GUIDE-ja.md",
@@ -204,7 +199,7 @@ fn japanese_docs_have_separated_roles() {
         &["## インストール", "## 環境変数", "## 終了コード"],
     );
 
-    let cli = read_repo_file("docs/CLI-ja.md");
+    let cli = support::read_repo_file("docs/CLI-ja.md");
     assert_contains_all(
         &cli,
         "docs/CLI-ja.md",
@@ -227,7 +222,7 @@ fn japanese_docs_have_separated_roles() {
         ],
     );
 
-    let overview = read_repo_file("docs/ftime-overview-ja.md");
+    let overview = support::read_repo_file("docs/ftime-overview-ja.md");
     assert_contains_all(
         &overview,
         "docs/ftime-overview-ja.md",

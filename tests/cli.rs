@@ -1,3 +1,5 @@
+mod support;
+
 use assert_cmd::Command;
 use filetime::{FileTime, set_file_mtime};
 use predicates::prelude::*;
@@ -61,12 +63,15 @@ fn removed_hidden_flag_is_rejected() {
 }
 
 #[test]
-fn version_reports_v1_0_0() {
+fn version_reports_current_package_version() {
     bin()
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("ftime 1.0.0"));
+        .stdout(predicate::str::contains(format!(
+            "ftime {}",
+            support::package_version()
+        )));
 }
 
 #[test]

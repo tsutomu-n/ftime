@@ -1,3 +1,5 @@
+mod support;
+
 use std::fs::{self, File};
 use std::path::Path;
 use std::process::Command;
@@ -12,14 +14,6 @@ fn run_uninstall(home: &Path, install_dir: &Path) -> std::process::Output {
         .env("INSTALL_DIR", install_dir)
         .output()
         .unwrap()
-}
-
-fn read_repo_file(path: &str) -> String {
-    fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
-}
-
-fn current_release_tag() -> String {
-    "v1.0.0".to_string()
 }
 
 fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
@@ -73,9 +67,9 @@ fn uninstall_succeeds_when_binary_is_missing() {
 
 #[test]
 fn uninstall_docs_cover_release_and_cargo_paths() {
-    let tag = current_release_tag();
+    let tag = support::release_tag();
     for path in ["README.md", "docs/README-ja.md", "docs/README-zh.md"] {
-        let content = read_repo_file(path);
+        let content = support::read_repo_file(path);
 
         assert!(
             !content.contains(
@@ -117,7 +111,7 @@ fn uninstall_docs_cover_release_and_cargo_paths() {
 
 #[test]
 fn japanese_uninstall_docs_explain_unix_and_windows_custom_args() {
-    let content = read_repo_file("docs/README-ja.md");
+    let content = support::read_repo_file("docs/README-ja.md");
 
     assert!(
         !content.contains("同じ場所を `INSTALL_DIR` で渡します。"),
@@ -132,7 +126,7 @@ fn japanese_uninstall_docs_explain_unix_and_windows_custom_args() {
 
 #[test]
 fn chinese_readme_has_uninstall_section() {
-    let content = read_repo_file("docs/README-zh.md");
+    let content = support::read_repo_file("docs/README-zh.md");
 
     assert_contains_all(
         &content,
