@@ -15,11 +15,12 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 ### GitHub Releases (recommended)
 Installs the latest published release, not unreleased `main`.
 
+#### macOS / Linux
 ```bash
-# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.sh | bash
-
-# Windows (PowerShell)
+```
+#### Windows (PowerShell)
+```bash
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1 -UseBasicParsing | iex"
 ```
 
@@ -63,8 +64,8 @@ Common flags:
 
 ### GitHub Releases install
 
+#### macOS / Linux
 ```bash
-# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash
 ```
 
@@ -74,7 +75,7 @@ If you installed to a custom directory, pass the same location again:
 curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | env INSTALL_DIR=/custom/bin bash
 ```
 
-Windows PowerShell:
+#### Windows PowerShell
 
 ```powershell
 powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1 -UseBasicParsing | iex"
