@@ -14,9 +14,9 @@ Last updated: 2026-03-25
 *   Dotfiles are included by default and excluded by `--exclude-dots`.
 *   History collapses by default and expands with `-a`.
 *   Pipe output remains two-column TSV.
-*   `-A/--absolute` changes pipe and TTY time output to absolute local timestamps with timezone.
+*   `-A/--absolute` changes pipe and TTY time output to `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)`.
 *   TTY shows size column.
-*   TTY shows `Skew` and `Current Timezone: ±HHMM`.
+*   TTY shows `Skew` and `Current Timezone: UTC±HH:MM`.
 *   `NO_COLOR` keeps the text contract while removing ANSI escape codes.
 *   JSON includes `size` for regular files and omits it for directories.
 

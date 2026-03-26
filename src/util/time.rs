@@ -74,13 +74,17 @@ pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
 /// Render a local absolute timestamp string for CLI output.
 pub fn absolute_time(mtime: SystemTime) -> String {
     let dt: DateTime<Local> = mtime.into();
-    dt.format("%Y-%m-%d %H:%M:%S %z").to_string()
+    format!(
+        "{} ({})",
+        dt.format("%Y-%m-%d %H:%M:%S"),
+        utc_offset_label(dt)
+    )
 }
 
-/// Return the local timezone offset for the current environment, e.g. `+0900`.
+/// Return the local timezone offset for the current environment, e.g. `UTC+09:00`.
 pub fn current_timezone_offset() -> String {
     let now: DateTime<Local> = Local::now();
-    now.format("%z").to_string()
+    utc_offset_label(now)
 }
 
 /// Truncate time to date for comparisons.
@@ -101,6 +105,10 @@ fn start_of_local_day(now: DateTime<Local>) -> DateTime<Local> {
         chrono::LocalResult::Ambiguous(dt, _) => dt,
         chrono::LocalResult::None => now,
     }
+}
+
+fn utc_offset_label(dt: DateTime<Local>) -> String {
+    format!("UTC{}", dt.format("%:z"))
 }
 
 /// Best-effort label classification. Currently only `Fresh` with a small time window.
@@ -235,22 +243,33 @@ mod tests {
     fn test_absolute_time_format() {
         let ts = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
         let rendered = absolute_time(ts);
-        assert!(rendered.contains('-'));
-        assert!(rendered.contains(':'));
+        assert!(rendered.starts_with("20"));
+        assert!(rendered.contains(" (UTC"));
+        assert!(rendered.ends_with(')'));
+
+        let (_, offset) = rendered.split_once(" (UTC").unwrap();
+        let offset = offset.strip_suffix(')').unwrap();
+        assert_eq!(offset.len(), 6);
         assert!(
-            chrono::DateTime::parse_from_str(&rendered, "%Y-%m-%d %H:%M:%S %z").is_ok()
-                || chrono::DateTime::parse_from_str(&rendered, "%Y-%m-%d %H:%M:%S %:z").is_ok()
+            offset.starts_with('+') || offset.starts_with('-'),
+            "unexpected offset sign: {offset}"
         );
+        assert_eq!(&offset[3..4], ":");
+        assert!(offset[1..3].chars().all(|ch| ch.is_ascii_digit()));
+        assert!(offset[4..6].chars().all(|ch| ch.is_ascii_digit()));
     }
 
     #[test]
     fn test_current_timezone_offset_format() {
         let offset = current_timezone_offset();
-        assert_eq!(offset.len(), 5);
+        assert!(offset.starts_with("UTC"));
+        assert_eq!(offset.len(), 9);
         assert!(
-            offset.starts_with('+') || offset.starts_with('-'),
+            matches!(offset.as_bytes()[3], b'+' | b'-'),
             "unexpected offset sign: {offset}"
         );
-        assert!(offset[1..].chars().all(|ch| ch.is_ascii_digit()));
+        assert_eq!(&offset[6..7], ":");
+        assert!(offset[4..6].chars().all(|ch| ch.is_ascii_digit()));
+        assert!(offset[7..9].chars().all(|ch| ch.is_ascii_digit()));
     }
 }

@@ -65,12 +65,12 @@
 - **History の折り畳み**: `--all` なしの場合は `💤 History (N files hidden)` の1行のみ。`--all` でリスト表示＋必要なら `... and N more items` を付加。
 - **カラー抑止**: 環境変数 `NO_COLOR` 設定時は常に無色。オプションフラグは不要。
 - **強制TTY**: `FTIME_FORCE_TTY` が設定されている場合、stdout がパイプでもTTYスタイルを使う（テストやデモ用途）。
-- **フッター**: `Current Timezone: ±HHMM` を最後に表示する。
+- **フッター**: `Current Timezone: UTC±HH:MM` を最後に表示する。
 
 ## 6. 出力形式（パイプ/非TTY）
 - カラー・アイコン・バケットヘッダーなし。
 - 全件をタブ区切り1行1エントリで出力: `<path>\t<time>`。
-- `-A/--absolute` 指定時は `YYYY-MM-DD HH:MM:SS ±HHMM` を出す。
+- `-A/--absolute` 指定時は `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` を出す。
 - 20件上限制限なし。ヒストリ折り畳みなし。
 - ソート順はTTYと同じ（mtime降順）。
 

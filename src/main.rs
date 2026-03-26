@@ -44,7 +44,7 @@ struct Cli {
     #[arg(short = 'I', long = "icons")]
     use_icons: bool,
 
-    /// Emit absolute local timestamps instead of relative time
+    /// Emit absolute local timestamps with UTC offset instead of relative time
     #[arg(short = 'A', long = "absolute")]
     absolute_time: bool,
 

@@ -18,10 +18,10 @@ v2.0.0 is the first breaking release after the v1.x contract. It promotes the cu
 - Added `--exclude-dots` to opt out of dotfiles.
 
 ## New Behavior
-- Added `-A/--absolute` for timezone-aware absolute timestamps in TTY and pipe output.
+- Added `-A/--absolute` for `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` timestamps in TTY and pipe output.
 - TTY output now includes a size column.
 - Future mtimes are rendered as `+Ns [Skew]` / `+Nm [Skew]`.
-- TTY output appends `Current Timezone: ±HHMM`.
+- TTY output appends `Current Timezone: UTC±HH:MM`.
 - TTY time column uses a bucket-aware heatmap.
 - JSON now includes optional `size` for regular files.
 

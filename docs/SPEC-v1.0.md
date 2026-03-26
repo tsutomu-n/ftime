@@ -38,12 +38,12 @@ Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 *   Time column uses a bucket-aware heatmap.
 *   `Skew` styling takes precedence over bucket heatmap.
 *   History is collapsed by default; `-a/--all` expands it.
-*   A `Current Timezone: ±HHMM` footer is appended.
+*   A `Current Timezone: UTC±HH:MM` footer is appended.
 
 ### Pipe / redirected output
 *   Plain two-column TSV: `<path>\t<time>`.
 *   No colors, headers, icons, bucket grouping, or item limit.
-*   `time` is relative by default, or `YYYY-MM-DD HH:MM:SS ±HHMM` with `-A/--absolute`.
+*   `time` is relative by default, or `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` with `-A/--absolute`.
 
 ### JSON Lines
 *   Triggered by `--json`.

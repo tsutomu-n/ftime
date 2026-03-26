@@ -48,7 +48,7 @@ ftime --json
 よく使うフラグ:
 
 - `-a, --all`: TTY で `History` を展開
-- `-A, --absolute`: 絶対時刻で表示
+- `-A, --absolute`: `2026-03-16 20:49:28 (UTC+09:00)` のような絶対時刻で表示
 - `--exclude-dots`: ドットファイルを除外
 - `--no-ignore`: built-in / `.ftimeignore` を無効化
 

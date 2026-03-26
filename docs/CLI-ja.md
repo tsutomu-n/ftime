@@ -17,7 +17,7 @@ ftime [OPTIONS] [PATH]
 | 短 | 長 | 内容 | 備考 |
 | --- | --- | --- | --- |
 | `-a` | `--all` | TTY で `History` を展開 | 20 件上限は維持 |
-| `-A` | `--absolute` | 時刻を `YYYY-MM-DD HH:MM:SS ±HHMM` で表示 | TTY / 非TTY 共通 |
+| `-A` | `--absolute` | 時刻を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` で表示 | TTY / 非TTY 共通 |
 |  | `--json` | JSON Lines 出力 | デフォルトビルドで有効 |
 |  | `--ext rs,toml` | 拡張子ホワイトリスト | ファイルのみ対象 |
 |  | `--exclude-dots` | dotfiles を除外 | 既定では表示 |
@@ -76,7 +76,7 @@ ftime [OPTIONS] [PATH]
 - `History` は既定で折りたたみ、`-a` で展開
 - 各バケットは最大 20 件まで表示
 - 行形式は `name | size | time`
-- 末尾に `Current Timezone: ±HHMM` を表示
+- 末尾に `Current Timezone: UTC±HH:MM` を表示
 
 ### 非TTY
 

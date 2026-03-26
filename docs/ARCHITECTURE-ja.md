@@ -80,7 +80,7 @@ tests/               # 統合テスト（CLI挙動）
 - バケットごとに空行を挿入し視認性を上げる。
 - Historyはデフォルト折り畳みでノイズを減らす。
 - 行は `name | size | time`。時間列はバケット連動の heatmap で、future mtime は `Skew` として優先強調する。
-- フッターに `Current Timezone: ±HHMM` を付ける。
+- フッターに `Current Timezone: UTC±HH:MM` を付ける。
 
 ### テキストビュー
 - タブ区切り2カラム。機械可読性を最優先。

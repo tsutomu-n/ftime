@@ -18,7 +18,7 @@ ftime [OPTIONS] [PATH]
 |  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
 |  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
 |  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
-| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS ±HHMM` format for TTY and pipe output. |
+| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` format for TTY and pipe output. |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
 |  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |
@@ -28,7 +28,7 @@ ftime [OPTIONS] [PATH]
 
 ## 4. Environment Variables
 *   `NO_COLOR`: If present (including empty string), disable color output. **Always takes precedence** over other coloring decisions.
-*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`. In TTY mode, the time column uses a bucket-aware heatmap, future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`, and a `Current Timezone: ±HHMM` footer is appended.
+*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`. In TTY mode, the time column uses a bucket-aware heatmap, future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`, and a `Current Timezone: UTC±HH:MM` footer is appended.
 *   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 

@@ -152,7 +152,7 @@ fn absolute_time_flag_changes_pipe_output_format() {
     assert_eq!(cols.len(), 2);
     assert!(
         predicate::str::is_match(
-            r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (?:[+-]\d{4}|[+-]\d{2}:\d{2})$"
+            r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)$"
         )
         .unwrap()
         .eval(cols[1])
@@ -179,7 +179,7 @@ fn tty_output_shows_size_column_and_absolute_time() {
     assert!(stdout.contains("|"));
     assert!(
         predicate::str::is_match(
-            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (?:[+-]\d{4}|[+-]\d{2}:\d{2})"
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)"
         )
         .unwrap()
         .eval(&stdout)
@@ -203,7 +203,7 @@ fn tty_output_shows_skew_warning_and_timezone_footer() {
 
     assert!(stdout.contains("[Skew]"));
     assert!(
-        predicate::str::is_match(r"Current Timezone: [+-]\d{4}")
+        predicate::str::is_match(r"Current Timezone: UTC[+-]\d{2}:\d{2}")
             .unwrap()
             .eval(&stdout)
     );

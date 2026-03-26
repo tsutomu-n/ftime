@@ -50,7 +50,7 @@ ftime --json
 Common flags:
 
 - `-a, --all`: expand `History` in TTY mode
-- `-A, --absolute`: show absolute local timestamps
+- `-A, --absolute`: show absolute local timestamps like `2026-03-16 20:49:28 (UTC+09:00)`
 - `--exclude-dots`: hide dotfiles
 - `--no-ignore`: disable built-in and file-based ignore rules
 

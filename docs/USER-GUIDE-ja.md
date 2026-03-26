@@ -60,7 +60,7 @@ ftime --json | jq '.path'
 - `History` はデフォルトで折りたたみです
 - 行は `name | size | time` の形です
 - 未来時刻は `Skew` として強調されます
-- 最後に `Current Timezone: ±HHMM` が付きます
+- 最後に `Current Timezone: UTC±HH:MM` が付きます
 
 最初の確認では、`Active` と `Today` だけで十分なことが多いです。`History` を毎回開くより、必要になった時だけ `-a` を付ける運用のほうが速くなります。
 
