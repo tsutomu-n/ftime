@@ -1,375 +1,126 @@
-# ftime ユーザーガイド（エンドユーザー向け・詳細版）
+# ftime ユーザーガイド
 
-このガイドは、 **「何ができるか」「どう使うか」「出力をどう読むか」** を迷わず理解できる粒度でまとめた手引きです。仕様・設計の詳細は `SPEC-ja.md` と `ARCHITECTURE-ja.md` にあります。
+この文書は、`ftime` を日常作業でどう使い分けるかに絞ったガイドです。インストールは `README-ja.md`、オプションや出力契約の正確な確認は `CLI-ja.md` を参照してください。
 
----
+## 30秒まとめ
 
-## 0. まず知っておくべき要点（30秒まとめ）
-- **非再帰（深さ1）** の最新ファイル一覧ツール。
-- **読み取り専用**、ディレクトリ配下のファイルを **mtime降順** で並べる。
-- **Active / Today / This Week / History** の4バケットで視認性を高める。
-- TTY時は色・見出し・折り畳み・サイズ列・時間列 heatmap、パイプ時は **タブ区切り** の機械向け出力。
-- JSON Lines出力に対応（`--json`）。
+- `ftime` は深さ 1 の最近更新一覧を出す読み取り専用 CLI
+- まず `ftime`、古い履歴も見たければ `ftime -a`
+- ドットファイルを消したければ `--exclude-dots`
+- 機械処理なら `--json` かパイプ出力を使う
 
----
+## 典型的な使い方
 
-## 1. ftime とは
-ftime は **「最近更新したファイルを素早く見つける」** ためのCLIです。  
-特徴は以下のとおりです。
+### 1. 作業を再開するとき
 
-- **非再帰（深さ1）**: 対象ディレクトリ直下のみをスキャン（サブディレクトリは潜らない）。
-- **読み取り専用**: 変更・削除は一切しない。
-- **mtime降順ソート**: 新しい順に並ぶ（同時刻は `name` 昇順）。
-- **4バケット表示**: Active / Today / This Week / History に分類。
-- **出力モード自動切替**: TTYなら人向け、パイプなら機械向け。
-
----
-
-## 2. インストール / セットアップ
-要件: Rust/Cargo 1.92+（edition 2024）
-
-### 2.1 GitHub Releases からインストール（推奨）
-```
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
-
-# Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
-```
-
-- この経路は **最新 release** を入れる。未リリースの `main` は入らない。
-
-### 2.2 crates.io からインストール（公開済みの場合）
-```
-cargo install ftime
-```
-未公開の場合は、**GitHub Releases** または **ソースからビルド** を利用してください。
-
-### 2.3 ソースからビルド / 開発版インストール
-```
-cargo build --release
-```
-生成物: `target/release/ftime`
-
-実行例:
-```
-./target/release/ftime
-```
-
-どのディレクトリでも `ftime` だけで使いたい場合は、次のどちらかを選びます（環境によりPATH設定が必要です）:
-```
-cargo install --path . --force
-hash -r
-# または（Linux/macOS）: ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
-```
-
-- `cargo install --path . --force` は、手元の checkout をそのまま使いたい開発者向けの経路です。
-
-### 2.4 追加ビルドオプション
-- **Nerd Fontアイコン**: `cargo build --release --features icons`
-- **JSON無効ビルド**: `cargo build --release --no-default-features`
-  - JSONはデフォルトで有効（`json` feature）。
-  - `--no-default-features` でビルドすると `--json` オプションは使えない。
-
----
-
-## 3. 基本コマンド
-```
-ftime [OPTIONS] [PATH]
-```
-
-- `PATH` 省略時は **カレントディレクトリ**。
-- 出力のパスは **PATHからの相対パス**。
-
----
-
-## 4. 出力形式の全体像
-
-| モード | いつ起きるか | 形式 | 見出し/色 | 件数制限 | History |
-| --- | --- | --- | --- | --- | --- |
-| TTY | 通常の端末 | 人向け | あり | 1バケット最大20件 | 折り畳み（`-a`で展開） |
-| Pipe/リダイレクト | `|` や `>` のとき | タブ区切り | なし | なし | 常に出力 |
-| JSON Lines | `--json` | 1行1JSON | なし | なし | 常に出力 |
-
-### 4.1 TTY出力（人間向け）
-例:
-```
-🔥 Active Context (< 1h)
-  • src/main.rs | 4 KB | 12 mins ago  ✨ Fresh
-  • docs/CLI.md | 6 KB | 2 hours ago
-
-☕ Today's Session
-  • README.md | 8 KB | 3 hours ago
-
-📅 This Week
-  • tests/cli.rs | 9 KB | 2 days ago
-  ... and 5 more items
-
-💤 History (42 files hidden)
-
-Current Timezone: +0900
-```
-
-ポイント:
-- **バケット順固定**: Active → Today → This Week → History
-- **1バケット最大20件**。超過分は `... and N more items` と表示。
-- **Historyはデフォルト折り畳み**。件数だけ表示。`-a` で展開。
-- **時間列は bucket-aware な色分け**。future mtime は `Skew` として強調。
-- **末尾に `Current Timezone: ±HHMM`** を表示。
-- ディレクトリは末尾 `/` 付きで表示。
-- シンボリックリンクは `name -> target`。
-
-### 4.2 Pipe出力（機械向け）
-- 形式: `<path>\t<time>`
-- **見出しなし / 色なし / 件数制限なし**
-- **全ファイルをmtime降順で出力**
-- `-A` 指定時は `time` が `YYYY-MM-DD HH:MM:SS ±HHMM` になる
-
-例:
-```
-src/main.rs\t12 mins ago
-docs/CLI.md\t2 hours ago
-README.md\t3 hours ago
-```
-
-### 4.3 JSON Lines出力
-`--json` 指定時のみ有効（json feature ビルド時）。
-
-1行1オブジェクト:
-```
-{"path":"src/main.rs","bucket":"active","mtime":"2026-01-10T05:12:20.214004873+00:00","relative_time":"just now","is_dir":false,"is_symlink":false,"label":"fresh"}
-```
-
-フィールド:
-- `path`: PATHからの相対パス
-- `bucket`: `active` / `today` / `this_week` / `history`
-- `mtime`: **RFC3339 (UTC)**
-- `relative_time`: 人間向け相対時間（下記参照）
-- `is_dir`: ディレクトリかどうか
-- `is_symlink`: シンボリックリンクかどうか
-- `symlink_target`: ターゲットが取得できた場合のみ出力
-- `label`: `fresh` のみ（該当時のみ出力）
-
-順序:
-- 出力順は **Active → Today → This Week → History** の順でバケットごと。
-- 各バケット内は mtime降順 / name昇順。
-
----
-
-## 5. 時間バケットの定義（厳密）
-
-| バケット | 条件 |
-| --- | --- |
-| Active | `now - mtime < 1時間` または `mtime` が未来で `duration_since` が失敗 |
-| Today | ローカル時刻の **当日0:00以降** |
-| This Week | `now - mtime < 7日` かつ Today ではない |
-| History | 上記以外 |
-
-補足:
-- **ローカルタイムゾーン依存**。`TZ` の設定で境界が変わる。
-- DST（サマータイム）切り替えはローカル時刻境界に影響する。
-
----
-
-## 6. relative_time の出力ルール
-
-| 経過時間 | 表示 |
-| --- | --- |
-| `mtime` が未来 | `+Ns [Skew]` / `+Nm [Skew]` |
-| < 60秒 | `just now` |
-| = 1分 | `1 min ago` |
-| 2–59分 | `N mins ago` |
-| = 1時間 | `1 hour ago` |
-| 2–23時間 | `N hours ago` |
-| = 1日 | `Yesterday` |
-| < 7日 | `N days ago` |
-| >= 7日 | `YYYY-MM-DD`（ローカル日付） |
-
----
-
-## 7. ラベル（Fresh）
-- **5分以内** の変更は `✨ Fresh` が付く。
-- `--no-labels` で無効化可能。
-- JSONでは `label: "fresh"` を出力。
-- 未来時刻のファイルは Fresh にならない。
-
----
-
-## 8. オプション詳細
-
-| オプション | 内容 | 使いどころ |
-| --- | --- | --- |
-| `-a, --all` | Historyを展開 | 7日以上前も一覧したい |
-| `-A, --absolute` | 絶対時刻を表示（`YYYY-MM-DD HH:MM:SS ±HHMM`） | 相対時間ではなく時刻そのものを確認したい |
-| `--exclude-dots` | ドットファイルを除外 | 通常ファイルだけを見たい |
-| `--no-ignore` | built-in / ignoreファイルを無効化 | `.DS_Store` なども含めたい |
-| `--no-labels` | Freshラベルを無効化 | 出力を簡潔にしたい |
-| `--ext rs,toml` | 拡張子フィルタ（ファイルのみ） | 特定拡張子だけ見たい |
-| `-I, --icons` | Nerd Fontアイコン | 文字アイコンに切替 |
-| `--json` | JSON Lines出力 | 機械処理したい |
-
-`--icons` 補足:
-- `icons` feature でビルドされていない場合、指定しても **絵文字アイコンにフォールバック**。
-
----
-
-## 9. ignore ルール（重要）
-
-### 9.1 built-in ignore
-- デフォルトで **`.DS_Store` と `Thumbs.db` を除外**。
-- dotfile 自体はデフォルトで表示される。
-- `--no-ignore` を付けると **built-in も含めて無効化**。
-
-### 9.2 グローバル ignore（`~/.ftimeignore`）
-- 1行1パターン。
-- `#` から始まる行と空行は無視。
-- `FTIME_IGNORE` でファイルパスを上書き可能。
-
-### 9.3 ローカル ignore（`./.ftimeignore`）
-- 対象ディレクトリ直下の `.ftimeignore` を読み込む。
-- フォーマットはグローバルと同じ。
-
-### 9.4 パターン仕様（簡易グロブ）
-- `*` = 0文字以上
-- `?` = 1文字
-- `\\` エスケープや `[]` 文字クラスはなし
-- `/` を含むパターンは **相対パス** にマッチ、それ以外は **ファイル名** にマッチ
-
----
-
-## 10. 環境変数
-
-| 変数 | 内容 |
-| --- | --- |
-| `NO_COLOR` | 色出力を無効化（空文字でも無効扱い） |
-| `FTIME_FORCE_TTY` | パイプ時でもTTY書式を強制（Skew / timezone footer / 時間色の確認にも使える） |
-| `FTIME_IGNORE` | グローバル ignore ファイルのパスを上書き |
-| `TZ` | タイムゾーンを明示（ローカル境界確認用） |
-
----
-
-## 11. 対象範囲とソート
-- **非再帰（深さ1）** のみ。
-- **mtime降順**、同時刻は **name昇順**。
-- `--ext` 指定時:
-  - **ファイルのみ**が対象。
-  - ディレクトリ・シンボリックリンクは除外。
-
----
-
-## 12. ディレクトリ / シンボリックリンクの扱い
-- ディレクトリ:
-  - TTY: 末尾 `/` を付与
-  - Pipe/JSON: パスのみ
-- シンボリックリンク:
-  - TTY: `name -> target` 表示
-  - `read_link` 失敗時は `<unresolved>`
-  - 破損リンクでも `read_link` が成功すれば target は表示される
-  - Pipe: パスのみ
-  - JSON: `is_symlink=true`、`symlink_target` は取得できた時のみ出力
-
----
-
-## 13. エラーと終了コード
-
-| 状況 | 出力 | 終了コード |
-| --- | --- | --- |
-| PATHがファイル | エラーメッセージ | 1 |
-| ディレクトリ読み取り失敗 | エラーメッセージ | 1 |
-| 該当ファイルなし | `No recent files found`（TTY） / 空出力（Pipe/JSON） | 0 |
-
----
-
-## 14. 代表的ユースケース
-
-### 14.1 朝イチで作業再開
-```
+```bash
 ftime
 ```
-Active / Today で「直近の作業ファイル」を即確認。
 
-### 14.2 昨日以前も含めて確認
-```
+最初に見るべきコマンドです。`Active` と `Today` を中心に、直近で触ったファイルを短時間で思い出せます。`History` は折りたたまれるので、古いノイズを最初から見なくて済みます。
+
+### 2. 昨日以前も含めて俯瞰したいとき
+
+```bash
 ftime -a
 ```
-Historyも含めて一覧。
 
-### 14.3 dotfileを除外する
-```
+`History` を展開して確認したい場面です。TTY では各バケット 20 件上限のままなので、全件が必要ならパイプ出力に切り替えます。
+
+### 3. dotfiles を一時的に外したいとき
+
+```bash
 ftime --exclude-dots
 ```
-通常ファイルだけを見たいときに有効。
 
-### 14.4 absolute time で確認
-```
-ftime -A
-```
-TTY / Pipe ともに timezone 付き絶対時刻に切り替える。
+`.env`、`.gitignore`、設定ファイルが多いディレクトリでノイズを減らしたいときに向いています。逆に設定ファイルも追いたいなら、何も付けないのが基本です。
 
-### 14.5 拡張子フィルタ
-```
+### 4. 特定の拡張子だけ見たいとき
+
+```bash
 ftime --ext rs,toml
 ```
-Rustや設定ファイルだけ抽出。
 
-### 14.6 パイプ連携
+コードや設定だけを見たい場面向けです。`--ext` はファイルだけに効き、ディレクトリは結果から落ちます。
+
+### 5. 他のツールに渡したいとき
+
+```bash
+ftime | cut -f1
+ftime --json | jq '.path'
 ```
-ftime | head -n 10
+
+テキスト出力は `path<TAB>time`、`--json` は 1 行 1 JSON です。`fzf`、`jq`、シェルスクリプトにそのまま渡せます。
+
+## 出力の読み方
+
+### TTY 出力
+
+- `Active / Today / This Week / History` の順で出ます
+- `History` はデフォルトで折りたたみです
+- 行は `name | size | time` の形です
+- 未来時刻は `Skew` として強調されます
+- 最後に `Current Timezone: ±HHMM` が付きます
+
+最初の確認では、`Active` と `Today` だけで十分なことが多いです。`History` を毎回開くより、必要になった時だけ `-a` を付ける運用のほうが速くなります。
+
+### パイプ / リダイレクト出力
+
+- バケット見出しは消えます
+- 20 件上限はなくなり、全件出ます
+- 形式は `path<TAB>time` です
+
+一覧を加工したいときは、TTY ではなくこちらを基準に考えると扱いやすいです。
+
+### JSON Lines
+
+- `--json` を付けると 1 行 1 JSON になります
+- 主なキーは `path`, `bucket`, `mtime`, `relative_time` です
+- 人が読むというより、ツール連携向けです
+
+出力キーの正確な契約は `CLI-ja.md` と `CLI.md` を見てください。
+
+## フィルタの使い分け
+
+### `--exclude-dots`
+dotfiles を見たくない時だけ使います。常用するより、必要なときだけ付けるほうが意図が明確です。
+
+### `--ext`
+「対象を絞る」ためのフラグです。たとえば Rust と TOML だけ見たい時に有効です。ディレクトリを含めて俯瞰したい場面では向きません。
+
+### ignore ルール
+`.DS_Store` と `Thumbs.db` は built-in で除外されます。さらに `~/.ftimeignore`、`<PATH>/.ftimeignore`、`FTIME_IGNORE` を使って自分のノイズを消せます。
+
+### `--no-ignore`
+ignore が効きすぎているか確認したいときの切り戻し用です。普段使いではなく、挙動確認のためのフラグとして考えると分かりやすいです。
+
+## よくある組み合わせ
+
+```bash
+ftime -a
+ftime --exclude-dots --ext rs,toml
+NO_COLOR=1 ftime
+FTIME_FORCE_TTY=1 ftime
 ```
-最初の10件だけ確認。
 
-### 14.7 JSONで収集
-```
-ftime --json | head -n 5
-```
-JSONで取得し、別処理へ。
+- `ftime -a`: 履歴まで含めてざっと把握
+- `ftime --exclude-dots --ext rs,toml`: ふだん触るコードだけ確認
+- `NO_COLOR=1 ftime`: ログに貼りたいとき
+- `FTIME_FORCE_TTY=1 ftime`: TTY 表示の確認やスナップショット用
 
----
+## 困ったときの見方
 
-## 15. トラブルシュート
+### 何も出ない
+空ディレクトリか、`--exclude-dots` / `--ext` / ignore で全件落ちている可能性があります。まずはフラグを外して再実行します。
 
-| 症状 | 原因/対処 |
-| --- | --- |
-| 何も出ない | 空ディレクトリ or 直下に対象ファイルがない |
-| Historyが出ない | `-a` を付ける |
-| 色が出ない | `NO_COLOR` が設定されている |
-| Todayの境界がずれる | `TZ` が想定と違う |
-| パス処理で区切りが崩れる | パイプはタブ区切り、`cut -f1` などで処理 |
+### 未来時刻が出る
+`+Ns [Skew]` や `+Nm [Skew]` は、ファイルの mtime が現在より未来にある状態です。システム時計や同期ズレの確認ポイントです。
 
----
+### パスに対してエラーになる
+`ftime` はディレクトリを対象にするツールです。ファイルを直接渡すと終了コード 1 で失敗します。
 
-## 16. FAQ
+## 次に読む文書
 
-**Q: 再帰しない理由は？**  
-A: 深さ1で高速・シンプルに使えるように設計。
-
-**Q: 20件上限を変えられる？**  
-A: 現行は固定。全件はパイプ/JSONで取得。
-
-**Q: 未来時刻のファイルは？**  
-A: Activeに入る（未来時刻は「直近」とみなす）。
-
-**Q: JSONのmtimeはなぜUTC？**  
-A: 互換性と機械処理の安定性を優先。
-
----
-
-## 17. コマンド早見表
-
-| 目的 | コマンド |
-| --- | --- |
-| 直近を見る | `ftime` |
-| Historyまで全部 | `ftime -a` |
-| dotfiles を除外 | `ftime --exclude-dots` |
-| 絶対時刻で見る | `ftime -A` |
-| 拡張子フィルタ | `ftime --ext rs,toml` |
-| パイプ処理 | `ftime | head -n 10` |
-| JSON取得 | `ftime --json` |
-
----
-
-## 18. 参考リンク
-- 仕様: `SPEC-ja.md`
-- 設計: `ARCHITECTURE-ja.md`
-- CLI詳細: `CLI-ja.md`
-- テスト計画: `TESTPLAN-ja.md`
+- 最初の入口に戻る: `README-ja.md`
+- フラグや出力契約を確認する: `CLI-ja.md`
+- どの文書を読むべきか迷ったら: `ftime-overview-ja.md`

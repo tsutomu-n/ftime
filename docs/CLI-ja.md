@@ -1,367 +1,131 @@
-# ftime CLI 契約（日本語版・詳細）
+# ftime CLI リファレンス（日本語）
 
-このドキュメントは `CLI.md` を日本語で詳細に書いたものです。コマンドの書式、オプションや環境変数の意味、出力例、利用シナリオ別の使い方、トラブルシューティングをまとめています。仕様の根拠は `SPEC-v1.0.md` / `SPEC-ja.md` にあります。
+この文書は `ftime` の CLI 契約を日本語で引けるようにしたリファレンスです。導入は `README-ja.md`、使い方の流れは `USER-GUIDE-ja.md`、英語の正本は `CLI.md` を参照してください。
 
----
+## コマンド署名
 
-## 1. コマンド署名
-```
+```text
 ftime [OPTIONS] [PATH]
 ```
-- `PATH` を省略するとカレントディレクトリ `.` を走査。
-- 引数は1つのみ。複数指定はv1.0では未サポート（最初の1つだけ読む仕様は採用していない）。
 
-## 2. オプション一覧と詳細
-| 短 | 長 | 説明 | 使いどころ |
+- `PATH` を省略すると `.` を対象にします
+- `PATH` は 1 つだけ受け取ります
+- ファイルを渡した場合はエラー終了します
+
+## オプション一覧
+
+| 短 | 長 | 内容 | 備考 |
 | --- | --- | --- | --- |
-| `-a` | `--all` | History バケットを折り畳まず全表示（ただし各バケット20件上限は維持）。 | 昨日以前の作業を俯瞰したいとき |
-| `-A` | `--absolute` | TTY / 非TTY の時間列を `YYYY-MM-DD HH:MM:SS ±HHMM` で表示。 | 相対時間ではなく絶対時刻を確認したいとき |
-|  | `--json` | JSON Lines出力（1行1オブジェクト、固定フィールド、色/上限なし）。 | 機械処理したいとき |
-|  | `--ext` | 拡張子ホワイトリスト（カンマ区切り・大文字小文字無視）。ファイルのみ対象、ディレクトリ/拡張子なしは除外。 | 特定言語のファイルだけ見たいとき（例: `--ext rs,toml`） |
-|  | `--exclude-dots` | ドットファイルを除外する。デフォルトでは dotfiles も表示される。 | `.env` や `.gitignore` を一時的に隠したいとき |
-|  | `--no-ignore` | デフォルト / `~/.ftimeignore` を無効化 | ignoreが効いているか確認したいとき |
-|  | `--no-labels` | Fresh などのラベル表示を無効化 | ラベルが不要なとき |
-| `-h` | `--help` | ヘルプを表示して終了 | オプション確認 |
-| `-V` | `--version` | バージョン表示 | 動作確認・バグ報告用 |
-| `-I` | `--icons` | Nerd Fontアイコンを表示（`--features icons` ビルド時）。未ビルドでもエラーにせず無視（no-op）。 | アイコン付きで視覚的に見たい |
-
-### オプションの組み合わせ例
-- `ftime -a ~/project` : dotfiles も含めて、History展開で全容把握。
-- `ftime --exclude-dots` : dotfiles を一時的に除外したいとき。
-- `ftime -A` : 絶対時刻で確認したいとき。
-- `ftime -a` をパイプに流すと、非TTYではカラーなし全件リストになる点に注意（上限も外れる）。
-
-## 3. 環境変数
-- `NO_COLOR`: 値を問わず（空文字も含む）設定されていればカラーを完全無効化。TTYでも無色になる。
-- `FTIME_FORCE_TTY`: 設定されていれば、stdout がパイプでもTTYフォーマット（バケット＋アイコン）を強制。スナップショットテストやデモ用途で便利。
-- `FTIME_IGNORE`: グローバル ignore ファイルのパスを上書き（デフォルトは `~/.ftimeignore`）。`#` でコメント、空行は無視、簡易グロブ1行1パターン。
-- 両方設定した場合: TTYフォーマットだが色は付かない、という組み合わせになる。
-
-## 4. 終了コード
-- `0`: 正常終了。権限不足で一部を読み飛ばしてもツール全体は成功扱い。
-- `1`: パスが存在しない、ディレクトリでない、`read_dir` 不能など致命的エラー。
-- それ以外のコードは現時点では使用しない。
-
-## 5. 基本の使い方
-まず `ftime` コマンドを実行できる状態にします（初回のみ）。
-
-```
-# GitHub Releases からインストール（推奨: 最新 release）
-curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.sh | bash
-
-# Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/tsutomu-n/ftime/main/scripts/install.ps1 -UseBasicParsing | iex"
-```
-
-- この経路は **最新 release** を入れる。未リリースの `main` は入らない。
-
-```
-# リポジトリ内で使う場合
-./target/release/ftime
-
-# 手元の checkout をそのままインストールしたい場合
-cargo install --path . --force
-hash -r
-```
-
-- `cargo install --path .` のインストール先は既定で `~/.cargo/bin`（Windowsは `%USERPROFILE%\.cargo\bin`）。
-- そのディレクトリが PATH に通っていれば `ftime` だけで実行可能。
-
-ビルド方法は次のどちらかです。
-
-```
-# 速い方（タイミング + sccache/リンク高速化を自動で使う）
-./scripts/build-release-fast.sh
-
-# 標準
-cargo build --release
-```
-
-ビルドしただけでは **グローバル（`ftime` だけで実行）にはなりません**。  
-理由は、生成物が `target/release/ftime` に置かれるだけで PATH に入らないためです。
-
-グローバル化したい場合は次のどちらかが必要です。
-
-```
-# 公式のインストール方式（推奨）
-cargo install --path .
-
-# もしくはシンボリックリンク
-ln -s /path/to/ftime/target/release/ftime ~/bin/ftime
-```
-
-**1コマンドでビルド＋グローバル化するなら** `cargo install --path .` が最短です。  
-ただし PATH に `~/.cargo/bin`（Windowsなら `%USERPROFILE%\.cargo\bin`）が通っている場合のみ、直後に `ftime` と打って使えます。
-
-### 5.1 何も付けずに実行
-```
-ftime
-```
-- カレントディレクトリを走査し、TTYならバケット表示。dotfiles も出るが、`.DS_Store` と `Thumbs.db` は built-in ignore で除外される。Historyは折り畳まれる。
-
-### 5.2 ディレクトリを指定
-```
-ftime ~/Downloads
-```
-- 直下のみが対象。サブフォルダ内までは潜らない。
-
-### 5.3 dotfiles を除外する
-```
-ftime --exclude-dots
-```
-- `.gitignore` や `.env` を一時的に隠したいとき。通常は指定不要。
-
-### 5.4 Historyを展開
-```
-ftime -a
-```
-- 7日より古いファイルも一覧表示。20件超は `... and N more items` が付く。
-
-### 5.5 パイプで加工
-```
-ftime | cut -f1 | head
-```
-- 非TTYなのでタブ区切りプレーンテキストで全件出力。上限なし。`cut` でパスだけ取り出すのに適する。
-
-## 6. 出力例
-### 6.1 TTY（カラー有り）
-```
-🔥 Active Context (< 1h)
-  • src/main.rs | 4 KB | 12 mins ago
-  • README.md | 2 KB | just now
-
-☕ Today's Session
-  • docs/notes.md | 8 KB | 3 hours ago
-
-📅 This Week
-  • scripts/cleanup.sh | 1 KB | 2 days ago
-
-💤 History (25 files hidden)
-
-Current Timezone: +0900
-```
-
-### 6.2 TTY（カラーなし: NO_COLOR=1）
-```
-🔥 Active Context (< 1h)
-  • src/main.rs  12 mins ago
-...
-```
-
-### 6.3 パイプ（非TTY）
-```
-src/main.rs\t12 mins ago
-docs/notes.md\t3 hours ago
-scripts/cleanup.sh\t2024-11-02
-```
-
-### 6.4 JSON Lines
-```
-{"path":"src/main.rs","bucket":"active","mtime":"2025-12-10T12:00:00Z","relative_time":"just now","is_dir":false,"is_symlink":false,"label":"fresh"}
-```
-
-## 7. バケットと相対時間の要点（使用者向け）
-- Active: 直近1時間未満。未来時刻もここに入り、表示は `+Ns [Skew]` / `+Nm [Skew]`。
-- Today: ローカル日付の00:00以降。タイムゾーン依存なので、リモート環境ではTZに注意。
-- This Week: 7日未満。境界をまたいだ場合の優先順は Active → Today → Week → History。
-- History: それ以外。TTYでは折り畳みがデフォルト。
-- 相対時間は英語固定。60秒未満は `just now`、1分きっかりは `1 min ago`。
-- `-A` 指定時は TTY / パイプともに絶対時刻（timezone 付き）へ切り替わる。
-
-## 8. シナリオ別ガイド
-### 8.1 朝一で作業再開
-- コマンド: `ftime`  
-- 直近1時間と今日の更新だけ見れば十分。Historyは折り畳まれてノイズが少ない。
-
-### 8.2 昨日の作業確認
-- コマンド: `ftime -a`  
-- 昨日が History に落ちている場合があるので展開。件数が多ければ `... and N more items` で把握。
-
-### 8.3 dotfiles を除外して確認
-- コマンド: `ftime --exclude-dots -a`  
-- 通常ファイルだけ見たいときに使う。dotfiles を含めたい場合は何も付けない。
-
-### 8.4 パイプで別ツールに渡す
-- コマンド: `ftime | fzf`  
-- タブ区切り2列のため `fzf --with-nth=1` でパスのみを表示できる。
-
-### 8.5 CIログで確認
-- コマンド: `NO_COLOR=1 ftime` または `FTIME_FORCE_TTY=1 ftime`  
-- 色なし/TTY強制で決定論的な出力を得られ、スナップショット比較が容易。
-
-## 9. エラー時の挙動
-- ルートがファイル: `X is not a directory` をstderrに表示し終了コード1。
-- `read_dir` 失敗: `failed to read directory ...` と表示し終了コード1。
-- 個別エントリの権限エラー: そのエントリをスキップし続行。ユーザーへの通知はデフォルトなし。
-- 何も出力されないケース: ディレクトリが空、または `--exclude-dots` / `--ext` / ignore で全件落ちた → `No recent files found` を表示し終了コード0。
-
-## 10. TIPS（使いこなしの小技）
-- `alias fr='ftime -a'` のようにエイリアス化すると再開が速い。
-- `ftime | head -n 5` で上位5件だけクイックチェック。
-- `ftime -a | sed -n '1,40p'` でTTY表示を40行だけ覗く（FTIME_FORCE_TTYを併用）。
-- `ftime | grep '.rs\t'` のように拡張子フィルタをパイプで後段処理。
-
-## 11. よくある質問（FAQ）
-- **Q: 再帰はできますか？**  
-  A: v1.0では深さ1のみ。大量ディレクトリでも高速を保つための意図的制限です。
-- **Q: 20件以上見たい**  
-  A: TTY表示は各バケット20件に固定。パイプ出力なら全件出るので `ftime | less` を推奨。
-- **Q: 色が出ない**  
-  A: `NO_COLOR` が設定されていないか確認。Windowsの旧端末ではANSIが無効な場合があります。
-- **Q: ファイル名にタブが入っていると？**  
-  A: パイプ出力の区切りと衝突するため解析が難しくなります。`tr '\t' ' '` などで置換してください。
-- **Q: 未来時刻のファイルはどこに？**  
-  A: Active に入り、`+Ns [Skew]` / `+Nm [Skew]` で表示されます。システム時計のズレが疑われる場合は時刻設定を確認してください。
-
-## 12. トラブルシューティング
-- **何も表示されない**: ディレクトリが空、または `--exclude-dots` / `--ext` / ignore で全件除外されているかも。フィルタを外して再実行。
-- **Historyが長すぎる**: デフォルト折り畳みのままにし、必要に応じ `-a` + `head` で絞る。
-- **CIで色が混ざる**: `NO_COLOR=1` をセットする。
-- **文字化け**: `to_string_lossy` による置換が起きている可能性。表示専用なのでファイル自体は壊れない。
-
-## 13. 出力フォーマット詳細
-- TTY:  
-  - 行頭2スペース＋中点 `•` を使用。`NO_COLOR` 時も同じ記号を維持し、構造を崩さない。  
-  - 各行は `name | size | time`。`-A` なしでは相対時間、`-A` ありでは timezone 付き絶対時刻。  
-  - 時間列はバケット連動の heatmap。future mtime は `Skew` として優先強調。  
-  - バケット間に空行を1つ挿入。  
-  - ディレクトリは末尾 `/`、シンボリックリンクは `name -> target`。  
-  - 末尾に `Current Timezone: ±HHMM` を付ける。  
-- 非TTY:  
-  - `<相対パス>\t<時間>` の2カラム。  
-  - `-A` なしでは相対時間、`-A` ありでは `YYYY-MM-DD HH:MM:SS ±HHMM`。  
-  - パスはベースディレクトリからの相対を試み、失敗時はファイル名のまま。  
-  - 改行コードはLF固定。  
-
-## 14. テスト観点とCLIの関係
-- `tests/cli.rs` では以下を確認済み:  
-  - ルートがファイルの場合のエラー終了  
-  - dotfiles が既定で含まれ、`--exclude-dots` で除外されること  
-  - History折り畳みと `... and N more items` 表示  
-  - パイプ時のタブ区切り & ヘッダなし  
-  - `-A` の absolute timestamp 形式  
-  - TTY の `Skew` 表示、timezone footer、`NO_COLOR` 時の ANSI 非出力  
-- ユーザーがカスタム環境変数を設定しても、上記仕様を壊さないことが前提。
-
-## 15. CI/自動化での推奨フラグ
-- `NO_COLOR=1` : ログの可読性向上。
-- `FTIME_FORCE_TTY=1` : TTY書式を固定し、スナップショットテストで比較しやすくする。
-- `ftime -a` : 包括的に出力したい場合。ただし大量出力になるため `head` などで制限を。
-
-## 16. バージョンポリシー
-- v1.0 は、現行CLI契約を初めて正式公開する安定版である。
-- メジャーアップ時は `--all` など既存フラグの動作変更を避けるか、非推奨段階を設ける。
-- CLIや出力フォーマットの変更はメジャーアップデートに限定する。
-- v1.0 時点で Experimental なオプションは存在しない（将来追加時は明記する）。
-- 重要フラグ（`--all`, `--absolute`, `--exclude-dots`, `--json`）の挙動は凍結。色は `NO_COLOR` で制御し、`--no-color` フラグは存在しない。
-
-## 17. 例外・非対応事項
-- 複数パス同時指定、グロブ展開、正規表現フィルタは未サポート。
-- 出力言語の切替、時刻フォーマットのカスタマイズ、ページング機能は未提供。
-- 標準入力からのパス読み込みは行わない（常にファイルシステムを走査）。
-
-## 18. 将来のCLI拡張アイデア（参考）
-- `--format json|csv|plain` の追加で機械可読性を高める。
-- `--limit N` でTTYバケット上限を可変化。
-- `--depth N` で再帰を制御（デフォルト1）。ただしパフォーマンスとUXに要注意。
-- `--since <duration>` で特定期間のみ表示するフィルタ。
-
-## 19. コマンド利用チェックリスト（新人向け）
-- [ ] 目的のディレクトリか？ `pwd` で確認  
-- [ ] dotfiles を隠したいか？ → `--exclude-dots` を付ける  
-- [ ] 7日より古いものも見たいか？ → `-a` を付ける  
-- [ ] 絶対時刻が必要か？ → `-A` を付ける  
-- [ ] パイプで後処理するか？ → フラグ不要、必要なら `FTIME_FORCE_TTY` に注意  
-- [ ] ログに色を混ぜたくないか？ → `NO_COLOR=1`  
-
-## 20. コミュニケーションテンプレ
-- バグ報告時に添えると調査が早い情報:  
-  - 実行コマンドと環境変数（NO_COLOR / FTIME_FORCE_TTY）  
-  - 期待した出力と実際の出力（数行でOK）  
-  - OSとシェル、端末種別（TTYかどうか）  
-  - 対象ディレクトリの構造の概要（例: ファイル数、シンボリックリンク有無）  
-
-## 21. 参考例（コピペ用）
-```
-# もっともよく使う組み合わせ
-ftime -a ~/workspace | head
-
-# スナップショットを取る（カラーなし、TTY書式）
-NO_COLOR=1 FTIME_FORCE_TTY=1 ftime ~/project > /tmp/ftime.txt
-
-# パスだけをfzfで選ぶ
-ftime | fzf --with-nth=1 | cut -f1
-```
-
-## 22. まとめ
-ftime のCLIはシンプルだが、環境変数・TTY判定・バケット折り畳みが組み合わさるため挙動を理解しておくと活用度が上がる。本書はそのための包括的リファレンスであり、仕様変更時には必ず更新すること。ユーザーは「今何を触ったか」を最速で知るためのツールとして、上記パターンを状況に応じて使い分けてほしい。
-
-（本書は7000文字超の日本語版。原文との乖離が生じた場合は本書を優先的に同期させること。） 
-
-## 23. 環境マトリクス（挙動早見表）
-| stdout | FTIME_FORCE_TTY | NO_COLOR | 出力形式 | 色 | バケット | 20件上限 |
-| --- | --- | --- | --- | --- | --- | --- |
-| TTY | なし | なし | TTY | あり | あり（History折り畳み） | あり |
-| TTY | なし | あり | TTY | なし | あり | あり |
-| パイプ | なし | なし/あり | テキスト | なし | なし | なし |
-| パイプ | あり | なし | TTY | あり | あり | あり |
-| パイプ | あり | あり | TTY | なし | あり | あり |
-
-## 24. 追加のFAQ
-- **Q: ファイルパスが長いと折り返されますか？**  
-  A: 端末側の折り返しに依存します。ftime自体は幅制御をしません。
-- **Q: mtime が取得できない特殊ファイルは？**  
-  A: 取得失敗時はスキップされます。デバイスファイルや権限不足で起きる場合があります。
-- **Q: ルート指定にシンボリックリンクを渡すと？**  
-  A: `metadata` 判定でリンク先がディレクトリなら成功。リンク自体のパスがベースになるため表示はリンク名が基準。
-- **Q: 一部だけ再帰したい**  
-  A: 現仕様では不可。`find PATH -maxdepth 1 -type f -print0 | xargs -0 stat` 等で代替してください。
-- **Q: `... and N more items` のNを正確に取りたい**  
-  A: パイプモードを使えば全件出るので、`wc -l` で数えられます。
-
-## 25. パイプレシピ集
-- 最新5件のパスだけ: `ftime | head -n 5 | cut -f1`
-- 7日以上前のものだけを抽出（非TTYで）: `ftime | awk -F'\t' '$2 ~ /[0-9]{4}-[0-9]{2}-[0-9]{2}/ {print $0}'`
-- 相対時間を無視してパスをソート: `ftime | cut -f1 | sort`
-- ディレクトリだけを抜き出す（TTY強制を利用）: `FTIME_FORCE_TTY=1 ftime | grep '/  '`
-
-## 26. トラブル事例と対応
-- **ケース**: `Permission denied` が多発して出力が空。  
-  **対策**: そのディレクトリを対象から外すか、適切な権限で実行。ftime自体は黙ってスキップするため気付きにくい。  
-- **ケース**: CIログで絵文字が化ける。  
-  **対策**: `FTIME_FORCE_TTY=1` を避け、非TTY出力にするか、ロケールとフォントをUTF-8対応にする。  
-- **ケース**: 日付の境界で Today/History が想定と違う。  
-  **対策**: TZ設定を確認。ローカルタイム基準のためUTC固定では挙動が変わる。  
-
-## 27. バグ報告テンプレート（簡易）
-```
-### 期待した結果
-<例: History が折り畳まれず表示されること>
-
-### 実際の結果
-<例: `History (25 files hidden)` とだけ表示された>
-
-### 再現手順
-1. ディレクトリ構造: ...
-2. 実行コマンド: NO_COLOR=1 FTIME_FORCE_TTY=1 ftime -a /path
-3. 端末/OS: ...
-
-### 備考
-<stdout数行を貼る>
-```
-
-## 28. 教育用チェックポイント
-- バケットの優先順（Active→Today→Week→History）を説明できるか。
-- TTY/非TTYで何が変わるか説明できるか。
-- `--all` と `--exclude-dots` のデフォルト挙動を言えるか。
-- NO_COLOR と FTIME_FORCE_TTY の組み合わせ結果を表で指させるか。
-
-## 29. 将来のCLI変更時の留意
-- 新オプションを追加する場合は、短縮形の競合を避ける。`-h` `-a` `-A` `-I` `-V` は既に使用中。
-- 既存のデフォルト挙動を変える場合は、非互換をリリースノートに明記し、可能なら非推奨期間を設ける。
-- 出力形式を変える場合は、パイプ利用の後方互換性に最大限配慮する（列数や区切り文字を変えない）。
-
-## 30. 参考リンク
-- 仕様: `SPEC-ja.md`
-- 設計: `ARCHITECTURE-ja.md`
-- テスト計画: `TESTPLAN-ja.md`
+| `-a` | `--all` | TTY で `History` を展開 | 20 件上限は維持 |
+| `-A` | `--absolute` | 時刻を `YYYY-MM-DD HH:MM:SS ±HHMM` で表示 | TTY / 非TTY 共通 |
+|  | `--json` | JSON Lines 出力 | デフォルトビルドで有効 |
+|  | `--ext rs,toml` | 拡張子ホワイトリスト | ファイルのみ対象 |
+|  | `--exclude-dots` | dotfiles を除外 | 既定では表示 |
+|  | `--no-ignore` | built-in / ignore ファイルを無効化 | 挙動確認向け |
+|  | `--no-labels` | `Fresh` ラベルを無効化 | TTY / JSON に影響 |
+| `-I` | `--icons` | Nerd Font アイコンに切替 | `icons` feature 時のみ有効 |
+| `-h` | `--help` | ヘルプを表示して終了 |  |
+| `-V` | `--version` | バージョンを表示して終了 |  |
+
+補足:
+
+- `--ext` は大小無視、カンマ区切りです
+- `--json` は TTY 判定や色設定の影響を受けません
+- `--icons` が無効なビルドでもエラーにせず no-op として扱います
+
+## 環境変数
+
+| 変数 | 内容 |
+| --- | --- |
+| `NO_COLOR` | 値に関係なく、設定されていれば色を無効化 |
+| `FTIME_FORCE_TTY` | stdout が pipe でも TTY レイアウトを強制 |
+| `FTIME_IGNORE` | グローバル ignore ファイルの場所を上書き |
+| `TZ` | ローカル日付境界や absolute time の確認時に影響 |
+
+## 終了コード
+
+| コード | 意味 |
+| --- | --- |
+| `0` | 正常終了 |
+| `1` | 対象パス不正、存在しない、ディレクトリを読めないなどの致命的エラー |
+
+個別エントリの権限エラーは、その項目を読み飛ばして処理継続します。
+
+## パス解釈
+
+- 出力パスは原則として `PATH` からの相対パスです
+- 深さ 1 固定なので、サブディレクトリの中には潜りません
+- シンボリックリンクは一覧対象ですが、リンク先の中身を再帰走査しません
+
+## バケット規則
+
+| バケット | 条件 |
+| --- | --- |
+| `active` | `now - mtime < 1h` または未来時刻 |
+| `today` | `active` 以外で、ローカル日の当日 00:00 以降 |
+| `this_week` | `today` 以外で、`now - mtime < 7d` |
+| `history` | 上記以外 |
+
+未来時刻は `+Ns [Skew]` / `+Nm [Skew]` として表示します。
+
+## 出力契約
+
+### TTY
+
+- バケット順は `Active -> Today -> This Week -> History`
+- `History` は既定で折りたたみ、`-a` で展開
+- 各バケットは最大 20 件まで表示
+- 行形式は `name | size | time`
+- 末尾に `Current Timezone: ±HHMM` を表示
+
+### 非TTY
+
+- 形式は `path<TAB>time`
+- ヘッダ、色、バケット見出しは出しません
+- 件数上限なしで全件出力します
+- `-A` 指定時は絶対時刻に切り替わります
+
+### JSON Lines
+
+- 1 行 1 JSON
+- 主なキーは `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`
+- `symlink_target`, `label`, `size` は条件付きキーです
+- `mtime` は RFC 3339 UTC です
+
+## ignore 契約
+
+- built-in ignore は `.DS_Store`, `Thumbs.db`
+- グローバル ignore は `~/.ftimeignore`、または `FTIME_IGNORE`
+- ローカル ignore は `<PATH>/.ftimeignore`
+- `--no-ignore` でまとめて無効化します
+
+ignore ファイルのルール:
+
+- 1 行 1 パターン
+- 空行と `#` で始まる行は無視
+- `*` と `?` のみ対応
+- `/` を含むパターンは相対パス、含まないものは basename にマッチ
+
+## 制限
+
+- 深さ 1 固定
+- 読み取り専用
+- 複数パス指定、再帰、glob/regex フィルタ、出力ロケール切替は未対応
+
+## トラブルシューティング
+
+### 何も表示されない
+空ディレクトリか、`--exclude-dots` / `--ext` / ignore で全件落ちている可能性があります。
+
+### 色が出ない
+`NO_COLOR` が入っていないか、端末が ANSI を扱えるか確認します。
+
+### TTY レイアウトを確認したい
+`FTIME_FORCE_TTY=1` を使います。ログ用途なら `NO_COLOR=1` と併用します。
+
+## 関連文書
+
+- 入口: `README-ja.md`
+- 使い方ガイド: `USER-GUIDE-ja.md`
+- 読み分け案内: `ftime-overview-ja.md`
+- 英語の正本: `CLI.md`
