@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail};
 use std::env;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[cfg(unix)]
@@ -12,18 +12,41 @@ const WINDOWS_INSTALLER_URL: &str =
     "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1";
 
 pub fn self_update() -> Result<()> {
-    let current_exe = env::current_exe().context("failed to resolve current executable path")?;
-    let install_dir = current_exe
-        .parent()
-        .context("failed to resolve install directory")?;
+    let install_dir = if let Some(dir) = env::var_os("FTIME_SELF_UPDATE_INSTALL_DIR") {
+        PathBuf::from(dir)
+    } else {
+        let current_exe =
+            env::current_exe().context("failed to resolve current executable path")?;
+        resolve_install_dir(&current_exe)?.to_path_buf()
+    };
 
-    run_platform_update(install_dir)?;
+    run_platform_update(&install_dir)?;
     println!("self-update completed: {}", install_dir.display());
     Ok(())
 }
 
 fn installer_url() -> String {
     env::var("FTIME_SELF_UPDATE_URL").unwrap_or_else(|_| default_installer_url().to_string())
+}
+
+fn resolve_install_dir(current_exe: &Path) -> Result<&Path> {
+    let install_dir = current_exe
+        .parent()
+        .context("failed to resolve install directory")?;
+
+    if looks_like_cargo_target_dir(current_exe) {
+        bail!("--self-update is not available for cargo build outputs");
+    }
+
+    Ok(install_dir)
+}
+
+fn looks_like_cargo_target_dir(path: &Path) -> bool {
+    let parts: Vec<_> = path.components().collect();
+    parts.windows(2).any(|window| {
+        matches!(window[0], Component::Normal(segment) if segment == "target")
+            && matches!(window[1], Component::Normal(segment) if segment == "debug" || segment == "release")
+    })
 }
 
 #[cfg(unix)]
@@ -95,10 +118,25 @@ fn run_platform_update(install_dir: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn default_url_points_to_latest_release_installer() {
         let url = default_installer_url();
         assert!(url.contains("releases/latest/download/ftime-install"));
+    }
+
+    #[test]
+    fn resolve_install_dir_rejects_cargo_target_outputs() {
+        let path = PathBuf::from("/tmp/work/target/debug/ftime");
+        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        assert!(err.contains("--self-update is not available for cargo build outputs"));
+    }
+
+    #[test]
+    fn resolve_install_dir_accepts_regular_install_locations() {
+        let path = PathBuf::from("/home/tn/.local/bin/ftime");
+        let install_dir = resolve_install_dir(&path).unwrap();
+        assert_eq!(install_dir, Path::new("/home/tn/.local/bin"));
     }
 }

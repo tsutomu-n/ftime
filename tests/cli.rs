@@ -7,7 +7,6 @@ use serde_json::Value;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -95,6 +94,10 @@ fn self_update_runs_installer_for_current_binary_dir() {
             "FTIME_SELF_UPDATE_URL",
             format!("file://{}", script_path.display()),
         )
+        .env(
+            "FTIME_SELF_UPDATE_INSTALL_DIR",
+            dir.path().display().to_string(),
+        )
         .env("FTIME_SELF_UPDATE_MARKER", &marker_path)
         .output()
         .unwrap();
@@ -103,12 +106,8 @@ fn self_update_runs_installer_for_current_binary_dir() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("self-update completed"));
 
-    let install_dir = PathBuf::from(assert_cmd::cargo::cargo_bin!("ftime"))
-        .parent()
-        .unwrap()
-        .to_path_buf();
     let recorded = fs::read_to_string(marker_path).unwrap();
-    assert_eq!(recorded.trim(), install_dir.display().to_string());
+    assert_eq!(recorded.trim(), dir.path().display().to_string());
 }
 
 #[test]
@@ -122,6 +121,21 @@ fn self_update_rejects_scan_arguments() {
         .failure()
         .stderr(predicate::str::contains(
             "--self-update cannot be combined with scan options or PATH",
+        ));
+}
+
+#[test]
+fn self_update_rejects_cargo_build_outputs() {
+    bin()
+        .arg("--self-update")
+        .env(
+            "FTIME_SELF_UPDATE_URL",
+            "file:///definitely-not-used-because-should-fail-first",
+        )
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "--self-update is not available for cargo build outputs",
         ));
 }
 
