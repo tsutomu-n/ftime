@@ -42,18 +42,28 @@ fn resolve_install_dir(current_exe: &Path) -> Result<&Path> {
 }
 
 fn looks_like_cargo_target_dir(path: &Path) -> bool {
-    let has_profile_dir = path.ancestors().any(|ancestor| {
-        matches!(
-            ancestor.file_name(),
-            Some(name) if name == "debug" || name == "release"
-        )
-    });
+    let parts: Vec<_> = path
+        .components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(segment) => Some(segment),
+            _ => None,
+        })
+        .collect();
 
-    let has_target_dir = path
-        .ancestors()
-        .any(|ancestor| matches!(ancestor.file_name(), Some(name) if name == "target"));
+    parts.windows(2).any(is_direct_target_profile_layout)
+        || parts.windows(3).any(is_cross_target_profile_layout)
+}
 
-    has_profile_dir && has_target_dir
+fn is_direct_target_profile_layout(window: &[&std::ffi::OsStr]) -> bool {
+    window[0] == "target" && is_cargo_profile(window[1])
+}
+
+fn is_cross_target_profile_layout(window: &[&std::ffi::OsStr]) -> bool {
+    window[0] == "target" && !window[1].is_empty() && is_cargo_profile(window[2])
+}
+
+fn is_cargo_profile(segment: &std::ffi::OsStr) -> bool {
+    segment == "debug" || segment == "release"
 }
 
 #[cfg(unix)]
@@ -145,6 +155,13 @@ mod tests {
         let path = PathBuf::from("/tmp/work/target/x86_64-unknown-linux-gnu/release/ftime");
         let err = resolve_install_dir(&path).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
+    }
+
+    #[test]
+    fn resolve_install_dir_accepts_non_cargo_target_like_paths() {
+        let path = PathBuf::from("/tmp/release/tools/target/ftime");
+        let install_dir = resolve_install_dir(&path).unwrap();
+        assert_eq!(install_dir, Path::new("/tmp/release/tools/target"));
     }
 
     #[test]
