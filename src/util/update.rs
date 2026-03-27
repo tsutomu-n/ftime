@@ -50,20 +50,46 @@ fn looks_like_cargo_target_dir(path: &Path) -> bool {
         })
         .collect();
 
-    parts.windows(2).any(is_direct_target_profile_layout)
-        || parts.windows(3).any(is_cross_target_profile_layout)
+    parts
+        .iter()
+        .position(|segment| *segment == "target")
+        .map(|target_index| &parts[target_index + 1..])
+        .is_some_and(matches_cargo_output_tail)
 }
 
-fn is_direct_target_profile_layout(window: &[&std::ffi::OsStr]) -> bool {
-    window[0] == "target" && is_cargo_profile(window[1])
+fn matches_cargo_output_tail(tail: &[&std::ffi::OsStr]) -> bool {
+    matches!(tail, [profile, _bin] if is_cargo_profile_dir(profile))
+        || matches!(tail, [profile, subdir, _bin]
+            if is_cargo_profile_dir(profile) && is_cargo_binary_subdir(subdir))
+        || matches!(tail, [_triple, profile, _bin] if is_cargo_profile_dir(profile))
+        || matches!(tail, [_triple, profile, subdir, _bin]
+            if is_cargo_profile_dir(profile) && is_cargo_binary_subdir(subdir))
 }
 
-fn is_cross_target_profile_layout(window: &[&std::ffi::OsStr]) -> bool {
-    window[0] == "target" && !window[1].is_empty() && is_cargo_profile(window[2])
+fn is_cargo_profile_dir(segment: &std::ffi::OsStr) -> bool {
+    !segment.is_empty() && !is_known_non_profile_dir(segment)
 }
 
-fn is_cargo_profile(segment: &std::ffi::OsStr) -> bool {
-    segment == "debug" || segment == "release"
+fn is_cargo_binary_subdir(segment: &std::ffi::OsStr) -> bool {
+    segment == "deps" || segment == "examples"
+}
+
+fn is_known_non_profile_dir(segment: &std::ffi::OsStr) -> bool {
+    matches!(
+        segment.to_str(),
+        Some(
+            ".fingerprint"
+                | "bin"
+                | "build"
+                | "deps"
+                | "doc"
+                | "examples"
+                | "incremental"
+                | "lib"
+                | "package"
+                | "tmp"
+        )
+    )
 }
 
 #[cfg(unix)]
@@ -158,10 +184,31 @@ mod tests {
     }
 
     #[test]
+    fn resolve_install_dir_rejects_custom_profile_outputs() {
+        let path = PathBuf::from("/tmp/work/target/dist/ftime");
+        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        assert!(err.contains("--self-update is not available for cargo build outputs"));
+    }
+
+    #[test]
+    fn resolve_install_dir_rejects_cross_target_custom_profile_outputs() {
+        let path = PathBuf::from("/tmp/work/target/aarch64-apple-darwin/dist/ftime");
+        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        assert!(err.contains("--self-update is not available for cargo build outputs"));
+    }
+
+    #[test]
     fn resolve_install_dir_accepts_non_cargo_target_like_paths() {
         let path = PathBuf::from("/tmp/release/tools/target/ftime");
         let install_dir = resolve_install_dir(&path).unwrap();
         assert_eq!(install_dir, Path::new("/tmp/release/tools/target"));
+    }
+
+    #[test]
+    fn resolve_install_dir_accepts_common_bin_layout_under_target() {
+        let path = PathBuf::from("/opt/target/bin/ftime");
+        let install_dir = resolve_install_dir(&path).unwrap();
+        assert_eq!(install_dir, Path::new("/opt/target/bin"));
     }
 
     #[test]
