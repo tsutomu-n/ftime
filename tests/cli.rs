@@ -193,7 +193,10 @@ fn check_update_rejects_scan_arguments() {
 fn check_update_reports_when_already_current() {
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", support::package_version())
+        .env(
+            "FTIME_SELF_UPDATE_LATEST_VERSION",
+            support::package_version(),
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(

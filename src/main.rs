@@ -80,21 +80,9 @@ fn run() -> Result<()> {
             bail!("--self-update and --check-update cannot be combined");
         }
 
-        let update_flag = if cli.self_update {
-            "--self-update"
-        } else {
-            "--check-update"
-        };
+        let update_flag = update_flag_name(&cli);
 
-        if cli.path.is_some()
-            || cli.no_ignore
-            || cli.no_labels
-            || cli.show_all_history
-            || cli.ext.is_some()
-            || cli.use_icons
-            || cli.absolute_time
-            || cli.exclude_dots
-        {
+        if has_scan_options(&cli) {
             bail!("{update_flag} cannot be combined with scan options or PATH");
         }
 
@@ -171,6 +159,25 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+fn update_flag_name(cli: &Cli) -> &'static str {
+    if cli.self_update {
+        "--self-update"
+    } else {
+        "--check-update"
+    }
+}
+
+fn has_scan_options(cli: &Cli) -> bool {
+    cli.path.is_some()
+        || cli.no_ignore
+        || cli.no_labels
+        || cli.show_all_history
+        || cli.ext.is_some()
+        || cli.use_icons
+        || cli.absolute_time
+        || cli.exclude_dots
+}
+
 fn load_ignore_patterns() -> Vec<String> {
     if let Some(path) = env::var_os("FTIME_IGNORE") {
         return read_ignore_file(PathBuf::from(path));
@@ -202,4 +209,37 @@ fn read_ignore_file(path: PathBuf) -> Vec<String> {
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_cli(args: &[&str]) -> Cli {
+        Cli::parse_from(args)
+    }
+
+    #[test]
+    fn has_scan_options_is_false_for_update_only_flags() {
+        let cli = parse_cli(&["ftime", "--check-update"]);
+        assert!(!has_scan_options(&cli));
+    }
+
+    #[test]
+    fn has_scan_options_detects_path_argument() {
+        let cli = parse_cli(&["ftime", "--self-update", "."]);
+        assert!(has_scan_options(&cli));
+    }
+
+    #[test]
+    fn has_scan_options_detects_scan_flags() {
+        let cli = parse_cli(&["ftime", "--check-update", "--exclude-dots"]);
+        assert!(has_scan_options(&cli));
+    }
+
+    #[test]
+    fn update_flag_name_prefers_active_update_mode() {
+        let cli = parse_cli(&["ftime", "--check-update"]);
+        assert_eq!(update_flag_name(&cli), "--check-update");
+    }
 }

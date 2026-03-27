@@ -148,9 +148,7 @@ fn parse_version_output(output: &str) -> Option<String> {
 
 fn parse_latest_version(payload: &str) -> Option<String> {
     let value = serde_json::from_str::<Value>(payload).ok()?;
-    let tag = value
-        .get("tag_name")?
-        .as_str()?;
+    let tag = value.get("tag_name")?.as_str()?;
     Some(tag.trim_start_matches('v').to_string())
 }
 
@@ -200,7 +198,9 @@ fn format_check_update_message(current_version: Option<&str>, latest_version: &s
             Some(std::cmp::Ordering::Greater) => format!(
                 "latest published release is {latest_version} (current binary reports {current})"
             ),
-            _ => format!("latest published release is {latest_version} (current binary reports {current})"),
+            _ => format!(
+                "latest published release is {latest_version} (current binary reports {current})"
+            ),
         },
         None => format!("latest published release is {latest_version}"),
     }
