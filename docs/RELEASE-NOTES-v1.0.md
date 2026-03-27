@@ -1,13 +1,13 @@
-# ftime v1.0.2 Release Notes
+# ftime v1.0.0 Release Notes
 Date: 2026-03-27
 
 ## Summary
-v1.0.2 is a patch release focused on hardening `--self-update` path resolution and Cargo build-output detection.
+v1.0.0 is the first public release of the current CLI contract.
 
 ## Public Contract
 - Dotfiles are included by default.
 - `--exclude-dots` is the opt-out flag for dotfiles.
-- `-H/--hidden` is not part of the public v1.0.2 CLI.
+- `-H/--hidden` is not part of the public v1.0.0 CLI.
 
 ## New Behavior
 - Added `-A/--absolute` for `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` timestamps in TTY and pipe output.
@@ -18,8 +18,8 @@ v1.0.2 is a patch release focused on hardening `--self-update` path resolution a
 - JSON now includes optional `size` for regular files.
 - GitHub Releases now publish stable installer assets such as `ftime-install.sh` and stable latest-download binary asset names.
 - Added `--self-update` to refresh the current installed binary in place via the latest installer asset.
-- `--self-update` now rejects Cargo build outputs for direct, cross-target, and custom profile layouts.
-- `--self-update` now prefers the invoked symlink path when resolving the install directory.
+- `--self-update` rejects Cargo build outputs for direct, cross-target, and custom profile layouts.
+- `--self-update` prefers the invoked symlink path when resolving the install directory.
 
 ## Install Guidance
 - GitHub Releases expose stable installer assets via `releases/latest/download/ftime-install.sh` and `ftime-install.ps1`.

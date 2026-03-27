@@ -1,4 +1,4 @@
-# ftime v1.0.2 CLI Contract
+# ftime v1.0.0 CLI Contract
 
 ## 1. Command Signature
 ```bash
