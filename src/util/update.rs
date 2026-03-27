@@ -12,17 +12,30 @@ const WINDOWS_INSTALLER_URL: &str =
     "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1";
 
 pub fn self_update() -> Result<()> {
+    let current_exe = env::current_exe().context("failed to resolve current executable path")?;
     let install_dir = if let Some(dir) = env::var_os("FTIME_SELF_UPDATE_INSTALL_DIR") {
         PathBuf::from(dir)
     } else {
-        let current_exe =
-            env::current_exe().context("failed to resolve current executable path")?;
         let invoked_exe = resolve_invoked_executable(&current_exe);
         resolve_install_dir(&current_exe, invoked_exe.as_deref())?
     };
+    let previous_version = read_binary_version(&current_exe);
 
     run_platform_update(&install_dir)?;
-    println!("self-update completed: {}", install_dir.display());
+    let installed_exe = install_dir.join(
+        current_exe
+            .file_name()
+            .context("failed to resolve installed binary name")?,
+    );
+    let current_version = read_binary_version(&installed_exe);
+    println!(
+        "{}",
+        format_self_update_message(
+            previous_version.as_deref(),
+            current_version.as_deref(),
+            &install_dir,
+        )
+    );
     Ok(())
 }
 
@@ -82,6 +95,74 @@ fn canonical_paths_match(lhs: &Path, rhs: &Path) -> bool {
         (Ok(lhs), Ok(rhs)) => lhs == rhs,
         _ => false,
     }
+}
+
+fn read_binary_version(executable: &Path) -> Option<String> {
+    let output = Command::new(executable).arg("--version").output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    parse_version_output(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_version_output(output: &str) -> Option<String> {
+    let mut parts = output.split_whitespace();
+    match (parts.next(), parts.next()) {
+        (Some("ftime"), Some(version)) => Some(version.to_string()),
+        _ => None,
+    }
+}
+
+fn format_self_update_message(
+    previous_version: Option<&str>,
+    current_version: Option<&str>,
+    install_dir: &Path,
+) -> String {
+    match (previous_version, current_version) {
+        (Some(previous), Some(current)) if previous == current => {
+            format!(
+                "ftime is already up to date at {current} in {}",
+                install_dir.display()
+            )
+        }
+        (Some(previous), Some(current)) => match compare_versions(previous, current) {
+            Some(std::cmp::Ordering::Less) => {
+                format!(
+                    "ftime updated {previous} -> {current} in {}",
+                    install_dir.display()
+                )
+            }
+            Some(std::cmp::Ordering::Greater) => {
+                format!(
+                    "ftime now points to {current} (was {previous}) in {}",
+                    install_dir.display()
+                )
+            }
+            _ => format!(
+                "ftime version changed {previous} -> {current} in {}",
+                install_dir.display()
+            ),
+        },
+        _ => format!("self-update completed: {}", install_dir.display()),
+    }
+}
+
+fn compare_versions(lhs: &str, rhs: &str) -> Option<std::cmp::Ordering> {
+    let lhs = parse_version_tuple(lhs)?;
+    let rhs = parse_version_tuple(rhs)?;
+    Some(lhs.cmp(&rhs))
+}
+
+fn parse_version_tuple(version: &str) -> Option<(u64, u64, u64)> {
+    let mut parts = version.split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next()?.parse().ok()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    Some((major, minor, patch))
 }
 
 fn looks_like_cargo_target_dir(path: &Path) -> bool {
@@ -267,5 +348,50 @@ mod tests {
         let invoked_exe = PathBuf::from("/tmp/work/link/ftime");
         let install_dir = resolve_install_dir(&current_exe, Some(&invoked_exe)).unwrap();
         assert_eq!(install_dir, Path::new("/tmp/work/link"));
+    }
+
+    #[test]
+    fn parse_version_output_reads_clap_version_output() {
+        let version = parse_version_output("ftime 1.0.0\n").unwrap();
+        assert_eq!(version, "1.0.0");
+    }
+
+    #[test]
+    fn format_self_update_message_reports_upgrade() {
+        let message = format_self_update_message(
+            Some("1.0.0"),
+            Some("1.0.1"),
+            Path::new("/home/tn/.local/bin"),
+        );
+        assert_eq!(
+            message,
+            "ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin"
+        );
+    }
+
+    #[test]
+    fn format_self_update_message_reports_same_version() {
+        let message = format_self_update_message(
+            Some("1.0.0"),
+            Some("1.0.0"),
+            Path::new("/home/tn/.local/bin"),
+        );
+        assert_eq!(
+            message,
+            "ftime is already up to date at 1.0.0 in /home/tn/.local/bin"
+        );
+    }
+
+    #[test]
+    fn format_self_update_message_reports_retargeted_version() {
+        let message = format_self_update_message(
+            Some("1.0.2"),
+            Some("1.0.0"),
+            Path::new("/home/tn/.local/bin"),
+        );
+        assert_eq!(
+            message,
+            "ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin"
+        );
     }
 }
