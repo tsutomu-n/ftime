@@ -20,6 +20,7 @@ v1.0.0 is the first public release of the current CLI contract.
 - Added `--self-update` to refresh the current installed binary in place via the latest installer asset.
 - `--self-update` rejects Cargo build outputs for direct, cross-target, and custom profile layouts.
 - `--self-update` prefers the invoked symlink path when resolving the install directory.
+- `--self-update` now reports whether the installed version changed, stayed current, or now points to a renumbered release.
 
 ## Install Guidance
 - GitHub Releases expose stable installer assets via `releases/latest/download/ftime-install.sh` and `ftime-install.ps1`.
