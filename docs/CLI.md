@@ -1,4 +1,4 @@
-# ftime v1.0.1 CLI Contract
+# ftime v1.0.2 CLI Contract
 
 ## 1. Command Signature
 ```bash
@@ -21,7 +21,7 @@ ftime [OPTIONS] [PATH]
 | `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` format for TTY and pipe output. |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
-|  | `--self-update` | Update the current installed binary to the latest published release using the latest installer asset for the current platform. |
+|  | `--self-update` | Update the current installed binary to the latest published release using the latest installer asset for the current platform. When invoked via a symlink, update that symlink's directory. |
 |  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |
 | `-h` | `--help` | Print help message. |
 | `-V` | `--version` | Print version information. |
