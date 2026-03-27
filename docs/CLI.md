@@ -21,6 +21,7 @@ ftime [OPTIONS] [PATH]
 | `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` format for TTY and pipe output. |
 | `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
 | `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
+|  | `--check-update` | Check whether a newer published release is available. Prints `update available`, `already up to date`, or a renumbered-release notice. |
 |  | `--self-update` | Update the current installed binary to the latest published release using the latest installer asset for the current platform. When invoked via a symlink, update that symlink's directory. |
 |  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |
 | `-h` | `--help` | Print help message. |
@@ -39,6 +40,7 @@ ftime [OPTIONS] [PATH]
 *   Output formats (TTY/pipe/JSON) are stable; pipe output remains 2 columns, and JSON may omit optional fields when not applicable.
 *   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
 *   Important flags: `--all`, `--absolute`, `--exclude-dots`, `--json`. Color is controlled by `NO_COLOR` (no `--no-color` flag).
+*   Update flow: `--check-update` inspects the latest published release without installing it, while `--self-update` installs it in place.
 
 ## 6. Exit Codes
 *   `0`: Success.

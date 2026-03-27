@@ -75,6 +75,18 @@ fn version_reports_current_package_version() {
         )));
 }
 
+#[test]
+fn help_mentions_check_update_and_reinstall_note() {
+    bin()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--check-update"))
+        .stdout(predicate::str::contains(
+            "If your installed binary predates --self-update",
+        ));
+}
+
 #[cfg(unix)]
 #[test]
 fn self_update_runs_installer_for_current_binary_dir() {
@@ -160,6 +172,56 @@ fn self_update_rejects_scan_arguments() {
         .failure()
         .stderr(predicate::str::contains(
             "--self-update cannot be combined with scan options or PATH",
+        ));
+}
+
+#[test]
+fn check_update_rejects_scan_arguments() {
+    let dir = tempdir().unwrap();
+
+    bin()
+        .arg("--check-update")
+        .arg(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "--check-update cannot be combined with scan options or PATH",
+        ));
+}
+
+#[test]
+fn check_update_reports_when_already_current() {
+    bin()
+        .arg("--check-update")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", support::package_version())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            "ftime is already up to date at {}",
+            support::package_version()
+        )));
+}
+
+#[test]
+fn check_update_reports_when_update_is_available() {
+    bin()
+        .arg("--check-update")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("update available: 1.0.0 -> 1.0.1"));
+}
+
+#[test]
+fn check_update_reports_when_latest_is_renumbered_lower() {
+    bin()
+        .arg("--check-update")
+        .env("FTIME_SELF_UPDATE_CURRENT_VERSION", "1.0.2")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.0")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "latest published release is 1.0.0 (current binary reports 1.0.2)",
         ));
 }
 

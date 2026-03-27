@@ -51,6 +51,7 @@ Common flags:
 
 - `-a, --all`: expand `History` in TTY mode
 - `-A, --absolute`: show absolute local timestamps like `2026-03-16 20:49:28 (UTC+09:00)`
+- `--check-update`: report whether a newer published release is available
 - `--self-update`: update the current installed binary to the latest published release
 - `--exclude-dots`: hide dotfiles
 - `--no-ignore`: disable built-in and file-based ignore rules
@@ -58,16 +59,20 @@ Common flags:
 ## Update
 
 ```bash
+ftime --check-update
 ftime --self-update
 ```
 
 Typical output:
 
 ```text
+update available: 1.0.0 -> 1.0.1
 ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
 ftime is already up to date at 1.0.0 in /home/tn/.local/bin
 ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
 ```
+
+When invoked via a symlink, `ftime --self-update` updates that symlink directory.
 
 If your current binary predates `--self-update`, reinstall once from the latest GitHub Releases installer.
 

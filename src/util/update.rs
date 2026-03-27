@@ -1,8 +1,11 @@
 use anyhow::{Context, Result, bail};
+use serde_json::Value;
 use std::env;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+
+const LATEST_RELEASE_API_URL: &str = "https://api.github.com/repos/tsutomu-n/ftime/releases/latest";
 
 #[cfg(unix)]
 const UNIX_INSTALLER_URL: &str =
@@ -39,8 +42,37 @@ pub fn self_update() -> Result<()> {
     Ok(())
 }
 
+pub fn check_for_update() -> Result<()> {
+    let current_exe = env::current_exe().context("failed to resolve current executable path")?;
+    let current_version = current_binary_version(&current_exe);
+    let latest_version = latest_published_version()?;
+    println!(
+        "{}",
+        format_check_update_message(current_version.as_deref(), &latest_version)
+    );
+    Ok(())
+}
+
 fn installer_url() -> String {
     env::var("FTIME_SELF_UPDATE_URL").unwrap_or_else(|_| default_installer_url().to_string())
+}
+
+fn current_binary_version(executable: &Path) -> Option<String> {
+    env::var("FTIME_SELF_UPDATE_CURRENT_VERSION")
+        .ok()
+        .filter(|version| !version.trim().is_empty())
+        .or_else(|| read_binary_version(executable))
+}
+
+fn latest_published_version() -> Result<String> {
+    if let Ok(version) = env::var("FTIME_SELF_UPDATE_LATEST_VERSION") {
+        if !version.trim().is_empty() {
+            return Ok(version);
+        }
+    }
+
+    let payload = fetch_latest_release_metadata()?;
+    parse_latest_version(&payload).context("failed to parse latest release version")
 }
 
 fn resolve_install_dir(current_exe: &Path, invoked_exe: Option<&Path>) -> Result<PathBuf> {
@@ -114,6 +146,14 @@ fn parse_version_output(output: &str) -> Option<String> {
     }
 }
 
+fn parse_latest_version(payload: &str) -> Option<String> {
+    let value = serde_json::from_str::<Value>(payload).ok()?;
+    let tag = value
+        .get("tag_name")?
+        .as_str()?;
+    Some(tag.trim_start_matches('v').to_string())
+}
+
 fn format_self_update_message(
     previous_version: Option<&str>,
     current_version: Option<&str>,
@@ -148,6 +188,24 @@ fn format_self_update_message(
     }
 }
 
+fn format_check_update_message(current_version: Option<&str>, latest_version: &str) -> String {
+    match current_version {
+        Some(current) if current == latest_version => {
+            format!("ftime is already up to date at {latest_version}")
+        }
+        Some(current) => match compare_versions(current, latest_version) {
+            Some(std::cmp::Ordering::Less) => {
+                format!("update available: {current} -> {latest_version}")
+            }
+            Some(std::cmp::Ordering::Greater) => format!(
+                "latest published release is {latest_version} (current binary reports {current})"
+            ),
+            _ => format!("latest published release is {latest_version} (current binary reports {current})"),
+        },
+        None => format!("latest published release is {latest_version}"),
+    }
+}
+
 fn compare_versions(lhs: &str, rhs: &str) -> Option<std::cmp::Ordering> {
     let lhs = parse_version_tuple(lhs)?;
     let rhs = parse_version_tuple(rhs)?;
@@ -163,6 +221,44 @@ fn parse_version_tuple(version: &str) -> Option<(u64, u64, u64)> {
         return None;
     }
     Some((major, minor, patch))
+}
+
+#[cfg(unix)]
+fn fetch_latest_release_metadata() -> Result<String> {
+    let output = Command::new("curl")
+        .arg("-fsSL")
+        .arg("-H")
+        .arg("Accept: application/vnd.github+json")
+        .arg("-H")
+        .arg("X-GitHub-Api-Version: 2022-11-28")
+        .arg(LATEST_RELEASE_API_URL)
+        .output()
+        .context("failed to query latest release metadata")?;
+
+    if !output.status.success() {
+        bail!("failed to query latest release metadata");
+    }
+
+    String::from_utf8(output.stdout).context("latest release metadata was not valid UTF-8")
+}
+
+#[cfg(windows)]
+fn fetch_latest_release_metadata() -> Result<String> {
+    let output = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy")
+        .arg("Bypass")
+        .arg("-Command")
+        .arg("(Invoke-WebRequest -Uri $env:FTIME_LATEST_RELEASE_API_URL -UseBasicParsing).Content")
+        .env("FTIME_LATEST_RELEASE_API_URL", LATEST_RELEASE_API_URL)
+        .output()
+        .context("failed to query latest release metadata")?;
+
+    if !output.status.success() {
+        bail!("failed to query latest release metadata");
+    }
+
+    String::from_utf8(output.stdout).context("latest release metadata was not valid UTF-8")
 }
 
 fn looks_like_cargo_target_dir(path: &Path) -> bool {
@@ -357,6 +453,12 @@ mod tests {
     }
 
     #[test]
+    fn parse_latest_version_reads_github_tag_name() {
+        let version = parse_latest_version(r#"{"tag_name":"v1.0.0"}"#).unwrap();
+        assert_eq!(version, "1.0.0");
+    }
+
+    #[test]
     fn format_self_update_message_reports_upgrade() {
         let message = format_self_update_message(
             Some("1.0.0"),
@@ -392,6 +494,27 @@ mod tests {
         assert_eq!(
             message,
             "ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin"
+        );
+    }
+
+    #[test]
+    fn format_check_update_message_reports_available_update() {
+        let message = format_check_update_message(Some("1.0.0"), "1.0.1");
+        assert_eq!(message, "update available: 1.0.0 -> 1.0.1");
+    }
+
+    #[test]
+    fn format_check_update_message_reports_up_to_date() {
+        let message = format_check_update_message(Some("1.0.0"), "1.0.0");
+        assert_eq!(message, "ftime is already up to date at 1.0.0");
+    }
+
+    #[test]
+    fn format_check_update_message_reports_renumbered_release() {
+        let message = format_check_update_message(Some("1.0.2"), "1.0.0");
+        assert_eq!(
+            message,
+            "latest published release is 1.0.0 (current binary reports 1.0.2)"
         );
     }
 }

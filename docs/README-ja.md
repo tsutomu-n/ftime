@@ -49,6 +49,7 @@ ftime --json
 
 - `-a, --all`: TTY で `History` を展開
 - `-A, --absolute`: `2026-03-16 20:49:28 (UTC+09:00)` のような絶対時刻で表示
+- `--check-update`: もっと新しい公開版があるかだけ確認
 - `--self-update`: 今のインストール先に最新の公開版を上書き更新
 - `--exclude-dots`: ドットファイルを除外
 - `--no-ignore`: built-in / `.ftimeignore` を無効化
@@ -56,16 +57,20 @@ ftime --json
 ## アップデート
 
 ```bash
+ftime --check-update
 ftime --self-update
 ```
 
 よくある表示例:
 
 ```text
+update available: 1.0.0 -> 1.0.1
 ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
 ftime is already up to date at 1.0.0 in /home/tn/.local/bin
 ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
 ```
+
+symlink 経由で起動した場合、`ftime --self-update` はその symlink 側のディレクトリを更新します。
 
 手元の binary が `--self-update` 実装前なら、最初の 1 回だけ GitHub Releases の installer を再実行してください。
 

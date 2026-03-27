@@ -49,6 +49,7 @@ ftime --json
 
 - `-a, --all`：在 TTY 中展开 `History`
 - `-A, --absolute`：显示绝对本地时间
+- `--check-update`：只检查是否有更新的公开版
 - `--self-update`：把当前安装位置更新到最新公开版
 - `--exclude-dots`：隐藏 dotfiles
 - `--no-ignore`：禁用 built-in / `.ftimeignore`
@@ -56,16 +57,20 @@ ftime --json
 ## 更新
 
 ```bash
+ftime --check-update
 ftime --self-update
 ```
 
 常见输出示例：
 
 ```text
+update available: 1.0.0 -> 1.0.1
 ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
 ftime is already up to date at 1.0.0 in /home/tn/.local/bin
 ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
 ```
+
+如果通过 symlink 启动，`ftime --self-update` 会更新该 symlink 所在目录。
 
 如果你当前的 binary 还没有 `--self-update`，先用最新的 GitHub Releases installer 重装一次。
 

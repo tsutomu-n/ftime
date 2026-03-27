@@ -16,7 +16,8 @@ use std::process;
 #[command(
     name = "ftime",
     version,
-    about = "Recent file viewer with time buckets"
+    about = "Recent file viewer with time buckets",
+    after_help = "If your installed binary predates --self-update, reinstall once from the latest GitHub Releases installer."
 )]
 struct Cli {
     /// Emit JSON Lines output
@@ -52,6 +53,10 @@ struct Cli {
     #[arg(long = "self-update")]
     self_update: bool,
 
+    /// Check whether a newer published release is available
+    #[arg(long = "check-update")]
+    check_update: bool,
+
     /// Exclude dotfiles from scan results
     #[arg(long = "exclude-dots")]
     exclude_dots: bool,
@@ -70,7 +75,17 @@ fn main() {
 fn run() -> Result<()> {
     let cli = Cli::parse();
 
-    if cli.self_update {
+    if cli.self_update || cli.check_update {
+        if cli.self_update && cli.check_update {
+            bail!("--self-update and --check-update cannot be combined");
+        }
+
+        let update_flag = if cli.self_update {
+            "--self-update"
+        } else {
+            "--check-update"
+        };
+
         if cli.path.is_some()
             || cli.no_ignore
             || cli.no_labels
@@ -80,15 +95,19 @@ fn run() -> Result<()> {
             || cli.absolute_time
             || cli.exclude_dots
         {
-            bail!("--self-update cannot be combined with scan options or PATH");
+            bail!("{update_flag} cannot be combined with scan options or PATH");
         }
 
         #[cfg(feature = "json")]
         if cli.json {
-            bail!("--self-update cannot be combined with scan options or PATH");
+            bail!("{update_flag} cannot be combined with scan options or PATH");
         }
 
-        return util::update::self_update();
+        return if cli.self_update {
+            util::update::self_update()
+        } else {
+            util::update::check_for_update()
+        };
     }
 
     let path = match cli.path {

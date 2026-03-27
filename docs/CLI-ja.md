@@ -19,6 +19,7 @@ ftime [OPTIONS] [PATH]
 | `-a` | `--all` | TTY で `History` を展開 | 20 件上限は維持 |
 | `-A` | `--absolute` | 時刻を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` で表示 | TTY / 非TTY 共通 |
 |  | `--json` | JSON Lines 出力 | デフォルトビルドで有効 |
+|  | `--check-update` | より新しい公開版があるか確認 | PATH や走査系オプションとは併用不可 |
 |  | `--self-update` | 現在のインストール先を最新の公開版へ更新 | PATH や走査系オプションとは併用不可 |
 |  | `--ext rs,toml` | 拡張子ホワイトリスト | ファイルのみ対象 |
 |  | `--exclude-dots` | dotfiles を除外 | 既定では表示 |
@@ -33,6 +34,7 @@ ftime [OPTIONS] [PATH]
 - `--ext` は大小無視、カンマ区切りです
 - `--json` は TTY 判定や色設定の影響を受けません
 - `--icons` が無効なビルドでもエラーにせず no-op として扱います
+- `--check-update` は install を行わず、更新あり / 最新 / 番号振り直しを表示します
 - `--self-update` は symlink 経由で起動した場合、その symlink 側のディレクトリを更新対象にします
 - `--self-update` の表示は、更新あり・最新・番号振り直しをそれぞれ区別します
 
