@@ -53,6 +53,22 @@ ftime --json
 - `--exclude-dots`: ドットファイルを除外
 - `--no-ignore`: built-in / `.ftimeignore` を無効化
 
+## アップデート
+
+```bash
+ftime --self-update
+```
+
+よくある表示例:
+
+```text
+ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
+ftime is already up to date at 1.0.0 in /home/tn/.local/bin
+ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
+```
+
+手元の binary が `--self-update` 実装前なら、最初の 1 回だけ GitHub Releases の installer を再実行してください。
+
 ## アンインストール
 
 ### GitHub Releases install

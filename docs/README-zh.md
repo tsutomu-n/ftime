@@ -53,6 +53,22 @@ ftime --json
 - `--exclude-dots`：隐藏 dotfiles
 - `--no-ignore`：禁用 built-in / `.ftimeignore`
 
+## 更新
+
+```bash
+ftime --self-update
+```
+
+常见输出示例：
+
+```text
+ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
+ftime is already up to date at 1.0.0 in /home/tn/.local/bin
+ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
+```
+
+如果你当前的 binary 还没有 `--self-update`，先用最新的 GitHub Releases installer 重装一次。
+
 ## 卸载
 
 ### GitHub Releases 安装

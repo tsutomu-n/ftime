@@ -55,6 +55,22 @@ Common flags:
 - `--exclude-dots`: hide dotfiles
 - `--no-ignore`: disable built-in and file-based ignore rules
 
+## Update
+
+```bash
+ftime --self-update
+```
+
+Typical output:
+
+```text
+ftime updated 1.0.0 -> 1.0.1 in /home/tn/.local/bin
+ftime is already up to date at 1.0.0 in /home/tn/.local/bin
+ftime now points to 1.0.0 (was 1.0.2) in /home/tn/.local/bin
+```
+
+If your current binary predates `--self-update`, reinstall once from the latest GitHub Releases installer.
+
 ## Uninstall
 
 ### GitHub Releases install
