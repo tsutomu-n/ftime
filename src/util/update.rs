@@ -17,7 +17,8 @@ pub fn self_update() -> Result<()> {
     } else {
         let current_exe =
             env::current_exe().context("failed to resolve current executable path")?;
-        resolve_install_dir(&current_exe)?.to_path_buf()
+        let invoked_exe = resolve_invoked_executable(&current_exe);
+        resolve_install_dir(&current_exe, invoked_exe.as_deref())?
     };
 
     run_platform_update(&install_dir)?;
@@ -29,16 +30,58 @@ fn installer_url() -> String {
     env::var("FTIME_SELF_UPDATE_URL").unwrap_or_else(|_| default_installer_url().to_string())
 }
 
-fn resolve_install_dir(current_exe: &Path) -> Result<&Path> {
-    let install_dir = current_exe
-        .parent()
-        .context("failed to resolve install directory")?;
-
+fn resolve_install_dir(current_exe: &Path, invoked_exe: Option<&Path>) -> Result<PathBuf> {
     if looks_like_cargo_target_dir(current_exe) {
         bail!("--self-update is not available for cargo build outputs");
     }
 
-    Ok(install_dir)
+    invoked_exe
+        .unwrap_or(current_exe)
+        .parent()
+        .map(Path::to_path_buf)
+        .context("failed to resolve install directory")
+}
+
+fn resolve_invoked_executable(current_exe: &Path) -> Option<PathBuf> {
+    let arg0 = env::args_os().next()?;
+    let candidate = resolve_argv0_path(Path::new(&arg0))?;
+    if canonical_paths_match(&candidate, current_exe) {
+        Some(candidate)
+    } else {
+        None
+    }
+}
+
+fn resolve_argv0_path(arg0: &Path) -> Option<PathBuf> {
+    if arg0.components().count() > 1 {
+        absolutize_path(arg0).ok()
+    } else {
+        find_executable_in_path(arg0)
+    }
+}
+
+fn absolutize_path(path: &Path) -> Result<PathBuf> {
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        Ok(env::current_dir()
+            .context("failed to obtain current directory")?
+            .join(path))
+    }
+}
+
+fn find_executable_in_path(command: &Path) -> Option<PathBuf> {
+    let path_var = env::var_os("PATH")?;
+    env::split_paths(&path_var)
+        .map(|dir| dir.join(command))
+        .find(|candidate| candidate.exists())
+}
+
+fn canonical_paths_match(lhs: &Path, rhs: &Path) -> bool {
+    match (lhs.canonicalize(), rhs.canonicalize()) {
+        (Ok(lhs), Ok(rhs)) => lhs == rhs,
+        _ => false,
+    }
 }
 
 fn looks_like_cargo_target_dir(path: &Path) -> bool {
@@ -172,49 +215,57 @@ mod tests {
     #[test]
     fn resolve_install_dir_rejects_cargo_target_outputs() {
         let path = PathBuf::from("/tmp/work/target/debug/ftime");
-        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        let err = resolve_install_dir(&path, None).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
     }
 
     #[test]
     fn resolve_install_dir_rejects_cross_target_outputs() {
         let path = PathBuf::from("/tmp/work/target/x86_64-unknown-linux-gnu/release/ftime");
-        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        let err = resolve_install_dir(&path, None).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
     }
 
     #[test]
     fn resolve_install_dir_rejects_custom_profile_outputs() {
         let path = PathBuf::from("/tmp/work/target/dist/ftime");
-        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        let err = resolve_install_dir(&path, None).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
     }
 
     #[test]
     fn resolve_install_dir_rejects_cross_target_custom_profile_outputs() {
         let path = PathBuf::from("/tmp/work/target/aarch64-apple-darwin/dist/ftime");
-        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        let err = resolve_install_dir(&path, None).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
     }
 
     #[test]
     fn resolve_install_dir_accepts_non_cargo_target_like_paths() {
         let path = PathBuf::from("/tmp/release/tools/target/ftime");
-        let install_dir = resolve_install_dir(&path).unwrap();
+        let install_dir = resolve_install_dir(&path, None).unwrap();
         assert_eq!(install_dir, Path::new("/tmp/release/tools/target"));
     }
 
     #[test]
     fn resolve_install_dir_accepts_common_bin_layout_under_target() {
         let path = PathBuf::from("/opt/target/bin/ftime");
-        let install_dir = resolve_install_dir(&path).unwrap();
+        let install_dir = resolve_install_dir(&path, None).unwrap();
         assert_eq!(install_dir, Path::new("/opt/target/bin"));
     }
 
     #[test]
     fn resolve_install_dir_accepts_regular_install_locations() {
         let path = PathBuf::from("/home/tn/.local/bin/ftime");
-        let install_dir = resolve_install_dir(&path).unwrap();
+        let install_dir = resolve_install_dir(&path, None).unwrap();
         assert_eq!(install_dir, Path::new("/home/tn/.local/bin"));
+    }
+
+    #[test]
+    fn resolve_install_dir_prefers_invoked_symlink_parent() {
+        let current_exe = PathBuf::from("/tmp/work/real/ftime");
+        let invoked_exe = PathBuf::from("/tmp/work/link/ftime");
+        let install_dir = resolve_install_dir(&current_exe, Some(&invoked_exe)).unwrap();
+        assert_eq!(install_dir, Path::new("/tmp/work/link"));
     }
 }

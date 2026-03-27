@@ -110,6 +110,45 @@ fn self_update_runs_installer_for_current_binary_dir() {
     assert_eq!(recorded.trim(), dir.path().display().to_string());
 }
 
+#[cfg(unix)]
+#[test]
+fn self_update_prefers_invoked_symlink_directory() {
+    let dir = tempdir().unwrap();
+    let real_dir = dir.path().join("real");
+    let link_dir = dir.path().join("link");
+    fs::create_dir_all(&real_dir).unwrap();
+    fs::create_dir_all(&link_dir).unwrap();
+
+    let source_bin = assert_cmd::cargo::cargo_bin!("ftime");
+    let real_bin = real_dir.join("ftime");
+    fs::copy(&source_bin, &real_bin).unwrap();
+
+    let link_bin = link_dir.join("ftime");
+    std::os::unix::fs::symlink(&real_bin, &link_bin).unwrap();
+
+    let script_path = dir.path().join("install.sh");
+    let marker_path = dir.path().join("marker.txt");
+    fs::write(
+        &script_path,
+        "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$INSTALL_DIR\" > \"$FTIME_SELF_UPDATE_MARKER\"\n",
+    )
+    .unwrap();
+
+    let output = Command::new(&link_bin)
+        .arg("--self-update")
+        .env(
+            "FTIME_SELF_UPDATE_URL",
+            format!("file://{}", script_path.display()),
+        )
+        .env("FTIME_SELF_UPDATE_MARKER", &marker_path)
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let recorded = fs::read_to_string(marker_path).unwrap();
+    assert_eq!(recorded.trim(), link_dir.display().to_string());
+}
+
 #[test]
 fn self_update_rejects_scan_arguments() {
     let dir = tempdir().unwrap();
