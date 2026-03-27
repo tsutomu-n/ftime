@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail};
 use std::env;
 use std::io::Write;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[cfg(unix)]
@@ -42,11 +42,18 @@ fn resolve_install_dir(current_exe: &Path) -> Result<&Path> {
 }
 
 fn looks_like_cargo_target_dir(path: &Path) -> bool {
-    let parts: Vec<_> = path.components().collect();
-    parts.windows(2).any(|window| {
-        matches!(window[0], Component::Normal(segment) if segment == "target")
-            && matches!(window[1], Component::Normal(segment) if segment == "debug" || segment == "release")
-    })
+    let has_profile_dir = path.ancestors().any(|ancestor| {
+        matches!(
+            ancestor.file_name(),
+            Some(name) if name == "debug" || name == "release"
+        )
+    });
+
+    let has_target_dir = path
+        .ancestors()
+        .any(|ancestor| matches!(ancestor.file_name(), Some(name) if name == "target"));
+
+    has_profile_dir && has_target_dir
 }
 
 #[cfg(unix)]
@@ -129,6 +136,13 @@ mod tests {
     #[test]
     fn resolve_install_dir_rejects_cargo_target_outputs() {
         let path = PathBuf::from("/tmp/work/target/debug/ftime");
+        let err = resolve_install_dir(&path).unwrap_err().to_string();
+        assert!(err.contains("--self-update is not available for cargo build outputs"));
+    }
+
+    #[test]
+    fn resolve_install_dir_rejects_cross_target_outputs() {
+        let path = PathBuf::from("/tmp/work/target/x86_64-unknown-linux-gnu/release/ftime");
         let err = resolve_install_dir(&path).unwrap_err().to_string();
         assert!(err.contains("--self-update is not available for cargo build outputs"));
     }
