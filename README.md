@@ -1,4 +1,4 @@
-# ftime
+# ftime = file time / mtime-oriented recent listing
 
 English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
