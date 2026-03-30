@@ -23,9 +23,10 @@ function Resolve-Download {
     }
 
     $Tag = "v$($Version.TrimStart('v'))"
+    $VersionNumber = $Tag.TrimStart('v')
     return @{
         Tag = $Tag
-        Url = "https://github.com/$Repo/releases/download/$Tag/$Bin-$($Tag.TrimStart('v'))-$Target.zip"
+        Url = "https://github.com/$Repo/releases/download/$Tag/$Bin-$VersionNumber-$Target.zip"
     }
 }
 
