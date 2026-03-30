@@ -6,6 +6,8 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
+[![demo_ftime](assets/demo_ftime.gif)](assets/demo_ftime.mp4)
+
 - `File Time` view: read-only, depth-1, recency-first
 - Buckets: `Active` / `Today` / `This Week` / `History`
 - TTY output for humans, plain text / JSON Lines for scripts
