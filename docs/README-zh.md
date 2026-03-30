@@ -12,6 +12,7 @@
 
 ### GitHub Releases（推荐）
 先获取 GitHub Releases 上最新的 installer，再安装最新已发布的 release，不会安装未发布的 `main`。
+GitHub Releases installer 不需要 Rust。
 
 ```bash
 # macOS / Linux
@@ -29,6 +30,8 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
+
+Windows 默认安装目录是 `%LOCALAPPDATA%\Programs\ftime\bin`。
 
 Windows installer 目前仅覆盖 x86_64 / AMD64。
 

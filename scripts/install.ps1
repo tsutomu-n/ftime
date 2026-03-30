@@ -1,6 +1,6 @@
 param(
     [string]$Version = "latest",
-    [string]$InstallDir = "$env:USERPROFILE\.cargo\bin"
+    [string]$InstallDir = "$env:LOCALAPPDATA\Programs\ftime\bin"
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,7 +44,22 @@ $Tmp = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToS
 New-Item -ItemType Directory -Force -Path $Tmp | Out-Null
 $ZipPath = Join-Path $Tmp $Asset
 
-Invoke-WebRequest -Uri $Url -OutFile $ZipPath
+try {
+    Invoke-WebRequest -Uri $Url -OutFile $ZipPath
+}
+catch {
+    $StatusCode = $null
+    if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+        $StatusCode = [int]$_.Exception.Response.StatusCode
+    }
+
+    if ($StatusCode -eq 404) {
+        throw "No published Windows release asset was found. For unreleased main, install Rust and use cargo install --path . --force."
+    }
+
+    throw
+}
+
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 Expand-Archive -Path $ZipPath -DestinationPath $Tmp -Force
 

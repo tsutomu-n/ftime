@@ -1,5 +1,5 @@
 param(
-    [string]$InstallDir = "$env:USERPROFILE\.cargo\bin"
+    [string]$InstallDir = "$env:LOCALAPPDATA\Programs\ftime\bin"
 )
 
 $ErrorActionPreference = "Stop"

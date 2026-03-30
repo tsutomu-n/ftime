@@ -16,6 +16,7 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
 ### GitHub Releases (recommended)
 Fetches the latest published installer from GitHub Releases. This installs the latest published release, not unreleased `main`.
+Rust is not required for the GitHub Releases installer.
 
 #### macOS / Linux
 ```bash
@@ -34,6 +35,8 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
+
+Default Windows install dir: `%LOCALAPPDATA%\Programs\ftime\bin`.
 
 Windows installer currently targets x86_64 / AMD64.
 

@@ -75,6 +75,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "read-only File Time CLI for browsing files by recency",
             "The name stands for `files by time`",
             "## Install",
+            "Rust is not required for the GitHub Releases installer.",
+            "Default Windows install dir: `%LOCALAPPDATA%\\Programs\\ftime\\bin`.",
             "Windows installer currently targets x86_64 / AMD64.",
             "## Quick Usage",
             "Uninstall steps are documented in `## Uninstall`, including custom install directories.",
@@ -103,6 +105,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "files by time",
             "更新の新しさでファイルを見るための、読み取り専用の File Time CLI",
             "## インストール",
+            "GitHub Releases installer には Rust は不要です。",
+            "Windows の既定 install 先は `%LOCALAPPDATA%\\Programs\\ftime\\bin` です。",
             "Windows installer は現状 x86_64 / AMD64 を対象にしています。",
             "## クイックスタート",
             "アンインストール手順は下の `## アンインストール` にまとめています。",
@@ -131,6 +135,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "files by time",
             "按新旧顺序浏览文件的只读 File Time CLI",
             "## 安装",
+            "GitHub Releases installer 不需要 Rust。",
+            "Windows 默认安装目录是 `%LOCALAPPDATA%\\Programs\\ftime\\bin`。",
             "Windows installer 目前仅覆盖 x86_64 / AMD64。",
             "## 快速开始",
             "卸载步骤写在下方的 `## 卸载`，也包含自定义安装目录的情况。",
@@ -192,6 +198,33 @@ fn release_workflow_publishes_latest_bootstrap_assets() {
             "ftime-${{ matrix.target }}.tar.gz",
             "ftime-${{ matrix.target }}.zip",
         ],
+    );
+}
+
+#[test]
+fn powershell_install_scripts_use_non_cargo_default_dir_and_help_missing_release_asset() {
+    let install = support::read_repo_file("scripts/install.ps1");
+    assert_contains_all(
+        &install,
+        "scripts/install.ps1",
+        &[
+            "$env:LOCALAPPDATA\\Programs\\ftime\\bin",
+            "No published Windows release asset was found.",
+            "For unreleased main, install Rust and use cargo install --path . --force.",
+        ],
+    );
+    assert_contains_none(&install, "scripts/install.ps1", &["$env:USERPROFILE\\.cargo\\bin"]);
+
+    let uninstall = support::read_repo_file("scripts/uninstall.ps1");
+    assert_contains_all(
+        &uninstall,
+        "scripts/uninstall.ps1",
+        &["$env:LOCALAPPDATA\\Programs\\ftime\\bin"],
+    );
+    assert_contains_none(
+        &uninstall,
+        "scripts/uninstall.ps1",
+        &["$env:USERPROFILE\\.cargo\\bin"],
     );
 }
 

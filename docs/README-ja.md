@@ -12,6 +12,7 @@
 
 ### GitHub Releases（推奨）
 GitHub Releases 上の最新 installer を取得して、公開済みの最新 release を入れます。未リリースの `main` は入りません。
+GitHub Releases installer には Rust は不要です。
 
 ```bash
 # macOS / Linux
@@ -29,6 +30,8 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
+
+Windows の既定 install 先は `%LOCALAPPDATA%\Programs\ftime\bin` です。
 
 Windows installer は現状 x86_64 / AMD64 を対象にしています。
 
