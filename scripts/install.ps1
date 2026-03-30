@@ -11,7 +11,8 @@ $Bin = "ftime"
 function Resolve-Download {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
-        [Parameter(Mandatory = $true)][string]$Repo
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$Target
     )
 
     if ($Version -eq "latest") {
@@ -35,7 +36,7 @@ if ($Arch -ne "AMD64") {
 
 $Target = "x86_64-pc-windows-msvc"
 
-$Download = Resolve-Download -Version $Version -Repo $Repo
+$Download = Resolve-Download -Version $Version -Repo $Repo -Target $Target
 $Tag = $Download.Tag
 $Url = $Download.Url
 $Asset = Split-Path $Url -Leaf

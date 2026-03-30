@@ -15,19 +15,28 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 ## Install
 
 ### GitHub Releases (recommended)
+
 Fetches the latest published installer from GitHub Releases. This installs the latest published release, not unreleased `main`.
 Rust is not required for the GitHub Releases installer.
 
 #### macOS / Linux
+
 ```bash
 curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh | bash
 ```
+
 #### Windows (PowerShell)
+
 ```bash
 powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1 -UseBasicParsing | iex"
 ```
 
+Default Windows install dir: `%LOCALAPPDATA%\Programs\ftime\bin`.
+
+Windows installer currently targets x86_64 / AMD64.
+
 ### From source
+
 Requires Rust/Cargo 1.92+.
 
 ```bash
@@ -35,10 +44,6 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
-
-Default Windows install dir: `%LOCALAPPDATA%\Programs\ftime\bin`.
-
-Windows installer currently targets x86_64 / AMD64.
 
 Uninstall steps are documented in `## Uninstall`, including custom install directories.
 
@@ -86,6 +91,7 @@ If your current binary predates `--self-update`, reinstall once from the latest 
 ### GitHub Releases install
 
 #### macOS / Linux
+
 ```bash
 curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash
 ```

@@ -11,6 +11,7 @@
 ## インストール
 
 ### GitHub Releases（推奨）
+
 GitHub Releases 上の最新 installer を取得して、公開済みの最新 release を入れます。未リリースの `main` は入りません。
 GitHub Releases installer には Rust は不要です。
 
@@ -22,7 +23,12 @@ curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-ins
 powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1 -UseBasicParsing | iex"
 ```
 
+Windows の既定 install 先は `%LOCALAPPDATA%\Programs\ftime\bin` です。
+
+Windows installer は現状 x86_64 / AMD64 を対象にしています。
+
 ### ソースから入れる
+
 Rust/Cargo 1.92+ が必要です。
 
 ```bash
@@ -30,10 +36,6 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
-
-Windows の既定 install 先は `%LOCALAPPDATA%\Programs\ftime\bin` です。
-
-Windows installer は現状 x86_64 / AMD64 を対象にしています。
 
 アンインストール手順は下の `## アンインストール` にまとめています。custom install 先を使った場合の戻し方もそこにあります。
 

@@ -11,6 +11,7 @@
 ## 安装
 
 ### GitHub Releases（推荐）
+
 先获取 GitHub Releases 上最新的 installer，再安装最新已发布的 release，不会安装未发布的 `main`。
 GitHub Releases installer 不需要 Rust。
 
@@ -22,7 +23,12 @@ curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-ins
 powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1 -UseBasicParsing | iex"
 ```
 
+Windows 默认安装目录是 `%LOCALAPPDATA%\Programs\ftime\bin`。
+
+Windows installer 目前仅覆盖 x86_64 / AMD64。
+
 ### 从源码安装
+
 需要 Rust/Cargo 1.92+。
 
 ```bash
@@ -30,10 +36,6 @@ cargo install --path . --force
 hash -r
 ftime --version
 ```
-
-Windows 默认安装目录是 `%LOCALAPPDATA%\Programs\ftime\bin`。
-
-Windows installer 目前仅覆盖 x86_64 / AMD64。
 
 卸载步骤写在下方的 `## 卸载`，也包含自定义安装目录的情况。
 
