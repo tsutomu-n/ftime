@@ -43,6 +43,20 @@ fn current_release_docs_match_current_package_version() {
 }
 
 #[test]
+fn current_release_notes_capture_windows_installer_follow_up() {
+    let notes = support::read_repo_file("docs/RELEASE-NOTES-v1.0.md");
+    assert_contains_all(
+        &notes,
+        "docs/RELEASE-NOTES-v1.0.md",
+        &[
+            "Windows PowerShell installer no longer defaults to `.cargo\\bin`.",
+            "GitHub Releases installer now documents that Rust is not required.",
+            "%LOCALAPPDATA%\\Programs\\ftime\\bin",
+        ],
+    );
+}
+
+#[test]
 fn v2_docs_are_archived_after_renumbering() {
     for path in [
         "docs/SPEC-v2.0.md",

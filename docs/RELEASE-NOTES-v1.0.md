@@ -1,13 +1,13 @@
-# ftime v1.0.0 Release Notes
-Date: 2026-03-27
+# ftime v1.0.1 Release Notes
+Date: 2026-03-30
 
 ## Summary
-v1.0.0 is the first public release of the current CLI contract.
+v1.0.1 is a patch follow-up on the current public CLI contract, focused on the Windows PowerShell installer path and install guidance.
 
 ## Public Contract
 - Dotfiles are included by default.
 - `--exclude-dots` is the opt-out flag for dotfiles.
-- `-H/--hidden` is not part of the public v1.0.0 CLI.
+- `-H/--hidden` is not part of the public v1.0.1 CLI.
 
 ## New Behavior
 - Added `-A/--absolute` for `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` timestamps in TTY and pipe output.
@@ -21,6 +21,10 @@ v1.0.0 is the first public release of the current CLI contract.
 - `--self-update` rejects Cargo build outputs for direct, cross-target, and custom profile layouts.
 - `--self-update` prefers the invoked symlink path when resolving the install directory.
 - `--self-update` now reports whether the installed version changed, stayed current, or now points to a renumbered release.
+- Windows PowerShell installer no longer defaults to `.cargo\bin`.
+- Windows PowerShell installer now defaults to `%LOCALAPPDATA%\Programs\ftime\bin`.
+- GitHub Releases installer now documents that Rust is not required.
+- Windows release-asset 404s now point users to `cargo install --path . --force` only when they actually want unreleased `main`.
 
 ## Install Guidance
 - GitHub Releases expose stable installer assets via `releases/latest/download/ftime-install.sh` and `ftime-install.ps1`.
