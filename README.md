@@ -2,11 +2,11 @@
 
 English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
-`ftime` is a read-only CLI that shows only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can see what changed recently without recursive noise.
+`ftime` is a read-only File Time CLI for browsing files by recency. The name stands for `files by time`: it scans only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can see what changed recently without recursive noise.
 
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
-- Read-only, depth-1 scan
+- `File Time` view: read-only, depth-1, recency-first
 - Buckets: `Active` / `Today` / `This Week` / `History`
 - TTY output for humans, plain text / JSON Lines for scripts
 

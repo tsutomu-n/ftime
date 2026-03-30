@@ -2,9 +2,9 @@
 
 [English](../README.md) | [日本語](README-ja.md) | 中文
 
-`ftime` 是一个只读 CLI：只扫描目录的第一层，按 `mtime` 从新到旧排序，并按时间分桶展示最近改动过的文件或目录。
+`ftime` 是一个按新旧顺序浏览文件的只读 File Time CLI。名字来自 `files by time`：它只扫描目录的第一层，按 `mtime` 从新到旧排序，并按时间分桶展示最近改动过的文件或目录。
 
-- 固定深度 1，不递归
+- `File Time` 视角：只读、固定深度 1、按新到旧优先
 - `Active / Today / This Week / History` 四个时间桶
 - 终端输出适合人看，plain text / JSON 适合脚本处理
 

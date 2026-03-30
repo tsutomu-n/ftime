@@ -76,11 +76,14 @@ fn version_reports_current_package_version() {
 }
 
 #[test]
-fn help_mentions_check_update_and_reinstall_note() {
+fn help_mentions_file_time_concept_and_reinstall_note() {
     bin()
         .arg("--help")
         .assert()
         .success()
+        .stdout(predicate::str::contains(
+            "files by time: a read-only File Time CLI",
+        ))
         .stdout(predicate::str::contains("--check-update"))
         .stdout(predicate::str::contains(
             "If your installed binary predates --self-update",

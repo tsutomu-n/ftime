@@ -71,6 +71,9 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &root,
         "README.md",
         &[
+            "# `ftime` = files by time",
+            "read-only File Time CLI for browsing files by recency",
+            "The name stands for `files by time`",
             "## Install",
             "Windows installer currently targets x86_64 / AMD64.",
             "## Quick Usage",
@@ -97,6 +100,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &ja,
         "docs/README-ja.md",
         &[
+            "files by time",
+            "更新の新しさでファイルを見るための、読み取り専用の File Time CLI",
             "## インストール",
             "Windows installer は現状 x86_64 / AMD64 を対象にしています。",
             "## クイックスタート",
@@ -123,6 +128,8 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         &zh,
         "docs/README-zh.md",
         &[
+            "files by time",
+            "按新旧顺序浏览文件的只读 File Time CLI",
             "## 安装",
             "Windows installer 目前仅覆盖 x86_64 / AMD64。",
             "## 快速开始",

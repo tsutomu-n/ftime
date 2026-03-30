@@ -16,7 +16,7 @@ use std::process;
 #[command(
     name = "ftime",
     version,
-    about = "Recent file viewer with time buckets",
+    about = "files by time: a read-only File Time CLI",
     after_help = "If your installed binary predates --self-update, reinstall once from the latest GitHub Releases installer."
 )]
 struct Cli {
