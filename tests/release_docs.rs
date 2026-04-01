@@ -263,6 +263,30 @@ fn release_workflow_publishes_latest_bootstrap_assets() {
 }
 
 #[test]
+fn crate_package_excludes_local_only_assets_and_maintainer_docs() {
+    let cargo_toml = support::read_repo_file("Cargo.toml");
+    assert_contains_all(
+        &cargo_toml,
+        "Cargo.toml",
+        &[
+            "\"assets/demo_ftime.gif\"",
+            "\"assets/demo_ftime.mp4\"",
+            "\"assets/social-preview.png\"",
+            "\"docs/PUBLISH-CHECKLIST-ja.md\"",
+            "\"docs/PLATFORM-VERIFY-v1.0.md\"",
+            "\"docs/ARCHITECTURE.md\"",
+            "\"docs/ARCHITECTURE-ja.md\"",
+            "\"docs/12-10_ROADMAP.md\"",
+            "\"docs/SPEC-*\"",
+            "\"docs/TESTPLAN-*\"",
+            "\"docs/RELEASE-NOTES-*\"",
+            "\"scripts/build-release-fast.sh\"",
+            "\"AGENTS.md\"",
+        ],
+    );
+}
+
+#[test]
 fn powershell_install_scripts_use_non_cargo_default_dir_and_help_missing_release_asset() {
     let install = support::read_repo_file("scripts/install.ps1");
     assert_contains_all(
