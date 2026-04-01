@@ -22,6 +22,15 @@ fn assert_contains_none(content: &str, path: &str, snippets: &[&str]) {
 fn current_release_docs_match_current_package_version() {
     let cargo_toml = support::read_repo_file("Cargo.toml");
     assert!(cargo_toml.contains(&format!("version = \"{}\"", support::package_version())));
+    assert_contains_all(
+        &cargo_toml,
+        "Cargo.toml",
+        &[
+            "description = \"Read-only CLI for browsing recently changed files in a folder\"",
+            "keywords = [\"cli\", \"filesystem\", \"mtime\", \"jsonl\", \"productivity\"]",
+            "categories = [\"command-line-utilities\"]",
+        ],
+    );
 
     for path in [
         "docs/CLI.md",
@@ -57,6 +66,15 @@ fn current_release_notes_capture_windows_installer_follow_up() {
 }
 
 #[test]
+fn social_preview_asset_exists_as_png() {
+    let bytes = support::read_repo_bytes("assets/social-preview.png");
+    assert!(
+        bytes.starts_with(&[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]),
+        "assets/social-preview.png must be a PNG asset"
+    );
+}
+
+#[test]
 fn v2_docs_are_archived_after_renumbering() {
     for path in [
         "docs/SPEC-v2.0.md",
@@ -86,13 +104,27 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "README.md",
         &[
             "# `ftime` = files by time",
-            "read-only File Time CLI for browsing files by recency",
-            "The name stands for `files by time`",
+            "What changed in this folder recently?",
+            "The name stands for `files by time`.",
+            "It scans only the first level of a directory",
+            "Depth-1 only: see the current folder, not the whole tree",
+            "## Why `ftime`?",
+            "## Common examples",
+            "## Compared to other tools",
+            "clean up `~/Downloads`",
+            "`--json` emits one JSON object per line",
+            "## Example output",
+            "Active",
+            "Today",
+            "This Week",
+            "History",
             "## Install",
             "Rust is not required for the GitHub Releases installer.",
+            "### crates.io",
+            "cargo install ftime --locked",
             "Default Windows install dir: `%LOCALAPPDATA%\\Programs\\ftime\\bin`.",
             "Windows installer currently targets x86_64 / AMD64.",
-            "## Quick Usage",
+            "### From source (for unreleased main)",
             "Uninstall steps are documented in `## Uninstall`, including custom install directories.",
             "## Learn More",
             "[CLI contract](docs/CLI.md)",
@@ -117,9 +149,17 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-ja.md",
         &[
             "files by time",
-            "更新の新しさでファイルを見るための、読み取り専用の File Time CLI",
+            "このフォルダで最近何が変わった？",
+            "指定ディレクトリ直下だけを走査し",
+            "深さ1固定: 今見ているフォルダだけを対象",
+            "## どんな時に使うか",
+            "## 例",
+            "## 他のツールとの違い",
+            "`--json` は 1 行 1 JSON で出る",
             "## インストール",
             "GitHub Releases installer には Rust は不要です。",
+            "### crates.io",
+            "cargo install ftime --locked",
             "Windows の既定 install 先は `%LOCALAPPDATA%\\Programs\\ftime\\bin` です。",
             "Windows installer は現状 x86_64 / AMD64 を対象にしています。",
             "## クイックスタート",
@@ -147,9 +187,17 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
         "docs/README-zh.md",
         &[
             "files by time",
-            "按新旧顺序浏览文件的只读 File Time CLI",
+            "这个文件夹最近有什么变化？",
+            "它只扫描目录的第一层",
+            "固定深度 1：只看当前文件夹，不递归整个目录树",
+            "## 适合什么场景",
+            "## 示例",
+            "## 和其他工具的区别",
+            "`--json` 会按每行一个 JSON 对象输出",
             "## 安装",
             "GitHub Releases installer 不需要 Rust。",
+            "### crates.io",
+            "cargo install ftime --locked",
             "Windows 默认安装目录是 `%LOCALAPPDATA%\\Programs\\ftime\\bin`。",
             "Windows installer 目前仅覆盖 x86_64 / AMD64。",
             "## 快速开始",
@@ -190,8 +238,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/install.ps1",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1",
-                "crates.io",
-                "cargo install ftime",
+                "## Quick Usage",
             ],
         );
     }
@@ -293,6 +340,7 @@ fn japanese_docs_have_separated_roles() {
             "README-ja.md",
             "USER-GUIDE-ja.md",
             "CLI-ja.md",
+            "PUBLISH-CHECKLIST-ja.md",
             "どのドキュメントを読むべきか",
         ],
     );

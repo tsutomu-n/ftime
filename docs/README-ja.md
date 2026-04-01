@@ -2,11 +2,45 @@
 
 [English](../README.md) | 日本語 | [中文](README-zh.md)
 
-`ftime` は更新の新しさでファイルを見るための、読み取り専用の File Time CLI です。名前は `files by time` の略で、指定ディレクトリ直下だけを走査し、更新時刻 (`mtime`) の新しい順に時間バケットで見せます。再帰しないので、いま触ったものを短時間で確認したい場面に向いています。
+`ftime` は、次の1問に素早く答えるための、読み取り専用 CLI です。
 
-- `File Time` 向けの深さ 1・読み取り専用・新しい順スキャン
-- `Active / Today / This Week / History` の 4 バケット
-- 端末では見やすく、パイプや JSON では処理しやすく出力
+> このフォルダで最近何が変わった？
+
+名前は `files by time` の略です。指定ディレクトリ直下だけを走査し、`mtime` の新しい順に並べて、`Active / Today / This Week / History` の時間バケットに分けて表示します。再帰しないので、フォルダ全体の「最近の動き」を短時間で把握できます。
+
+- 読み取り専用: 削除・リネーム・書き込みなし
+- 深さ1固定: 今見ているフォルダだけを対象
+- 時間バケット: `Active` / `Today` / `This Week` / `History`
+- TTY では見やすく、`--json` ではスクリプト連携しやすい
+
+## どんな時に使うか
+
+- `~/Downloads` を整理したい
+- `./target` や build 出力を確認したい
+- ログフォルダの最近の動きを見たい
+- sync フォルダや共有フォルダで「何か変わった？」を確認したい
+
+## 例
+
+```bash
+ftime
+ftime ~/Downloads
+ftime ./target
+ftime /var/log/app
+ftime --exclude-dots
+ftime --json | jq -r '.path'
+```
+
+`--json` は 1 行 1 JSON で出るので、スクリプトにもつなげやすいです。
+
+## 他のツールとの違い
+
+- `ls -lt` は素早い並び替え表示には向いていますが、時間バケットには分けません。
+- `eza` は詳細な一覧表示や metadata の確認に向いています。
+- `fd` は再帰検索や changed-within 系の絞り込みに向いています。
+- `bat` はファイル内容を読むためのツールです。
+
+`ftime` は別の役割に寄せています。1フォルダの最近の動きを、読み取り専用・深さ1・時間バケット付きで把握するための CLI です。
 
 ## インストール
 
@@ -26,6 +60,15 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ft
 Windows の既定 install 先は `%LOCALAPPDATA%\Programs\ftime\bin` です。
 
 Windows installer は現状 x86_64 / AMD64 を対象にしています。
+
+### crates.io
+
+crates.io に公開された crate からインストールします。
+
+```bash
+cargo install ftime --locked
+ftime --version
+```
 
 ### ソースから入れる
 

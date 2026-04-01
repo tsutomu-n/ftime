@@ -7,6 +7,7 @@
 - まず 1 画面で概要を掴みたい: `README-ja.md`
 - 日常の使い方やコマンドの使い分けを知りたい: `USER-GUIDE-ja.md`
 - フラグ、環境変数、出力契約を正確に確認したい: `CLI-ja.md`
+- 外部公開の手順を確認したい: `PUBLISH-CHECKLIST-ja.md`
 - 英語の CLI 正本を見たい: `CLI.md`
 
 ## 迷ったときの選び方
@@ -14,6 +15,7 @@
 - インストールや最短コマンドだけ知りたいなら `README-ja.md`
 - 実務でどう使い分けるかを知りたいなら `USER-GUIDE-ja.md`
 - 実装やテストと照らして仕様確認したいなら `CLI-ja.md`
+- crates.io 公開や GitHub settings 更新の手順なら `PUBLISH-CHECKLIST-ja.md`
 
 ## 補足
 

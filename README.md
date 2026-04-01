@@ -2,15 +2,64 @@
 
 English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
-`ftime` is a read-only File Time CLI for browsing files by recency. The name stands for `files by time`: it scans only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can see what changed recently without recursive noise.
+`ftime` is a read-only CLI for answering one question quickly:
+
+> What changed in this folder recently?
+
+The name stands for `files by time`. It scans only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can see recent changes without recursive noise.
 
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
 [![demo_ftime](assets/demo_ftime.gif)](assets/demo_ftime.mp4)
 
-- `File Time` view: read-only, depth-1, recency-first
+- Read-only by design: no delete, rename, or write operations
+- Depth-1 only: see the current folder, not the whole tree
 - Buckets: `Active` / `Today` / `This Week` / `History`
-- TTY output for humans, plain text / JSON Lines for scripts
+- TTY output for humans, JSON Lines for scripts
+
+## Why `ftime`?
+
+Use it when you want to:
+
+- clean up `~/Downloads`
+- check build output in `./target`
+- inspect a log or sync folder
+- answer "did anything change here?" in seconds
+
+## Common examples
+
+```bash
+ftime
+ftime ~/Downloads
+ftime ./target
+ftime /var/log/app
+ftime --exclude-dots
+ftime --json | jq -r '.path'
+```
+
+`--json` emits one JSON object per line, so it works well with `jq` and other scripts.
+
+## Example output
+
+```text
+Active
+  Cargo.toml
+Today
+  README.md
+This Week
+  docs/
+History
+  target/
+```
+
+## Compared to other tools
+
+- `ls -lt` is fine for a quick sorted listing, but it does not group files into recency buckets.
+- `eza` is great when you want a richer file listing with metadata, modified sorting, and size columns.
+- `fd` is great when you want recursive search and filters such as "changed within".
+- `bat` is for reading file contents, not for understanding a folder’s recent activity.
+
+`ftime` is for a different job: a read-only, depth-1 view of recent changes in one folder.
 
 ## Install
 
@@ -35,7 +84,16 @@ Default Windows install dir: `%LOCALAPPDATA%\Programs\ftime\bin`.
 
 Windows installer currently targets x86_64 / AMD64.
 
-### From source
+### crates.io
+
+Uses the published crate from crates.io.
+
+```bash
+cargo install ftime --locked
+ftime --version
+```
+
+### From source (for unreleased main)
 
 Requires Rust/Cargo 1.92+.
 
@@ -46,16 +104,6 @@ ftime --version
 ```
 
 Uninstall steps are documented in `## Uninstall`, including custom install directories.
-
-## Quick Usage
-
-```bash
-ftime
-ftime ~/project
-ftime --exclude-dots
-ftime --ext rs,toml
-ftime --json
-```
 
 Common flags:
 

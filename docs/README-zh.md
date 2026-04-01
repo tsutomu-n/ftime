@@ -2,11 +2,45 @@
 
 [English](../README.md) | [日本語](README-ja.md) | 中文
 
-`ftime` 是一个按新旧顺序浏览文件的只读 File Time CLI。名字来自 `files by time`：它只扫描目录的第一层，按 `mtime` 从新到旧排序，并按时间分桶展示最近改动过的文件或目录。
+`ftime` 是一个只读 CLI，专门用来快速回答一个问题：
 
-- `File Time` 视角：只读、固定深度 1、按新到旧优先
-- `Active / Today / This Week / History` 四个时间桶
-- 终端输出适合人看，plain text / JSON 适合脚本处理
+> 这个文件夹最近有什么变化？
+
+名字来自 `files by time`。它只扫描目录的第一层，按 `mtime` 从新到旧排序，再分到 `Active / Today / This Week / History` 这些时间桶里，这样你不用递归整棵目录树，也能快速看出最近的变化。
+
+- 只读设计：不会删除、重命名或写入文件
+- 固定深度 1：只看当前文件夹，不递归整个目录树
+- 时间分桶：`Active` / `Today` / `This Week` / `History`
+- 终端输出适合人看，`--json` 适合脚本处理
+
+## 适合什么场景
+
+- 整理 `~/Downloads`
+- 检查 `./target` 这类 build 输出目录
+- 快速查看日志目录或同步目录最近有没有变化
+- 在几秒内回答“这里刚刚改了什么？”
+
+## 示例
+
+```bash
+ftime
+ftime ~/Downloads
+ftime ./target
+ftime /var/log/app
+ftime --exclude-dots
+ftime --json | jq -r '.path'
+```
+
+`--json` 会按每行一个 JSON 对象输出，方便接到 `jq` 或其他脚本里。
+
+## 和其他工具的区别
+
+- `ls -lt` 适合快速按时间排序查看，但不会自动分到时间桶里。
+- `eza` 更适合看丰富的列表、metadata 和排序列。
+- `fd` 更适合递归搜索以及 changed-within 这类过滤。
+- `bat` 是用来阅读文件内容的，不是用来看目录最近活动的。
+
+`ftime` 关注的是另一件事：以只读、深度 1、时间分桶的方式，快速看懂一个文件夹最近发生了什么。
 
 ## 安装
 
@@ -26,6 +60,15 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ft
 Windows 默认安装目录是 `%LOCALAPPDATA%\Programs\ftime\bin`。
 
 Windows installer 目前仅覆盖 x86_64 / AMD64。
+
+### crates.io
+
+从 crates.io 上公开的 crate 安装。
+
+```bash
+cargo install ftime --locked
+ftime --version
+```
 
 ### 从源码安装
 

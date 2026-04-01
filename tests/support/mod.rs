@@ -8,6 +8,11 @@ pub fn read_repo_file(path: &str) -> String {
     fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
 }
 
+#[allow(dead_code)]
+pub fn read_repo_bytes(path: &str) -> Vec<u8> {
+    fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join(path)).unwrap()
+}
+
 pub fn package_version() -> &'static str {
     PACKAGE_VERSION
         .get_or_init(|| {

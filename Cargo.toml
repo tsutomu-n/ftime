@@ -4,11 +4,13 @@ version = "1.0.1"
 edition = "2024"
 rust-version = "1.92"
 authors = ["CLI Tools Team"]
-description = "Read-only File Time CLI for browsing files by recency"
+description = "Read-only CLI for browsing recently changed files in a folder"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tsutomu-n/ftime"
 homepage = "https://github.com/tsutomu-n/ftime"
+keywords = ["cli", "filesystem", "mtime", "jsonl", "productivity"]
+categories = ["command-line-utilities"]
 exclude = [
     ".ai_memory/**",
     ".serena/**",
