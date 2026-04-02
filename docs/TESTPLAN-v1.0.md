@@ -1,4 +1,4 @@
-# ftime v1.0.3 Test Plan
+# ftime v1.0.4 Test Plan
 Last updated: 2026-04-02
 
 ## 1. Unit Tests
@@ -33,5 +33,5 @@ cargo clippy --all-targets --all-features -- -D warnings
 ## 4. Release Validation
 *   `cargo run -- --help` shows `-A, --absolute` and `--exclude-dots`.
 *   `cargo run -- --help` does not show `-H, --hidden`.
-*   `cargo run -- --version` prints `ftime 1.0.3`.
-*   After publishing `v1.0.3`, the latest installer assets install a binary whose `--help` matches the v1 contract.
+*   `cargo run -- --version` prints `ftime 1.0.4`.
+*   After publishing `v1.0.4`, the latest installer assets install a binary whose `--help` matches the v1 contract.

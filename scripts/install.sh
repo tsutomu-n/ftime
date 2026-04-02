@@ -39,6 +39,15 @@ detect_target() {
     esac
 }
 
+resolve_latest_tag() {
+    local payload tag
+
+    payload="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | tr -d '\n')"
+    tag="$(printf '%s' "$payload" | sed -nE 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p')"
+    [[ -n "$tag" ]] || die "failed to resolve latest release tag"
+    printf '%s\n' "$tag"
+}
+
 resolve_download() {
     local version target asset url
 
@@ -46,13 +55,11 @@ resolve_download() {
     target="$2"
 
     if [[ "$version" == "latest" ]]; then
-        asset="${BIN}-${target}.tar.gz"
-        url="https://github.com/${REPO}/releases/latest/download/${asset}"
-        printf '%s\n%s\n' "latest" "$url"
-        return 0
+        version="$(resolve_latest_tag)"
+    else
+        version="v${version#v}"
     fi
 
-    version="v${version#v}"
     asset="${BIN}-${version#v}-${target}.tar.gz"
     url="https://github.com/${REPO}/releases/download/${version}/${asset}"
     printf '%s\n%s\n' "$version" "$url"

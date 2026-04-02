@@ -129,10 +129,10 @@ ftime --self-update
 常见输出示例：
 
 ```text
-update available: 1.0.3 -> 1.0.4
-ftime updated 1.0.3 -> 1.0.4 in /home/tn/.local/bin
-ftime is already up to date at 1.0.3 in /home/tn/.local/bin
-ftime now points to 1.0.3 (was 1.0.4) in /home/tn/.local/bin
+update available: 1.0.4 -> 1.0.5
+ftime updated 1.0.4 -> 1.0.5 in /home/tn/.local/bin
+ftime is already up to date at 1.0.4 in /home/tn/.local/bin
+ftime now points to 1.0.4 (was 1.0.5) in /home/tn/.local/bin
 ```
 
 如果通过 symlink 启动，`ftime --self-update` 会更新该 symlink 所在目录。

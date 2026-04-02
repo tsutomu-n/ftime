@@ -132,8 +132,8 @@ fn release_notes_separate_patch_changes_from_current_contract_snapshot() {
             &format!("# ftime v{} Release Notes", support::package_version()),
             "## Changes in v",
             "## Current v1 Contract Snapshot",
-            "TTY bucket headers now use `Active`, `Today`, `This Week`, and `History`.",
-            "README examples now match the shipped `• name | size | time` TTY output.",
+            "Self-update now resolves the latest tag before downloading the installer asset.",
+            "Unix and PowerShell installers now resolve the latest tag before downloading versioned platform assets.",
         ],
     );
     assert_contains_none(&notes, "docs/RELEASE-NOTES-v1.0.md", &["## New Behavior"]);
@@ -150,6 +150,40 @@ fn current_release_notes_capture_windows_installer_follow_up() {
             "GitHub Releases installer now documents that Rust is not required.",
             "%LOCALAPPDATA%\\Programs\\ftime\\bin",
         ],
+    );
+}
+
+#[test]
+fn installers_resolve_latest_tag_before_downloading_platform_binaries() {
+    let install_sh = support::read_repo_file("scripts/install.sh");
+    assert_contains_all(
+        &install_sh,
+        "scripts/install.sh",
+        &[
+            "https://api.github.com/repos/${REPO}/releases/latest",
+            "asset=\"${BIN}-${version#v}-${target}.tar.gz\"",
+            "url=\"https://github.com/${REPO}/releases/download/${version}/${asset}\"",
+        ],
+    );
+    assert_contains_none(
+        &install_sh,
+        "scripts/install.sh",
+        &["url=\"https://github.com/${REPO}/releases/latest/download/${asset}\""],
+    );
+
+    let install_ps1 = support::read_repo_file("scripts/install.ps1");
+    assert_contains_all(
+        &install_ps1,
+        "scripts/install.ps1",
+        &[
+            "https://api.github.com/repos/$Repo/releases/latest",
+            "Url = \"https://github.com/$Repo/releases/download/$Tag/$Bin-$VersionNumber-$Target.zip\"",
+        ],
+    );
+    assert_contains_none(
+        &install_ps1,
+        "scripts/install.ps1",
+        &["https://github.com/$Repo/releases/latest/download/$Bin-$Target.zip"],
     );
 }
 

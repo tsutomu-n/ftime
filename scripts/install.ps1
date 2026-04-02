@@ -8,6 +8,20 @@ $ErrorActionPreference = "Stop"
 $Repo = "tsutomu-n/ftime"
 $Bin = "ftime"
 
+function Resolve-LatestTag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo
+    )
+
+    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+    $Tag = "$($Release.tag_name)".Trim()
+    if (-not $Tag) {
+        throw "failed to resolve latest release tag"
+    }
+
+    return $Tag
+}
+
 function Resolve-Download {
     param(
         [Parameter(Mandatory = $true)][string]$Version,
@@ -16,13 +30,11 @@ function Resolve-Download {
     )
 
     if ($Version -eq "latest") {
-        return @{
-            Tag = "latest"
-            Url = "https://github.com/$Repo/releases/latest/download/$Bin-$Target.zip"
-        }
+        $Tag = Resolve-LatestTag -Repo $Repo
     }
-
-    $Tag = "v$($Version.TrimStart('v'))"
+    else {
+        $Tag = "v$($Version.TrimStart('v'))"
+    }
     $VersionNumber = $Tag.TrimStart('v')
     return @{
         Tag = $Tag

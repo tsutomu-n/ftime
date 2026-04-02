@@ -8,11 +8,9 @@ use std::process::{Command, Stdio};
 const LATEST_RELEASE_API_URL: &str = "https://api.github.com/repos/tsutomu-n/ftime/releases/latest";
 
 #[cfg(unix)]
-const UNIX_INSTALLER_URL: &str =
-    "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh";
+const INSTALLER_ASSET_NAME: &str = "ftime-install.sh";
 #[cfg(windows)]
-const WINDOWS_INSTALLER_URL: &str =
-    "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.ps1";
+const INSTALLER_ASSET_NAME: &str = "ftime-install.ps1";
 
 pub fn self_update() -> Result<()> {
     let current_exe = env::current_exe().context("failed to resolve current executable path")?;
@@ -53,8 +51,22 @@ pub fn check_for_update() -> Result<()> {
     Ok(())
 }
 
-fn installer_url() -> String {
-    env::var("FTIME_SELF_UPDATE_URL").unwrap_or_else(|_| default_installer_url().to_string())
+fn installer_url() -> Result<String> {
+    if let Some(url) = env::var("FTIME_SELF_UPDATE_URL")
+        .ok()
+        .filter(|url| !url.trim().is_empty())
+    {
+        return Ok(url);
+    }
+
+    Ok(installer_url_for_version(&latest_published_version()?))
+}
+
+fn installer_url_for_version(version: &str) -> String {
+    let version = version.trim_start_matches('v');
+    format!(
+        "https://github.com/tsutomu-n/ftime/releases/download/v{version}/{INSTALLER_ASSET_NAME}"
+    )
 }
 
 fn current_binary_version(executable: &Path) -> Option<String> {
@@ -313,18 +325,8 @@ fn is_known_non_profile_dir(segment: &std::ffi::OsStr) -> bool {
 }
 
 #[cfg(unix)]
-fn default_installer_url() -> &'static str {
-    UNIX_INSTALLER_URL
-}
-
-#[cfg(windows)]
-fn default_installer_url() -> &'static str {
-    WINDOWS_INSTALLER_URL
-}
-
-#[cfg(unix)]
 fn run_platform_update(install_dir: &Path) -> Result<()> {
-    let url = installer_url();
+    let url = installer_url()?;
     let installer = Command::new("curl")
         .arg("-fsSL")
         .arg(&url)
@@ -361,13 +363,14 @@ fn run_platform_update(install_dir: &Path) -> Result<()> {
 
 #[cfg(windows)]
 fn run_platform_update(install_dir: &Path) -> Result<()> {
+    let installer_url = installer_url()?;
     let status = Command::new("powershell")
         .arg("-NoProfile")
         .arg("-ExecutionPolicy")
         .arg("Bypass")
         .arg("-Command")
         .arg("& ([scriptblock]::Create((Invoke-WebRequest -Uri $env:FTIME_SELF_UPDATE_URL -UseBasicParsing).Content)) -InstallDir $env:FTIME_SELF_UPDATE_INSTALL_DIR")
-        .env("FTIME_SELF_UPDATE_URL", installer_url())
+        .env("FTIME_SELF_UPDATE_URL", installer_url)
         .env("FTIME_SELF_UPDATE_INSTALL_DIR", install_dir)
         .status()
         .context("failed to start PowerShell installer")?;
@@ -384,9 +387,12 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn default_url_points_to_latest_release_installer() {
-        let url = default_installer_url();
-        assert!(url.contains("releases/latest/download/ftime-install"));
+    fn installer_url_for_version_points_to_versioned_release_asset() {
+        let url = installer_url_for_version("1.2.3");
+        assert_eq!(
+            url,
+            "https://github.com/tsutomu-n/ftime/releases/download/v1.2.3/ftime-install.sh"
+        );
     }
 
     #[test]
