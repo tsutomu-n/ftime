@@ -1,4 +1,4 @@
-# ftime v1.0.0 テスト計画（日本語版・詳細）
+# ftime v1.0.3 テスト計画（日本語版・詳細）
 
 本書は `TESTPLAN-v1.0.md` の日本語拡張版です。テスト観点、シナリオ、環境設定、リスクベースの優先度、実行手順、期待結果、判定基準を整理し、誰でも再現できるようにします。
 
@@ -269,8 +269,8 @@ cargo test
 
 ## 28. サンプル期待出力（比較用）
 ```
-🔥 Active Context (< 1h)
-  • visible  just now
+🔥 Active
+  • visible | 0 B | just now
 
 💤 History (25 files hidden)
 ```

@@ -37,7 +37,11 @@ pub fn render(
     let tz_offset = current_timezone_offset();
 
     render_bucket(
-        &header(provider.as_ref(), TimeBucket::Active, bucket_title(TimeBucket::Active)),
+        &header(
+            provider.as_ref(),
+            TimeBucket::Active,
+            bucket_title(TimeBucket::Active),
+        ),
         &buckets.active,
         TimeBucket::Active,
         now,
@@ -45,7 +49,11 @@ pub fn render(
         use_absolute,
     );
     render_bucket(
-        &header(provider.as_ref(), TimeBucket::Today, bucket_title(TimeBucket::Today)),
+        &header(
+            provider.as_ref(),
+            TimeBucket::Today,
+            bucket_title(TimeBucket::Today),
+        ),
         &buckets.today,
         TimeBucket::Today,
         now,

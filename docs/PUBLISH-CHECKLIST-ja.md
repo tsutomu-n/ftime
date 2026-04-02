@@ -68,7 +68,7 @@ cargo publish
 
 - `error: credentials not found`
 - `error: the remote server responded with an error (status 403)`
-- `error: crate version \`1.0.2\` is already uploaded`
+- `error: crate version \`1.0.3\` is already uploaded`
 
 `version already exists` の場合は、この場で無理に続けず version bump を別タスクに切り分けます。
 

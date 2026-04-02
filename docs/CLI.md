@@ -1,4 +1,4 @@
-# ftime v1.0.2 CLI Contract
+# ftime v1.0.3 CLI Contract
 
 ## 1. Command Signature
 ```bash
@@ -15,7 +15,7 @@ ftime [OPTIONS] [PATH]
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
 | `--json` | `--json` | Emit JSON Lines output (fields: path, bucket, mtime, relative_time, is_dir, is_symlink, optional size, optional symlink_target, optional label). |
-|  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directoriesは除外される。 |
+|  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directories are excluded. |
 |  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
 |  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
 | `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` format for TTY and pipe output. |
@@ -44,7 +44,7 @@ ftime [OPTIONS] [PATH]
 
 ## 6. Exit Codes
 *   `0`: Success.
-*   `1`: General error (e.g., directory not found, permission denied on target root, target is a file). Per-entry I/O エラーはスキップし処理継続する。
+*   `1`: General error (e.g., directory not found, permission denied on target root, target is a file). Per-entry I/O errors are skipped and scanning continues.
 
 ## 7. Usage Examples
 ```bash

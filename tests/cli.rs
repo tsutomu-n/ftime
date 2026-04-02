@@ -222,11 +222,11 @@ fn check_update_reports_when_already_current() {
 fn check_update_reports_when_update_is_available() {
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.3")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.4")
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            "update available: {} -> 1.0.3",
+            "update available: {} -> 1.0.4",
             support::package_version()
         )));
 }
@@ -235,13 +235,17 @@ fn check_update_reports_when_update_is_available() {
 fn check_update_reports_when_latest_is_renumbered_lower() {
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_CURRENT_VERSION", "1.0.2")
+        .env(
+            "FTIME_SELF_UPDATE_CURRENT_VERSION",
+            support::package_version(),
+        )
         .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.0")
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "latest published release is 1.0.0 (current binary reports 1.0.2)",
-        ));
+        .stdout(predicate::str::contains(format!(
+            "latest published release is 1.0.0 (current binary reports {})",
+            support::package_version()
+        )));
 }
 
 #[test]

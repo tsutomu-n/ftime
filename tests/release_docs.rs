@@ -62,6 +62,84 @@ fn current_release_docs_match_current_package_version() {
 }
 
 #[test]
+fn japanese_extended_docs_track_current_bucket_names_and_version() {
+    let spec_ja = support::read_repo_file("docs/SPEC-ja.md");
+    assert_contains_all(
+        &spec_ja,
+        "docs/SPEC-ja.md",
+        &[
+            &format!("# ftime v{} 仕様書", support::package_version()),
+            "Active | `now - mtime < 1時間`",
+            "Today | `mtime >= 今日 00:00:00`",
+            "例 `🔥 Active`。",
+            "行形式: `name | size | time`。",
+            "全件をタブ区切り1行1エントリで出力: `<path>\\t<time>`。",
+        ],
+    );
+    assert_contains_none(
+        &spec_ja,
+        "docs/SPEC-ja.md",
+        &["Active Context", "Today's Session", "v1.0.0 仕様書"],
+    );
+
+    let testplan_ja = support::read_repo_file("docs/TESTPLAN-ja.md");
+    assert_contains_all(
+        &testplan_ja,
+        "docs/TESTPLAN-ja.md",
+        &[
+            &format!("# ftime v{} テスト計画", support::package_version()),
+            "```",
+            "🔥 Active",
+            "  • visible | 0 B | just now",
+            "💤 History (25 files hidden)",
+        ],
+    );
+    assert_contains_none(
+        &testplan_ja,
+        "docs/TESTPLAN-ja.md",
+        &["Active Context (< 1h)", "v1.0.0 テスト計画"],
+    );
+}
+
+#[test]
+fn cli_contract_stays_english_only_for_canonical_doc() {
+    let cli = support::read_repo_file("docs/CLI.md");
+    assert_contains_all(
+        &cli,
+        "docs/CLI.md",
+        &[
+            "Directories are excluded.",
+            "Per-entry I/O errors are skipped and scanning continues.",
+        ],
+    );
+    assert_contains_none(
+        &cli,
+        "docs/CLI.md",
+        &[
+            "Directoriesは除外される。",
+            "Per-entry I/O エラーはスキップし処理継続する。",
+        ],
+    );
+}
+
+#[test]
+fn release_notes_separate_patch_changes_from_current_contract_snapshot() {
+    let notes = support::read_repo_file("docs/RELEASE-NOTES-v1.0.md");
+    assert_contains_all(
+        &notes,
+        "docs/RELEASE-NOTES-v1.0.md",
+        &[
+            &format!("# ftime v{} Release Notes", support::package_version()),
+            "## Changes in v",
+            "## Current v1 Contract Snapshot",
+            "TTY bucket headers now use `Active`, `Today`, `This Week`, and `History`.",
+            "README examples now match the shipped `• name | size | time` TTY output.",
+        ],
+    );
+    assert_contains_none(&notes, "docs/RELEASE-NOTES-v1.0.md", &["## New Behavior"]);
+}
+
+#[test]
 fn current_release_notes_capture_windows_installer_follow_up() {
     let notes = support::read_repo_file("docs/RELEASE-NOTES-v1.0.md");
     assert_contains_all(
@@ -359,7 +437,11 @@ fn powershell_install_scripts_use_non_cargo_default_dir_and_help_missing_release
             "For unreleased main, install Rust and use cargo install --path . --force.",
         ],
     );
-    assert_contains_none(&install, "scripts/install.ps1", &["$env:USERPROFILE\\.cargo\\bin"]);
+    assert_contains_none(
+        &install,
+        "scripts/install.ps1",
+        &["$env:USERPROFILE\\.cargo\\bin"],
+    );
 
     let uninstall = support::read_repo_file("scripts/uninstall.ps1");
     assert_contains_all(
