@@ -1,4 +1,4 @@
-# ftime v1.0.1 Behavior Specification
+# ftime v1.0.2 Behavior Specification
 Last updated: 2026-03-30
 
 ## 1. Scope
@@ -69,7 +69,7 @@ Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 *   `--no-labels`: Disable labels such as `Fresh`.
 *   `-I, --icons`: Opt-in Nerd Font icons when the binary supports the `icons` feature.
 
-`-H/--hidden` is not part of the public v1.0.1 CLI contract.
+`-H/--hidden` is not part of the public v1.0.2 CLI contract.
 
 ## 6. Environment
 *   `NO_COLOR`: Disable colors even if set to an empty string.
@@ -77,7 +77,7 @@ Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 *   `FTIME_IGNORE`: Override the global ignore file path.
 
 ## 7. Compatibility Policy
-*   v1.0.1 freezes the current public CLI contract for future compatibility.
-*   The public v1.0.1 contract includes dotfiles by default and uses `--exclude-dots` as the opt-out flag.
+*   v1.0.2 freezes the current public CLI contract for future compatibility.
+*   The public v1.0.2 contract includes dotfiles by default and uses `--exclude-dots` as the opt-out flag.
 *   Pipe output remains 2 columns.
 *   JSON remains JSON Lines and may omit optional fields when not applicable.

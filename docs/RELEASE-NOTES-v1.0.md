@@ -1,13 +1,13 @@
-# ftime v1.0.1 Release Notes
+# ftime v1.0.2 Release Notes
 Date: 2026-03-30
 
 ## Summary
-v1.0.1 is a patch follow-up on the current public CLI contract, focused on the Windows PowerShell installer path and install guidance.
+v1.0.2 is a patch follow-up on the current public CLI contract, focused on aligning public docs and TTY bucket copy with the shipped output.
 
 ## Public Contract
 - Dotfiles are included by default.
 - `--exclude-dots` is the opt-out flag for dotfiles.
-- `-H/--hidden` is not part of the public v1.0.1 CLI.
+- `-H/--hidden` is not part of the public v1.0.2 CLI.
 
 ## New Behavior
 - Added `-A/--absolute` for `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` timestamps in TTY and pipe output.

@@ -222,11 +222,11 @@ fn check_update_reports_when_already_current() {
 fn check_update_reports_when_update_is_available() {
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.2")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.3")
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            "update available: {} -> 1.0.2",
+            "update available: {} -> 1.0.3",
             support::package_version()
         )));
 }
