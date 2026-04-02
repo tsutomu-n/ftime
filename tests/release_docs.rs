@@ -18,6 +18,16 @@ fn assert_contains_none(content: &str, path: &str, snippets: &[&str]) {
     }
 }
 
+fn assert_in_order(content: &str, path: &str, snippets: &[&str]) {
+    let mut cursor = 0usize;
+    for snippet in snippets {
+        let next = content[cursor..]
+            .find(snippet)
+            .unwrap_or_else(|| panic!("missing ordered snippet in {path}: {snippet}"));
+        cursor += next + snippet.len();
+    }
+}
+
 #[test]
 fn current_release_docs_match_current_package_version() {
     let cargo_toml = support::read_repo_file("Cargo.toml");
@@ -108,16 +118,18 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "The name stands for `files by time`.",
             "It scans only the first level of a directory",
             "Depth-1 only: see the current folder, not the whole tree",
+            "Human-readable sizes in TTY output; plain text and JSON Lines available for scripts",
             "## Why `ftime`?",
             "## Common examples",
-            "## Compared to other tools",
+            "## Tool fit",
             "clean up `~/Downloads`",
             "`--json` emits one JSON object per line",
             "## Example output",
-            "Active",
-            "Today",
-            "This Week",
-            "History",
+            "• Cargo.toml | 2.1 KiB | 12s ago",
+            "• README.md | 8.4 KiB | 2h ago",
+            "• docs/ | - | 3d ago",
+            "• target/ | - | 2w ago",
+            "Directories show `-` in the size column.",
             "## Install",
             "Rust is not required for the GitHub Releases installer.",
             "### crates.io",
@@ -152,8 +164,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "このフォルダで最近何が変わった？",
             "指定ディレクトリ直下だけを走査し",
             "深さ1固定: 今見ているフォルダだけを対象",
+            "TTY では人間可読サイズを表示し、非 TTY ではプレーンテキスト、`--json` では JSON Lines を使えます",
             "## どんな時に使うか",
             "## 例",
+            "## 出力例",
             "## 他のツールとの違い",
             "`--json` は 1 行 1 JSON で出る",
             "## インストール",
@@ -190,8 +204,10 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "这个文件夹最近有什么变化？",
             "它只扫描目录的第一层",
             "固定深度 1：只看当前文件夹，不递归整个目录树",
+            "TTY 中显示人类可读的大小，非 TTY 可用纯文本，`--json` 可输出 JSON Lines",
             "## 适合什么场景",
             "## 示例",
+            "## 输出示例",
             "## 和其他工具的区别",
             "`--json` 会按每行一个 JSON 对象输出",
             "## 安装",
@@ -242,6 +258,51 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             ],
         );
     }
+}
+
+#[test]
+fn readme_flags_keep_update_commands_after_scan_focused_flags() {
+    let root = support::read_repo_file("README.md");
+    assert_in_order(
+        &root,
+        "README.md",
+        &[
+            "- `-a, --all`",
+            "- `-A, --absolute`",
+            "- `--exclude-dots`",
+            "- `--json`",
+            "- `--check-update`",
+            "- `--self-update`",
+        ],
+    );
+
+    let ja = support::read_repo_file("docs/README-ja.md");
+    assert_in_order(
+        &ja,
+        "docs/README-ja.md",
+        &[
+            "- `-a, --all`",
+            "- `-A, --absolute`",
+            "- `--exclude-dots`",
+            "- `--json`",
+            "- `--check-update`",
+            "- `--self-update`",
+        ],
+    );
+
+    let zh = support::read_repo_file("docs/README-zh.md");
+    assert_in_order(
+        &zh,
+        "docs/README-zh.md",
+        &[
+            "- `-a, --all`",
+            "- `-A, --absolute`",
+            "- `--exclude-dots`",
+            "- `--json`",
+            "- `--check-update`",
+            "- `--self-update`",
+        ],
+    );
 }
 
 #[test]

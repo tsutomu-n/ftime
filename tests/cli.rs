@@ -90,6 +90,16 @@ fn help_mentions_file_time_concept_and_reinstall_note() {
         ));
 }
 
+#[test]
+fn help_lists_check_update_before_self_update() {
+    let output = bin().arg("--help").output().unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let check = stdout.find("--check-update").unwrap();
+    let update = stdout.find("--self-update").unwrap();
+
+    assert!(check < update);
+}
+
 #[cfg(unix)]
 #[test]
 fn self_update_runs_installer_for_current_binary_dir() {

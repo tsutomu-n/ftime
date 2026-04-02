@@ -11,7 +11,7 @@
 - 只读设计：不会删除、重命名或写入文件
 - 固定深度 1：只看当前文件夹，不递归整个目录树
 - 时间分桶：`Active` / `Today` / `This Week` / `History`
-- 终端输出适合人看，`--json` 适合脚本处理
+- TTY 中显示人类可读的大小，非 TTY 可用纯文本，`--json` 可输出 JSON Lines
 
 ## 适合什么场景
 
@@ -33,14 +33,30 @@ ftime --json | jq -r '.path'
 
 `--json` 会按每行一个 JSON 对象输出，方便接到 `jq` 或其他脚本里。
 
+## 输出示例
+
+```text
+Active
+  • Cargo.toml | 2.1 KiB | 12s ago
+Today
+  • README.md | 8.4 KiB | 2h ago
+This Week
+  • docs/ | - | 3d ago
+History
+  • target/ | - | 2w ago
+```
+
+目录会在 size 列显示 `-`。
+
 ## 和其他工具的区别
 
-- `ls -lt` 适合快速按时间排序查看，但不会自动分到时间桶里。
-- `eza` 更适合看丰富的列表、metadata 和排序列。
-- `fd` 更适合递归搜索以及 changed-within 这类过滤。
-- `bat` 是用来阅读文件内容的，不是用来看目录最近活动的。
-
-`ftime` 关注的是另一件事：以只读、深度 1、时间分桶的方式，快速看懂一个文件夹最近发生了什么。
+| 工具 | 强项 | `ftime` 的区别 |
+| --- | --- | --- |
+| `ls -lt` | 快速按时间排序查看 | 不会自动分到时间桶 |
+| `eza` | 丰富的列表和 metadata | 没有内建时间分桶 |
+| `fd` | 递归搜索和过滤 | 天生就是递归工具 |
+| `bat` | 阅读文件内容 | 不是目录活动视图 |
+| `ftime` | 看一个文件夹最近的活动 | 时间桶 + 大小一眼可见 |
 
 ## 安装
 
@@ -97,9 +113,10 @@ ftime --json
 
 - `-a, --all`：在 TTY 中展开 `History`
 - `-A, --absolute`：显示绝对本地时间
+- `--exclude-dots`：隐藏 dotfiles
+- `--json`：按每行一个 JSON 对象输出
 - `--check-update`：只检查是否有更新的公开版
 - `--self-update`：把当前安装位置更新到最新公开版
-- `--exclude-dots`：隐藏 dotfiles
 - `--no-ignore`：禁用 built-in / `.ftimeignore`
 
 ## 更新

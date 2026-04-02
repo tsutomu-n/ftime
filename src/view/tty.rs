@@ -37,11 +37,7 @@ pub fn render(
     let tz_offset = current_timezone_offset();
 
     render_bucket(
-        &header(
-            provider.as_ref(),
-            TimeBucket::Active,
-            "Active Context (< 1h)",
-        ),
+        &header(provider.as_ref(), TimeBucket::Active, bucket_title(TimeBucket::Active)),
         &buckets.active,
         TimeBucket::Active,
         now,
@@ -49,7 +45,7 @@ pub fn render(
         use_absolute,
     );
     render_bucket(
-        &header(provider.as_ref(), TimeBucket::Today, "Today's Session"),
+        &header(provider.as_ref(), TimeBucket::Today, bucket_title(TimeBucket::Today)),
         &buckets.today,
         TimeBucket::Today,
         now,
@@ -57,7 +53,11 @@ pub fn render(
         use_absolute,
     );
     render_bucket(
-        &header(provider.as_ref(), TimeBucket::ThisWeek, "This Week"),
+        &header(
+            provider.as_ref(),
+            TimeBucket::ThisWeek,
+            bucket_title(TimeBucket::ThisWeek),
+        ),
         &buckets.week,
         TimeBucket::ThisWeek,
         now,
@@ -67,7 +67,11 @@ pub fn render(
 
     if show_all_history || buckets.history.len() <= LIMIT {
         render_bucket(
-            &header(provider.as_ref(), TimeBucket::History, "History"),
+            &header(
+                provider.as_ref(),
+                TimeBucket::History,
+                bucket_title(TimeBucket::History),
+            ),
             &buckets.history,
             TimeBucket::History,
             now,
@@ -77,7 +81,11 @@ pub fn render(
     } else if !buckets.history.is_empty() {
         println!(
             "{} ({} files hidden)",
-            header(provider.as_ref(), TimeBucket::History, "History"),
+            header(
+                provider.as_ref(),
+                TimeBucket::History,
+                bucket_title(TimeBucket::History),
+            ),
             buckets.history.len()
         );
     }
@@ -214,6 +222,15 @@ fn format_size(size: Option<u64>) -> String {
     }
 }
 
+fn bucket_title(bucket: TimeBucket) -> &'static str {
+    match bucket {
+        TimeBucket::Active => "Active",
+        TimeBucket::Today => "Today",
+        TimeBucket::ThisWeek => "This Week",
+        TimeBucket::History => "History",
+    }
+}
+
 fn header(provider: &dyn IconProvider, bucket: TimeBucket, label: &str) -> String {
     let icon = provider.bucket_icon(bucket);
     if icon.is_empty() {
@@ -265,5 +282,13 @@ mod tests {
             classify_time_tone(TimeBucket::History, "2026-03-01"),
             TimeTone::History
         );
+    }
+
+    #[test]
+    fn bucket_titles_are_concise_and_match_readme_language() {
+        assert_eq!(bucket_title(TimeBucket::Active), "Active");
+        assert_eq!(bucket_title(TimeBucket::Today), "Today");
+        assert_eq!(bucket_title(TimeBucket::ThisWeek), "This Week");
+        assert_eq!(bucket_title(TimeBucket::History), "History");
     }
 }

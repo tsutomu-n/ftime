@@ -15,7 +15,7 @@ The name stands for `files by time`. It scans only the first level of a director
 - Read-only by design: no delete, rename, or write operations
 - Depth-1 only: see the current folder, not the whole tree
 - Buckets: `Active` / `Today` / `This Week` / `History`
-- TTY output for humans, JSON Lines for scripts
+- Human-readable sizes in TTY output; plain text and JSON Lines available for scripts
 
 ## Why `ftime`?
 
@@ -43,23 +43,26 @@ ftime --json | jq -r '.path'
 
 ```text
 Active
-  Cargo.toml
+  • Cargo.toml | 2.1 KiB | 12s ago
 Today
-  README.md
+  • README.md | 8.4 KiB | 2h ago
 This Week
-  docs/
+  • docs/ | - | 3d ago
 History
-  target/
+  • target/ | - | 2w ago
 ```
 
-## Compared to other tools
+Directories show `-` in the size column.
 
-- `ls -lt` is fine for a quick sorted listing, but it does not group files into recency buckets.
-- `eza` is great when you want a richer file listing with metadata, modified sorting, and size columns.
-- `fd` is great when you want recursive search and filters such as "changed within".
-- `bat` is for reading file contents, not for understanding a folder’s recent activity.
+## Tool fit
 
-`ftime` is for a different job: a read-only, depth-1 view of recent changes in one folder.
+| Tool | Strong at | Where `ftime` differs |
+| --- | --- | --- |
+| `ls -lt` | quick sorted listing | no recency buckets |
+| `eza` | rich file listing with metadata | no built-in time buckets |
+| `fd` | recursive search and filters | recursive by design |
+| `bat` | reading file contents | not a folder activity view |
+| `ftime` | recent activity in one folder | buckets + size at a glance |
 
 ## Install
 
@@ -109,9 +112,10 @@ Common flags:
 
 - `-a, --all`: expand `History` in TTY mode
 - `-A, --absolute`: show absolute local timestamps like `2026-03-16 20:49:28 (UTC+09:00)`
+- `--exclude-dots`: hide dotfiles
+- `--json`: emit one JSON object per line for scripts
 - `--check-update`: report whether a newer published release is available
 - `--self-update`: update the current installed binary to the latest published release
-- `--exclude-dots`: hide dotfiles
 - `--no-ignore`: disable built-in and file-based ignore rules
 
 ## Update

@@ -49,13 +49,13 @@ struct Cli {
     #[arg(short = 'A', long = "absolute")]
     absolute_time: bool,
 
-    /// Update the current installed binary to the latest published release
-    #[arg(long = "self-update")]
-    self_update: bool,
-
     /// Check whether a newer published release is available
     #[arg(long = "check-update")]
     check_update: bool,
+
+    /// Update the current installed binary to the latest published release
+    #[arg(long = "self-update")]
+    self_update: bool,
 
     /// Exclude dotfiles from scan results
     #[arg(long = "exclude-dots")]
