@@ -391,7 +391,9 @@ mod tests {
         let url = installer_url_for_version("1.2.3");
         assert_eq!(
             url,
-            "https://github.com/tsutomu-n/ftime/releases/download/v1.2.3/ftime-install.sh"
+            format!(
+                "https://github.com/tsutomu-n/ftime/releases/download/v1.2.3/{INSTALLER_ASSET_NAME}"
+            )
         );
     }
 
