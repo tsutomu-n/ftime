@@ -1,5 +1,5 @@
 # ftime v1.0.4 Behavior Specification
-Last updated: 2026-04-02
+Last updated: 2026-04-03
 
 ## 1. Scope
 *   **Target:** Local filesystem visualization.
@@ -37,6 +37,8 @@ Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 *   `time` is relative by default, or absolute with `-A/--absolute`.
 *   Time column uses a bucket-aware heatmap.
 *   `Skew` styling takes precedence over bucket heatmap.
+*   Directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself.
+*   Child activity hints never reclassify the parent bucket.
 *   History is collapsed by default; `-a/--all` expands it.
 *   A `Current Timezone: UTC±HH:MM` footer is appended.
 
@@ -44,6 +46,7 @@ Future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`.
 *   Plain two-column TSV: `<path>\t<time>`.
 *   No colors, headers, icons, bucket grouping, or item limit.
 *   `time` is relative by default, or `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` with `-A/--absolute`.
+*   This hint is TTY-only and does not appear in pipe or JSON output.
 
 ### JSON Lines
 *   Triggered by `--json`.

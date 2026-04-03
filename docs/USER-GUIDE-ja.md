@@ -59,6 +59,8 @@ ftime --json | jq '.path'
 - `Active / Today / This Week / History` の順で出ます
 - `History` はデフォルトで折りたたみです
 - 行は `name | size | time` の形です
+- ディレクトリ行では `[child: active]` / `[child: today]` が付くことがあります
+- これはフォルダ自身より新しい直下の子要素があるサインです
 - 未来時刻は `Skew` として強調されます
 - 最後に `Current Timezone: UTC±HH:MM` が付きます
 
@@ -77,6 +79,7 @@ ftime --json | jq '.path'
 - `--json` を付けると 1 行 1 JSON になります
 - 主なキーは `path`, `bucket`, `mtime`, `relative_time` です
 - 人が読むというより、ツール連携向けです
+- 機械処理したいときは、child hint が出ないパイプ出力か `--json` を使います。
 
 出力キーの正確な契約は `CLI-ja.md` と `CLI.md` を見てください。
 

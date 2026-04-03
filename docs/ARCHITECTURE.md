@@ -7,13 +7,14 @@ The current codebase separates concerns to keep FS mode stable while allowing fu
 src/
 ├── main.rs          # Entry point, CLI parsing (clap), Mode selection (TTY check)
 ├── engine.rs        # Core logic: Scanning (depth=1), Sorting, Filtering (exclude_dots / ignore)
-├── model.rs         # Data structures (FileEntry, TimeBucket)
+├── model.rs         # Data structures (FileEntry, TimeBucket, ChildActivityHint)
 ├── view/
 │   ├── mod.rs       # View trait or switch
 │   ├── tty.rs       # Colored/Rich output logic
 │   ├── text.rs      # Plain/Pipe output logic
 │   └── json.rs      # JSON Lines output (`--json`, feature json)
 └── util/
+    ├── ignore.rs    # Ignore file loading (`~/.ftimeignore`, local `.ftimeignore`)
     └── time.rs      # Relative time calculation logic
 ```
 
@@ -38,6 +39,11 @@ pub enum TimeBucket {
     ThisWeek, // < 7d
     History,  // Older
 }
+
+pub enum ChildActivityHint {
+    Active,
+    Today,
+}
 ```
 
 ## 3. Non-Functional Requirements
@@ -53,8 +59,8 @@ pub enum TimeBucket {
 *   **Toolchain:** Rust edition 2024 (MSRV 1.92).
 
 ## 4. Responsibility Boundaries
-*   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。`ScanOptions` は `exclude_dots` / `ext_filter` / ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化 を受け付ける。
+*   `engine`: `scan_dir` で depth=1 のみを列挙し、`FileEntry` を `mtime` DESC（tie-break: `name` ASC）でソート後、`bucketize` で `TimeBucket` に振り分ける。`ScanOptions` は `exclude_dots` / `ext_filter` / ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化 を受け付ける。`dir_child_activity_hint` is also owned here so child activity uses the same inclusion semantics as the root scan.
 *   `util::time`: `classify_bucket`/`relative_time`/`absolute_time`/`current_timezone_offset` など時間境界と整形を集約し、境界テストをここに集中させる。
-*   `view::tty` / `view::text` / `view::json`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。TTY は `name | size | time` と timezone footer を扱う。
+*   `view::tty` / `view::text` / `view::json`: 出力レイアウトのみを担当し、エンジンのソート順・バケット順を崩さない。TTY は `name | size | time` と timezone footer を扱う. TTY may append a child activity suffix on directory rows; text and JSON stay unchanged.
 *   `view::icon`（現行機能）: アイコン提供を抽象化。デフォルトは絵文字、`icons` feature + `--icons` 指定時に Nerd Font グリフへ差し替え。フォント未導入でもフォールバック可能であることを保証。
 *   `engine::ScanOptions` は `exclude_dots`, `ext_filter`（拡張子ホワイトリスト）を受け取り、ファイル拡張子によるフィルタはスキャン段階で適用する（ディレクトリは除外）。

@@ -560,3 +560,76 @@ fn japanese_docs_have_separated_roles() {
         "docs/ftime-overview-ja.md should stay short, found {overview_line_count} lines"
     );
 }
+
+#[test]
+fn current_contract_docs_capture_child_activity_hint_behavior() {
+    let spec = support::read_repo_file("docs/SPEC-v1.0.md");
+    assert_contains_all(
+        &spec,
+        "docs/SPEC-v1.0.md",
+        &[
+            "Directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself.",
+            "This hint is TTY-only and does not appear in pipe or JSON output.",
+            "Child activity hints never reclassify the parent bucket.",
+        ],
+    );
+
+    let spec_ja = support::read_repo_file("docs/SPEC-ja.md");
+    assert_contains_all(
+        &spec_ja,
+        "docs/SPEC-ja.md",
+        &[
+            "ディレクトリ行では、直下の子要素のほうがフォルダ自身より新しい場合に、`[child: active]` / `[child: today]` の補助表示が付くことがあります。",
+            "この補助表示は TTY 専用で、パイプ出力や JSON Lines には出ません。",
+            "child hint は親ディレクトリ自身のバケットを再分類しません。",
+        ],
+    );
+
+    let cli_ja = support::read_repo_file("docs/CLI-ja.md");
+    assert_contains_all(
+        &cli_ja,
+        "docs/CLI-ja.md",
+        &[
+            "ディレクトリ行では、直下の子要素のほうが親より新しい場合に ` [child: active]` / ` [child: today]` の補助表示が time の後ろに付きます。",
+            "この補助表示は TTY 専用です。",
+            "JSON Lines に child activity 専用フィールドはありません。",
+        ],
+    );
+
+    let architecture = support::read_repo_file("docs/ARCHITECTURE.md");
+    assert_contains_all(
+        &architecture,
+        "docs/ARCHITECTURE.md",
+        &[
+            "util/",
+            "ignore.rs    # Ignore file loading (`~/.ftimeignore`, local `.ftimeignore`)",
+            "model.rs         # Data structures (FileEntry, TimeBucket, ChildActivityHint)",
+            "`engine`: `scan_dir`",
+            "`dir_child_activity_hint`",
+            "`view::tty` / `view::text` / `view::json`",
+            "TTY may append a child activity suffix on directory rows; text and JSON stay unchanged.",
+        ],
+    );
+
+    let architecture_ja = support::read_repo_file("docs/ARCHITECTURE-ja.md");
+    assert_contains_all(
+        &architecture_ja,
+        "docs/ARCHITECTURE-ja.md",
+        &[
+            "`dir_child_activity_hint`",
+            "TTY のディレクトリ行だけに child hint の suffix を付ける",
+            "text / json は child hint を扱わない",
+        ],
+    );
+
+    let guide = support::read_repo_file("docs/USER-GUIDE-ja.md");
+    assert_contains_all(
+        &guide,
+        "docs/USER-GUIDE-ja.md",
+        &[
+            "`[child: active]` / `[child: today]`",
+            "フォルダ自身より新しい直下の子要素があるサイン",
+            "機械処理したいときは、child hint が出ないパイプ出力か `--json` を使います。",
+        ],
+    );
+}

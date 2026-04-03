@@ -81,6 +81,8 @@ ftime [OPTIONS] [PATH]
 - `History` は既定で折りたたみ、`-a` で展開
 - 各バケットは最大 20 件まで表示
 - 行形式は `name | size | time`
+- ディレクトリ行では、直下の子要素のほうが親より新しい場合に ` [child: active]` / ` [child: today]` の補助表示が time の後ろに付きます。
+- この補助表示は TTY 専用です。
 - 末尾に `Current Timezone: UTC±HH:MM` を表示
 
 ### 非TTY
@@ -89,6 +91,7 @@ ftime [OPTIONS] [PATH]
 - ヘッダ、色、バケット見出しは出しません
 - 件数上限なしで全件出力します
 - `-A` 指定時は絶対時刻に切り替わります
+- child hint は出ません
 
 ### JSON Lines
 
@@ -96,6 +99,7 @@ ftime [OPTIONS] [PATH]
 - 主なキーは `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`
 - `symlink_target`, `label`, `size` は条件付きキーです
 - `mtime` は RFC 3339 UTC です
+- JSON Lines に child activity 専用フィールドはありません。
 
 ## ignore 契約
 

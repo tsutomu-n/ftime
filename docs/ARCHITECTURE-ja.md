@@ -29,10 +29,10 @@ tests/               # 統合テスト（CLI挙動）
 
 ### モジュール責務
 - **main.rs**: CLI引数のバリデーション、環境変数反映、I/Oエラーのトップレベルハンドリング。ビジネスロジックは呼び出すだけで持ち込まない。
-- **engine.rs**: ファイルシステム読み取りとバケット分配の中核。`ScanOptions` で `exclude_dots` / 拡張子ホワイトリスト（`ext_filter`）/ ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化を受け、スキャン段階で適用。I/O境界でエラーを握り潰す/伝搬する判断を集中させる。
+- **engine.rs**: ファイルシステム読み取りとバケット分配の中核。`ScanOptions` で `exclude_dots` / 拡張子ホワイトリスト（`ext_filter`）/ ignore（デフォルト + グローバル + ローカル `.ftimeignore`）/ label無効化を受け、スキャン段階で適用。`dir_child_activity_hint` で TTY のディレクトリ行だけに child hint の suffix を付けるための best-effort 判定もここで行う。I/O境界でエラーを握り潰す/伝搬する判断を集中させる。
 - **model.rs**: 構造体定義のみ。依存が少なく、将来別バックエンド（Git）追加時に共通データモデルとして再利用可能。
 - **util/time.rs**: 時刻処理の唯一の場所。DSTやローカルタイムへの依存、absolute timestamp の整形、future mtime の `Skew` 表示、timezone offset 取得をここに閉じ込め、他モジュールを純粋に保つ。
-- **view/**: 表示責務を隔離し、レンダリング差分（TTY/パイプ/JSON、色・折り畳み・表示上限・absolute/relative time）だけを扱う。データ構造はエンジンから受け取る。
+- **view/**: 表示責務を隔離し、レンダリング差分（TTY/パイプ/JSON、色・折り畳み・表示上限・absolute/relative time）だけを扱う。データ構造はエンジンから受け取る。text / json は child hint を扱わない。
 
 ## 3. データモデル詳細
 ### FileEntry

@@ -62,6 +62,8 @@
   - シンボリックリンク: 本体名を Yellow、`->` 以降のターゲットを dimmed。`read_link` 成功時は返された文字列を表示（存在チェックはしない）。ターゲットはベースディレクトリからの相対表示を試みる。  
   - 通常ファイル: 色付けなし（NO_COLOR 時は全て無色）。  
   - 行形式: `name | size | time`。時間列はバケット連動の heatmap を持ち、future mtime は `Skew` を優先強調する。  
+  - ディレクトリ行では、直下の子要素のほうがフォルダ自身より新しい場合に、`[child: active]` / `[child: today]` の補助表示が付くことがあります。  
+  - child hint は親ディレクトリ自身のバケットを再分類しません。  
 - **History の折り畳み**: `--all` なしの場合は `💤 History (N files hidden)` の1行のみ。`--all` でリスト表示＋必要なら `... and N more items` を付加。
 - **カラー抑止**: 環境変数 `NO_COLOR` 設定時は常に無色。オプションフラグは不要。
 - **強制TTY**: `FTIME_FORCE_TTY` が設定されている場合、stdout がパイプでもTTYスタイルを使う（テストやデモ用途）。
@@ -73,6 +75,7 @@
 - `-A/--absolute` 指定時は `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` を出す。
 - 20件上限制限なし。ヒストリ折り畳みなし。
 - ソート順はTTYと同じ（mtime降順）。
+- この補助表示は TTY 専用で、パイプ出力や JSON Lines には出ません。
 
 ## 7. フィルタリング
 - dotfiles: デフォルトで含める。不要なら `--exclude-dots` で除外。
