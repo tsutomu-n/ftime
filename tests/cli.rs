@@ -7,6 +7,8 @@ use serde_json::Value;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -559,6 +561,90 @@ fn tty_child_activity_hint_respects_exclude_dots_and_child_local_ignore() {
 
     assert!(!hidden_line.contains("[child:"));
     assert!(!ignored_line.contains("[child:"));
+}
+
+#[test]
+fn tty_child_activity_hint_is_not_shown_for_symlink_entries() {
+    let dir = tempdir().unwrap();
+    let real_dir = dir.path().join("docs");
+    fs::create_dir(&real_dir).unwrap();
+    let recent_child = real_dir.join("guide.md");
+    File::create(&recent_child).unwrap();
+
+    let link_dir = dir.path().join("docs-link");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&real_dir, &link_dir).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_dir(&real_dir, &link_dir).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &recent_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &real_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let symlink_line = stdout
+        .lines()
+        .find(|line| line.contains("docs-link ->"))
+        .expect("symlink row should exist");
+
+    assert!(!symlink_line.contains("[child:"));
+}
+
+#[cfg(unix)]
+#[test]
+fn tty_child_activity_hint_is_not_shown_for_unreadable_directories() {
+    let dir = tempdir().unwrap();
+    let locked_dir = dir.path().join("locked");
+    fs::create_dir(&locked_dir).unwrap();
+    let recent_child = locked_dir.join("recent.log");
+    File::create(&recent_child).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &recent_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &locked_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    fs::set_permissions(&locked_dir, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+
+    fs::set_permissions(&locked_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let locked_line = stdout
+        .lines()
+        .find(|line| line.contains("locked/ | - |"))
+        .expect("locked directory row should exist");
+
+    assert!(output.status.success());
+    assert!(!locked_line.contains("[child:"));
 }
 
 #[test]
