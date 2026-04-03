@@ -26,3 +26,9 @@ pub enum TimeBucket {
 pub enum Label {
     Fresh,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChildActivityHint {
+    Active,
+    Today,
+}

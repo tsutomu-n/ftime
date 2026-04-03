@@ -146,7 +146,7 @@ fn self_update_prefers_invoked_symlink_directory() {
 
     let source_bin = assert_cmd::cargo::cargo_bin!("ftime");
     let real_bin = real_dir.join("ftime");
-    fs::copy(&source_bin, &real_bin).unwrap();
+    fs::copy(source_bin, &real_bin).unwrap();
 
     let link_bin = link_dir.join("ftime");
     std::os::unix::fs::symlink(&real_bin, &link_bin).unwrap();
@@ -413,6 +413,152 @@ fn tty_output_with_no_color_keeps_text_contract_without_ansi() {
     assert!(stdout.contains("[Skew]"));
     assert!(stdout.contains("Current Timezone: "));
     assert!(!stdout.contains("\u{1b}["));
+}
+
+#[test]
+fn tty_output_shows_child_activity_hints_only_for_directories() {
+    let dir = tempdir().unwrap();
+    let docs_dir = dir.path().join("docs");
+    fs::create_dir(&docs_dir).unwrap();
+    let docs_child = docs_dir.join("guide.md");
+    File::create(&docs_child).unwrap();
+
+    let target_dir = dir.path().join("target");
+    fs::create_dir(&target_dir).unwrap();
+    let target_child = target_dir.join("artifact.bin");
+    File::create(&target_child).unwrap();
+
+    let readme = dir.path().join("README.md");
+    File::create(&readme).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &target_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &docs_dir,
+        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &target_dir,
+        FileTime::from_system_time(now - Duration::from_secs(14 * 24 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &readme,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("docs/ | - |"));
+    assert!(stdout.contains("[child: today]"));
+    assert!(stdout.contains("target/ | - |"));
+    assert!(stdout.contains("[child: active]"));
+    assert!(!stdout.contains("README.md | 0 B | 2 hours ago [child:"));
+}
+
+#[test]
+fn pipe_and_json_output_do_not_include_child_activity_hints() {
+    let dir = tempdir().unwrap();
+    let docs_dir = dir.path().join("docs");
+    fs::create_dir(&docs_dir).unwrap();
+    let docs_child = docs_dir.join("guide.md");
+    File::create(&docs_child).unwrap();
+    let now = SystemTime::now();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &docs_dir,
+        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let pipe_output = bin().arg(dir.path()).output().unwrap();
+    let pipe_stdout = String::from_utf8(pipe_output.stdout).unwrap();
+    assert!(!pipe_stdout.contains("[child:"));
+
+    let json_output = bin().arg(dir.path()).arg("--json").output().unwrap();
+    let json_stdout = String::from_utf8(json_output.stdout).unwrap();
+    let first = json_stdout.lines().next().expect("one line present");
+    let value: Value = serde_json::from_str(first).unwrap();
+    assert!(value.get("child_activity").is_none());
+}
+
+#[test]
+fn tty_child_activity_hint_respects_exclude_dots_and_child_local_ignore() {
+    let dir = tempdir().unwrap();
+    let hidden_dir = dir.path().join("hidden-only");
+    fs::create_dir(&hidden_dir).unwrap();
+    let hidden_child = hidden_dir.join(".recent.log");
+    File::create(&hidden_child).unwrap();
+
+    let ignored_dir = dir.path().join("ignored-only");
+    fs::create_dir(&ignored_dir).unwrap();
+    fs::write(ignored_dir.join(".ftimeignore"), "recent.log\n").unwrap();
+    let ignored_child = ignored_dir.join("recent.log");
+    File::create(&ignored_child).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &hidden_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &ignored_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &hidden_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &ignored_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--exclude-dots")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let hidden_line = stdout
+        .lines()
+        .find(|line| line.contains("hidden-only/ | - |"))
+        .expect("hidden-only directory row should exist");
+    let ignored_line = stdout
+        .lines()
+        .find(|line| line.contains("ignored-only/ | - |"))
+        .expect("ignored-only directory row should exist");
+
+    assert!(!hidden_line.contains("[child:"));
+    assert!(!ignored_line.contains("[child:"));
 }
 
 #[test]

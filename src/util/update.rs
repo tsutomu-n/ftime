@@ -77,10 +77,10 @@ fn current_binary_version(executable: &Path) -> Option<String> {
 }
 
 fn latest_published_version() -> Result<String> {
-    if let Ok(version) = env::var("FTIME_SELF_UPDATE_LATEST_VERSION") {
-        if !version.trim().is_empty() {
-            return Ok(version);
-        }
+    if let Ok(version) = env::var("FTIME_SELF_UPDATE_LATEST_VERSION")
+        && !version.trim().is_empty()
+    {
+        return Ok(version);
     }
 
     let payload = fetch_latest_release_metadata()?;

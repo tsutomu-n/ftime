@@ -7,10 +7,10 @@ use anyhow::{Context, Result, bail};
 use clap::Parser;
 use engine::{ScanOptions, bucketize, scan_dir};
 use std::env;
-use std::fs;
 use std::io::IsTerminal;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process;
+use util::ignore::{load_ignore_patterns, load_local_ignore};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -152,6 +152,7 @@ fn run() -> Result<()> {
             cli.show_all_history,
             cli.use_icons,
             cli.absolute_time,
+            &scan_opts,
         )?;
     } else {
         view::text::render(&scan.entries, scan.now, &path, cli.absolute_time)?;
@@ -176,39 +177,6 @@ fn has_scan_options(cli: &Cli) -> bool {
         || cli.use_icons
         || cli.absolute_time
         || cli.exclude_dots
-}
-
-fn load_ignore_patterns() -> Vec<String> {
-    if let Some(path) = env::var_os("FTIME_IGNORE") {
-        return read_ignore_file(PathBuf::from(path));
-    }
-    if let Some(home) = env::var_os("HOME") {
-        let default = PathBuf::from(home).join(".ftimeignore");
-        return read_ignore_file(default);
-    }
-    Vec::new()
-}
-
-fn load_local_ignore(root: &Path) -> Vec<String> {
-    let candidate = root.join(".ftimeignore");
-    read_ignore_file(candidate)
-}
-
-fn read_ignore_file(path: PathBuf) -> Vec<String> {
-    let Ok(contents) = fs::read_to_string(path) else {
-        return Vec::new();
-    };
-    contents
-        .lines()
-        .filter_map(|line| {
-            let trimmed = line.trim();
-            if trimmed.is_empty() || trimmed.starts_with('#') {
-                None
-            } else {
-                Some(trimmed.to_string())
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]

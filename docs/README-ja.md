@@ -41,12 +41,13 @@ Active
 Today
   • README.md | 8.4 KiB | 2h ago
 This Week
-  • docs/ | - | 3d ago
+  • docs/ | - | 3d ago [child: today]
 History
-  • target/ | - | 2w ago
+  • target/ | - | 2w ago [child: active]
 ```
 
 ディレクトリは size 列に `-` を表示します。
+ディレクトリ行では、直下の子要素のほうがフォルダ自身より新しい場合に、`[child: active]` / `[child: today]` の補助表示が付くことがあります。これは TTY 専用で、プレーンテキストや JSON Lines には出ません。
 
 ## 他のツールとの違い
 

@@ -30,7 +30,7 @@ ftime [OPTIONS] [PATH]
 
 ## 4. Environment Variables
 *   `NO_COLOR`: If present (including empty string), disable color output. **Always takes precedence** over other coloring decisions.
-*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`. In TTY mode, the time column uses a bucket-aware heatmap, future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`, and a `Current Timezone: UTC±HH:MM` footer is appended.
+*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`. In TTY mode, the time column uses a bucket-aware heatmap, future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`, directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself, and a `Current Timezone: UTC±HH:MM` footer is appended.
 *   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
 *   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
 

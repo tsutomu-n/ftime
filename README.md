@@ -47,12 +47,13 @@ Active
 Today
   • README.md | 8.4 KiB | 2h ago
 This Week
-  • docs/ | - | 3d ago
+  • docs/ | - | 3d ago [child: today]
 History
-  • target/ | - | 2w ago
+  • target/ | - | 2w ago [child: active]
 ```
 
 Directories show `-` in the size column.
+Directory rows may show a child activity hint when a direct child is more recent than the directory itself. This hint is TTY-only and never appears in plain text or JSON Lines output.
 
 ## Tool fit
 

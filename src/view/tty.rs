@@ -1,5 +1,5 @@
-use crate::engine::Bucketed;
-use crate::model::{FileEntry, TimeBucket};
+use crate::engine::{Bucketed, ScanOptions, dir_child_activity_hint};
+use crate::model::{ChildActivityHint, FileEntry, TimeBucket};
 use crate::util::time::{absolute_time, current_timezone_offset, relative_time};
 #[cfg(feature = "icons")]
 use crate::view::icon::NerdIconProvider;
@@ -27,6 +27,7 @@ pub fn render(
     show_all_history: bool,
     use_icons: bool,
     use_absolute: bool,
+    scan_opts: &ScanOptions,
 ) -> Result<()> {
     if buckets.total() == 0 {
         println!("No recent files found");
@@ -47,6 +48,7 @@ pub fn render(
         now,
         base,
         use_absolute,
+        scan_opts,
     );
     render_bucket(
         &header(
@@ -59,6 +61,7 @@ pub fn render(
         now,
         base,
         use_absolute,
+        scan_opts,
     );
     render_bucket(
         &header(
@@ -71,6 +74,7 @@ pub fn render(
         now,
         base,
         use_absolute,
+        scan_opts,
     );
 
     if show_all_history || buckets.history.len() <= LIMIT {
@@ -85,6 +89,7 @@ pub fn render(
             now,
             base,
             use_absolute,
+            scan_opts,
         );
     } else if !buckets.history.is_empty() {
         println!(
@@ -110,6 +115,7 @@ fn render_bucket(
     now: SystemTime,
     base: &Path,
     use_absolute: bool,
+    scan_opts: &ScanOptions,
 ) {
     if entries.is_empty() {
         return;
@@ -130,12 +136,13 @@ fn render_bucket(
             relative_time(now, entry.mtime)
         };
         let display_time = style_time_text(bucket, &time_str);
+        let child_hint = format_child_activity_hint_suffix(entry, now, bucket, scan_opts);
         println!(
             "  • {} | {} | {}{}",
             format_name(entry, base),
             format_size(entry.size),
             display_time,
-            label
+            label + &child_hint
         );
     }
 
@@ -199,6 +206,28 @@ fn format_label(entry: &FileEntry) -> String {
     match entry.label {
         Some(crate::model::Label::Fresh) => "  ✨ Fresh".to_string(),
         None => "".to_string(),
+    }
+}
+
+fn format_child_activity_hint_suffix(
+    entry: &FileEntry,
+    now: SystemTime,
+    bucket: TimeBucket,
+    scan_opts: &ScanOptions,
+) -> String {
+    if !entry.is_dir || entry.is_symlink {
+        return String::new();
+    }
+
+    dir_child_activity_hint(&entry.path, now, bucket, scan_opts)
+        .map(format_child_activity_hint)
+        .unwrap_or_default()
+}
+
+fn format_child_activity_hint(hint: ChildActivityHint) -> String {
+    match hint {
+        ChildActivityHint::Active => " [child: active]".dimmed().to_string(),
+        ChildActivityHint::Today => " [child: today]".dimmed().to_string(),
     }
 }
 

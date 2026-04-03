@@ -41,12 +41,13 @@ Active
 Today
   • README.md | 8.4 KiB | 2h ago
 This Week
-  • docs/ | - | 3d ago
+  • docs/ | - | 3d ago [child: today]
 History
-  • target/ | - | 2w ago
+  • target/ | - | 2w ago [child: active]
 ```
 
 目录会在 size 列显示 `-`。
+当目录的某个直系子项比目录本身更新时，目录行可能显示 `[child: active]` 或 `[child: today]` 作为辅助提示。这个提示只会出现在 TTY 输出中，不会出现在纯文本或 JSON Lines 中。
 
 ## 和其他工具的区别
 
