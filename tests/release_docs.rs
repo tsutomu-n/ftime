@@ -132,8 +132,8 @@ fn release_notes_separate_patch_changes_from_current_contract_snapshot() {
             &format!("# ftime v{} Release Notes", support::package_version()),
             "## Changes in v",
             "## Current v1 Contract Snapshot",
-            "Self-update now resolves the latest tag before downloading the installer asset.",
-            "Unix and PowerShell installers now resolve the latest tag before downloading versioned platform assets.",
+            "TTY directory rows may now show `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself.",
+            "Child activity hints remain advisory only: they do not reclassify the parent bucket and never appear in plain text or JSON output.",
         ],
     );
     assert_contains_none(&notes, "docs/RELEASE-NOTES-v1.0.md", &["## New Behavior"]);

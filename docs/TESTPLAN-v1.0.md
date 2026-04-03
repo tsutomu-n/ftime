@@ -1,5 +1,5 @@
-# ftime v1.0.4 Test Plan
-Last updated: 2026-04-02
+# ftime v1.0.5 Test Plan
+Last updated: 2026-04-03
 
 ## 1. Unit Tests
 *   Bucket boundaries for Active / Today / This Week / History.
@@ -17,6 +17,7 @@ Last updated: 2026-04-02
 *   `-A/--absolute` changes pipe and TTY time output to `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)`.
 *   TTY shows size column.
 *   TTY shows `Skew` and `Current Timezone: UTC±HH:MM`.
+*   TTY shows child activity hints only on directory rows, and pipe / JSON never emit them.
 *   `NO_COLOR` keeps the text contract while removing ANSI escape codes.
 *   JSON includes `size` for regular files and omits it for directories.
 *   `--self-update` rejects Cargo build outputs, including custom profiles.
@@ -33,5 +34,5 @@ cargo clippy --all-targets --all-features -- -D warnings
 ## 4. Release Validation
 *   `cargo run -- --help` shows `-A, --absolute` and `--exclude-dots`.
 *   `cargo run -- --help` does not show `-H, --hidden`.
-*   `cargo run -- --version` prints `ftime 1.0.4`.
-*   After publishing `v1.0.4`, the latest installer assets install a binary whose `--help` matches the v1 contract.
+*   `cargo run -- --version` prints `ftime 1.0.5`.
+*   After publishing `v1.0.5`, the latest installer assets install a binary whose `--help` matches the v1 contract.
