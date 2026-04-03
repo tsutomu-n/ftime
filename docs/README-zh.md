@@ -116,10 +116,11 @@ ftime --json
 - `-a, --all`：在 TTY 中展开 `History`
 - `-A, --absolute`：显示绝对本地时间
 - `--exclude-dots`：隐藏 dotfiles
+- `--ext`：只看指定扩展名的文件，目录不会保留
 - `--json`：按每行一个 JSON 对象输出
 - `--check-update`：只检查是否有更新的公开版
 - `--self-update`：把当前安装位置更新到最新公开版
-- `--no-ignore`：禁用 built-in / `.ftimeignore`
+- `--no-ignore`：临时关闭 ignore 规则，以确认哪些内容被过滤掉了
 
 ## 更新
 

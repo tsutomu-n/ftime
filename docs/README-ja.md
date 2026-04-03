@@ -116,10 +116,11 @@ ftime --json
 - `-a, --all`: TTY で `History` を展開
 - `-A, --absolute`: `2026-03-16 20:49:28 (UTC+09:00)` のような絶対時刻で表示
 - `--exclude-dots`: ドットファイルを除外
+- `--ext`: コードや設定だけ見たい時向け。ディレクトリは結果から落ちます
 - `--json`: 1 行 1 JSON で出力
 - `--check-update`: もっと新しい公開版があるかだけ確認
 - `--self-update`: 今のインストール先に最新の公開版を上書き更新
-- `--no-ignore`: built-in / `.ftimeignore` を無効化
+- `--no-ignore`: ignore が効きすぎていないか確認するための切り戻し
 
 ## アップデート
 

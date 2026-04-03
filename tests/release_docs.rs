@@ -381,6 +381,14 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
 #[test]
 fn readme_flags_keep_update_commands_after_scan_focused_flags() {
     let root = support::read_repo_file("README.md");
+    assert_contains_all(
+        &root,
+        "README.md",
+        &[
+            "- `--ext`: focus on selected file extensions; directories are excluded",
+            "- `--no-ignore`: temporarily disable ignore rules to verify what was filtered out",
+        ],
+    );
     assert_in_order(
         &root,
         "README.md",
@@ -388,6 +396,7 @@ fn readme_flags_keep_update_commands_after_scan_focused_flags() {
             "- `-a, --all`",
             "- `-A, --absolute`",
             "- `--exclude-dots`",
+            "- `--ext`",
             "- `--json`",
             "- `--check-update`",
             "- `--self-update`",
@@ -395,6 +404,14 @@ fn readme_flags_keep_update_commands_after_scan_focused_flags() {
     );
 
     let ja = support::read_repo_file("docs/README-ja.md");
+    assert_contains_all(
+        &ja,
+        "docs/README-ja.md",
+        &[
+            "- `--ext`: コードや設定だけ見たい時向け。ディレクトリは結果から落ちます",
+            "- `--no-ignore`: ignore が効きすぎていないか確認するための切り戻し",
+        ],
+    );
     assert_in_order(
         &ja,
         "docs/README-ja.md",
@@ -402,6 +419,7 @@ fn readme_flags_keep_update_commands_after_scan_focused_flags() {
             "- `-a, --all`",
             "- `-A, --absolute`",
             "- `--exclude-dots`",
+            "- `--ext`",
             "- `--json`",
             "- `--check-update`",
             "- `--self-update`",
@@ -409,6 +427,14 @@ fn readme_flags_keep_update_commands_after_scan_focused_flags() {
     );
 
     let zh = support::read_repo_file("docs/README-zh.md");
+    assert_contains_all(
+        &zh,
+        "docs/README-zh.md",
+        &[
+            "- `--ext`：只看指定扩展名的文件，目录不会保留",
+            "- `--no-ignore`：临时关闭 ignore 规则，以确认哪些内容被过滤掉了",
+        ],
+    );
     assert_in_order(
         &zh,
         "docs/README-zh.md",
@@ -416,6 +442,7 @@ fn readme_flags_keep_update_commands_after_scan_focused_flags() {
             "- `-a, --all`",
             "- `-A, --absolute`",
             "- `--exclude-dots`",
+            "- `--ext`",
             "- `--json`",
             "- `--check-update`",
             "- `--self-update`",

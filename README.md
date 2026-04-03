@@ -115,10 +115,11 @@ Common flags:
 - `-a, --all`: expand `History` in TTY mode
 - `-A, --absolute`: show absolute local timestamps like `2026-03-16 20:49:28 (UTC+09:00)`
 - `--exclude-dots`: hide dotfiles
+- `--ext`: focus on selected file extensions; directories are excluded
 - `--json`: emit one JSON object per line for scripts
 - `--check-update`: report whether a newer published release is available
 - `--self-update`: update the current installed binary to the latest published release
-- `--no-ignore`: disable built-in and file-based ignore rules
+- `--no-ignore`: temporarily disable ignore rules to verify what was filtered out
 
 ## Update
 
