@@ -54,6 +54,7 @@ History
 
 Directories show `-` in the size column.
 Directory rows may show a child activity hint when a direct child is more recent than the directory itself. This hint is TTY-only and never appears in plain text or JSON Lines output.
+The hint is advisory only: the parent directory keeps its own bucket and sort position based on the directory's `mtime`.
 
 ## Tool fit
 
