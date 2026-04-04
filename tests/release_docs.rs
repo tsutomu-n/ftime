@@ -183,6 +183,79 @@ fn social_preview_asset_exists_as_png() {
 }
 
 #[test]
+fn public_demo_scene_is_separated_from_repo_noise() {
+    let demo_readme = support::read_repo_file("demo/README.md");
+    assert_contains_all(
+        &demo_readme,
+        "demo/README.md",
+        &[
+            "This directory exists only for public demo capture.",
+            "ftime",
+            "ftime -a",
+            "ftime --json | jq -r '.path'",
+            "[child: active]",
+            "[child: today]",
+        ],
+    );
+    assert_contains_none(
+        &demo_readme,
+        "demo/README.md",
+        &[".ai_memory", ".plan", ".maintainer-local"],
+    );
+
+    let setup_script = support::read_repo_file("demo/setup-scene.sh");
+    assert_contains_all(
+        &setup_script,
+        "demo/setup-scene.sh",
+        &[
+            "template/docs/guide.md",
+            "template/target/app.bin",
+            "template/tests/cli.rs",
+            "Generated demo scene:",
+        ],
+    );
+
+    let render_script = support::read_repo_file("demo/render-assets.sh");
+    assert_contains_all(
+        &render_script,
+        "demo/render-assets.sh",
+        &[
+            "cargo build --release --bin ftime",
+            "assets/demo_ftime.gif",
+            "assets/demo_ftime.mp4",
+            "vhs",
+        ],
+    );
+
+    let tape = support::read_repo_file("demo/tapes/demo_ftime.tape");
+    assert_contains_all(
+        &tape,
+        "demo/tapes/demo_ftime.tape",
+        &[
+            "Type \"ftime\"",
+            "Type \"clear\"",
+            "Type \"ftime -a\"",
+            "Type \"ftime --json | jq -r '.path'\"",
+        ],
+    );
+
+    for path in [
+        "demo/render-assets.sh",
+        "demo/tapes/demo_ftime.tape",
+        "demo/template/Cargo.toml",
+        "demo/template/README.md",
+        "demo/template/docs/guide.md",
+        "demo/template/target/app.bin",
+        "demo/template/tests/cli.rs",
+    ] {
+        assert!(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join(path).exists(),
+            "{path} must exist for public demo capture"
+        );
+    }
+}
+
+#[test]
 fn internal_maintainer_docs_are_not_tracked_in_public_repo() {
     assert_repo_paths_missing(&[
         "AGENTS.md",
