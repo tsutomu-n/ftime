@@ -14,21 +14,13 @@ categories = ["command-line-utilities"]
 exclude = [
     ".ai_memory/**",
     ".serena/**",
+    ".maintainer-local/**",
     "次回/**",
     "次の実装計画：*/**",
     "Cargo.toml.orig",
-    "AGENTS.md",
     "assets/demo_ftime.gif",
     "assets/demo_ftime.mp4",
     "assets/social-preview.png",
-    "docs/12-10_ROADMAP.md",
-    "docs/ARCHITECTURE.md",
-    "docs/ARCHITECTURE-ja.md",
-    "docs/PLATFORM-VERIFY-v1.0.md",
-    "docs/PUBLISH-CHECKLIST-ja.md",
-    "docs/RELEASE-NOTES-*",
-    "docs/SPEC-*",
-    "docs/TESTPLAN-*",
     "scripts/build-release-fast.sh",
 ]
 

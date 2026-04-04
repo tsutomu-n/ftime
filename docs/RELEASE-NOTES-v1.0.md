@@ -24,6 +24,6 @@ v1.0.5 adds TTY-only child activity hints for directory rows, closes the remaini
 - GitHub Releases installer now documents that Rust is not required.
 
 ## Canonical Docs
-- `docs/SPEC-v1.0.md`
-- `docs/TESTPLAN-v1.0.md`
+- `README.md`
+- `docs/USER-GUIDE-ja.md`
 - `docs/CLI.md`

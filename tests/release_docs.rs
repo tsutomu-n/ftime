@@ -1,5 +1,7 @@
 mod support;
 
+use std::path::Path;
+
 fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
     for snippet in snippets {
         assert!(
@@ -28,6 +30,15 @@ fn assert_in_order(content: &str, path: &str, snippets: &[&str]) {
     }
 }
 
+fn assert_repo_paths_missing(paths: &[&str]) {
+    for path in paths {
+        assert!(
+            !Path::new(env!("CARGO_MANIFEST_DIR")).join(path).exists(),
+            "{path} should not be present in the public repo"
+        );
+    }
+}
+
 #[test]
 fn current_release_docs_match_current_package_version() {
     let cargo_toml = support::read_repo_file("Cargo.toml");
@@ -42,12 +53,7 @@ fn current_release_docs_match_current_package_version() {
         ],
     );
 
-    for path in [
-        "docs/CLI.md",
-        "docs/SPEC-v1.0.md",
-        "docs/TESTPLAN-v1.0.md",
-        "docs/RELEASE-NOTES-v1.0.md",
-    ] {
+    for path in ["docs/CLI.md", "docs/RELEASE-NOTES-v1.0.md"] {
         let content = support::read_repo_file(path);
         assert!(
             content.contains(&format!("v{}", support::package_version())),
@@ -63,41 +69,21 @@ fn current_release_docs_match_current_package_version() {
 
 #[test]
 fn japanese_extended_docs_track_current_bucket_names_and_version() {
-    let spec_ja = support::read_repo_file("docs/SPEC-ja.md");
+    let cli_ja = support::read_repo_file("docs/CLI-ja.md");
     assert_contains_all(
-        &spec_ja,
-        "docs/SPEC-ja.md",
+        &cli_ja,
+        "docs/CLI-ja.md",
         &[
-            &format!("# ftime v{} 仕様書", support::package_version()),
-            "Active | `now - mtime < 1時間`",
-            "Today | `mtime >= 今日 00:00:00`",
-            "例 `🔥 Active`。",
-            "行形式: `name | size | time`。",
-            "全件をタブ区切り1行1エントリで出力: `<path>\\t<time>`。",
+            "## バケット規則",
+            "| `active` | `now - mtime < 1h` または未来時刻 |",
+            "| `today` | `active` 以外で、ローカル日の当日 00:00 以降 |",
+            "JSON Lines に child activity 専用フィールドはありません。",
         ],
     );
     assert_contains_none(
-        &spec_ja,
-        "docs/SPEC-ja.md",
+        &cli_ja,
+        "docs/CLI-ja.md",
         &["Active Context", "Today's Session", "v1.0.0 仕様書"],
-    );
-
-    let testplan_ja = support::read_repo_file("docs/TESTPLAN-ja.md");
-    assert_contains_all(
-        &testplan_ja,
-        "docs/TESTPLAN-ja.md",
-        &[
-            &format!("# ftime v{} テスト計画", support::package_version()),
-            "```",
-            "🔥 Active",
-            "  • visible | 0 B | just now",
-            "💤 History (25 files hidden)",
-        ],
-    );
-    assert_contains_none(
-        &testplan_ja,
-        "docs/TESTPLAN-ja.md",
-        &["Active Context (< 1h)", "v1.0.0 テスト計画"],
     );
 }
 
@@ -197,25 +183,25 @@ fn social_preview_asset_exists_as_png() {
 }
 
 #[test]
-fn v2_docs_are_archived_after_renumbering() {
-    for path in [
-        "docs/SPEC-v2.0.md",
-        "docs/TESTPLAN-v2.0.md",
+fn internal_maintainer_docs_are_not_tracked_in_public_repo() {
+    assert_repo_paths_missing(&[
+        "AGENTS.md",
+        "docs/12-10_ROADMAP.md",
+        "docs/ARCHITECTURE.md",
+        "docs/ARCHITECTURE-ja.md",
+        "docs/PLATFORM-VERIFY-v1.0.md",
+        "docs/PUBLISH-CHECKLIST-ja.md",
         "docs/RELEASE-NOTES-v2.0.md",
-    ] {
-        let content = support::read_repo_file(path);
-        assert_contains_all(
-            &content,
-            path,
-            &[
-                "Archived",
-                "Current canonical references:",
-                "docs/SPEC-v1.0.md",
-                "docs/TESTPLAN-v1.0.md",
-                "docs/RELEASE-NOTES-v1.0.md",
-            ],
-        );
-    }
+        "docs/SPEC-ja.md",
+        "docs/SPEC-v0.1.md",
+        "docs/SPEC-v1.0.md",
+        "docs/SPEC-v2.0.md",
+        "docs/TESTPLAN-ja.md",
+        "docs/TESTPLAN-v0.1.md",
+        "docs/TESTPLAN-v1.0.md",
+        "docs/TESTPLAN-v2.0.md",
+        "docs/USER-GUIDE-customize-ja.md",
+    ]);
 }
 
 #[test]
@@ -478,16 +464,8 @@ fn crate_package_excludes_local_only_assets_and_maintainer_docs() {
             "\"assets/demo_ftime.gif\"",
             "\"assets/demo_ftime.mp4\"",
             "\"assets/social-preview.png\"",
-            "\"docs/PUBLISH-CHECKLIST-ja.md\"",
-            "\"docs/PLATFORM-VERIFY-v1.0.md\"",
-            "\"docs/ARCHITECTURE.md\"",
-            "\"docs/ARCHITECTURE-ja.md\"",
-            "\"docs/12-10_ROADMAP.md\"",
-            "\"docs/SPEC-*\"",
-            "\"docs/TESTPLAN-*\"",
-            "\"docs/RELEASE-NOTES-*\"",
+            "\".maintainer-local/**\"",
             "\"scripts/build-release-fast.sh\"",
-            "\"AGENTS.md\"",
         ],
     );
 }
@@ -574,7 +552,6 @@ fn japanese_docs_have_separated_roles() {
             "README-ja.md",
             "USER-GUIDE-ja.md",
             "CLI-ja.md",
-            "PUBLISH-CHECKLIST-ja.md",
             "どのドキュメントを読むべきか",
         ],
     );
@@ -593,25 +570,13 @@ fn japanese_docs_have_separated_roles() {
 
 #[test]
 fn current_contract_docs_capture_child_activity_hint_behavior() {
-    let spec = support::read_repo_file("docs/SPEC-v1.0.md");
+    let cli = support::read_repo_file("docs/CLI.md");
     assert_contains_all(
-        &spec,
-        "docs/SPEC-v1.0.md",
+        &cli,
+        "docs/CLI.md",
         &[
-            "Directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself.",
-            "This hint is TTY-only and does not appear in pipe or JSON output.",
-            "Child activity hints never reclassify the parent bucket.",
-        ],
-    );
-
-    let spec_ja = support::read_repo_file("docs/SPEC-ja.md");
-    assert_contains_all(
-        &spec_ja,
-        "docs/SPEC-ja.md",
-        &[
-            "ディレクトリ行では、直下の子要素のほうがフォルダ自身より新しい場合に、`[child: active]` / `[child: today]` の補助表示が付くことがあります。",
-            "この補助表示は TTY 専用で、パイプ出力や JSON Lines には出ません。",
-            "child hint は親ディレクトリ自身のバケットを再分類しません。",
+            "directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself",
+            "Current Timezone: UTC±HH:MM",
         ],
     );
 
@@ -623,32 +588,6 @@ fn current_contract_docs_capture_child_activity_hint_behavior() {
             "ディレクトリ行では、直下の子要素のほうが親より新しい場合に ` [child: active]` / ` [child: today]` の補助表示が time の後ろに付きます。",
             "この補助表示は TTY 専用です。",
             "JSON Lines に child activity 専用フィールドはありません。",
-        ],
-    );
-
-    let architecture = support::read_repo_file("docs/ARCHITECTURE.md");
-    assert_contains_all(
-        &architecture,
-        "docs/ARCHITECTURE.md",
-        &[
-            "util/",
-            "ignore.rs    # Ignore file loading (`~/.ftimeignore`, local `.ftimeignore`)",
-            "model.rs         # Data structures (FileEntry, TimeBucket, ChildActivityHint)",
-            "`engine`: `scan_dir`",
-            "`dir_child_activity_hint`",
-            "`view::tty` / `view::text` / `view::json`",
-            "TTY may append a child activity suffix on directory rows; text and JSON stay unchanged.",
-        ],
-    );
-
-    let architecture_ja = support::read_repo_file("docs/ARCHITECTURE-ja.md");
-    assert_contains_all(
-        &architecture_ja,
-        "docs/ARCHITECTURE-ja.md",
-        &[
-            "`dir_child_activity_hint`",
-            "TTY のディレクトリ行だけに child hint の suffix を付ける",
-            "text / json は child hint を扱わない",
         ],
     );
 
