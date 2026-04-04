@@ -39,6 +39,21 @@ ftime --json | jq -r '.path'
 
 `--json` emits one JSON object per line, so it works well with `jq` and other scripts.
 
+## Design philosophy
+
+`ftime` is built for Context Recovery. Its main job is to rebuild the recent working context of one folder quickly, not just extract the single newest path.
+
+Time buckets act as cognitive scaffolding: `Active`, `Today`, `This Week`, and `History` separate recent activity into chunks that are easier to scan than one flat time-sorted listing.
+
+## Non-goals
+
+`ftime` is not a replacement for `fd`, `find`, `eza`, or `git status`.
+
+- Recursive search is not the primary goal. Use `fd` or `find` when you need to search deep trees.
+- Rich VCS state inspection is not the primary goal. Use `git status` when you need tracked and untracked state.
+- Destructive actions are out of scope. `ftime` stays read-only.
+- General-purpose one-shot extraction is not the primary goal. `ftime` first helps you recover context, then makes the next thing to inspect easier to spot.
+
 ## Example output
 
 ```text
@@ -64,7 +79,7 @@ The hint is advisory only: the parent directory keeps its own bucket and sort po
 | `eza` | rich file listing with metadata | no built-in time buckets |
 | `fd` | recursive search and filters | recursive by design |
 | `bat` | reading file contents | not a folder activity view |
-| `ftime` | recent activity in one folder | buckets + size at a glance |
+| `ftime` | context recovery in one folder | buckets + size at a glance |
 
 ## Install
 

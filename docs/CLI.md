@@ -1,5 +1,7 @@
 # ftime v1.0.5 CLI Contract
 
+`ftime` is a read-only CLI for Context Recovery in one folder. Its main job is to rebuild recent working context with time buckets, then make the next thing to inspect easier to spot.
+
 ## 1. Command Signature
 ```bash
 ftime [OPTIONS] [PATH]
@@ -41,6 +43,12 @@ ftime [OPTIONS] [PATH]
 *   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
 *   Important flags: `--all`, `--absolute`, `--exclude-dots`, `--json`. Color is controlled by `NO_COLOR` (no `--no-color` flag).
 *   Update flow: `--check-update` inspects the latest published release without installing it, while `--self-update` installs it in place.
+
+## 5.1 Non-Goals
+*   Recursive search is out of scope; use `fd` or `find` for deep trees.
+*   Rich VCS state inspection is out of scope; use `git status` when you need tracked and untracked state.
+*   Destructive actions are out of scope; `ftime` remains read-only.
+*   General-purpose one-shot extraction is not the primary goal; `ftime` first organizes recent activity into context-oriented buckets.
 
 ## 6. Exit Codes
 *   `0`: Success.

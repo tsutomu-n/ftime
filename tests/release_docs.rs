@@ -291,6 +291,11 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "Depth-1 only: see the current folder, not the whole tree",
             "Human-readable sizes in TTY output; plain text and JSON Lines available for scripts",
             "## Why `ftime`?",
+            "## Design philosophy",
+            "Context Recovery",
+            "not a replacement for `fd`, `find`, `eza`, or `git status`",
+            "Recursive search is not the primary goal.",
+            "Destructive actions are out of scope. `ftime` stays read-only.",
             "## Common examples",
             "## Tool fit",
             "clean up `~/Downloads`",
@@ -339,6 +344,11 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "深さ1固定: 今見ているフォルダだけを対象",
             "TTY では人間可読サイズを表示し、非 TTY ではプレーンテキスト、`--json` では JSON Lines を使えます",
             "## どんな時に使うか",
+            "## Design Philosophy",
+            "Context Recovery（作業文脈の再構築）",
+            "`ftime` は `fd`、`find`、`eza`、`git status` の置き換えではありません。",
+            "再帰検索は主目的ではありません。",
+            "破壊的操作は対象外です。",
             "## 例",
             "## 出力例",
             "## 他のツールとの違い",
@@ -381,6 +391,11 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
             "固定深度 1：只看当前文件夹，不递归整个目录树",
             "TTY 中显示人类可读的大小，非 TTY 可用纯文本，`--json` 可输出 JSON Lines",
             "## 适合什么场景",
+            "## Design Philosophy",
+            "Context Recovery（作业上下文恢复）",
+            "`ftime` 不是 `fd`、`find`、`eza` 或 `git status` 的替代品。",
+            "递归搜索不是它的主要目标。",
+            "破坏性操作不在范围内。",
             "## 示例",
             "## 输出示例",
             "## 和其他工具的区别",
@@ -432,6 +447,7 @@ fn readme_surfaces_link_only_to_current_primary_docs() {
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh",
                 "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1",
                 "## Quick Usage",
+                "NEVER support sorting by size/extension",
             ],
         );
     }
@@ -581,9 +597,13 @@ fn japanese_docs_have_separated_roles() {
         &guide,
         "docs/USER-GUIDE-ja.md",
         &[
+            "Context Recovery（作業文脈の再構築）",
             "## 典型的な使い方",
             "## 出力の読み方",
             "## フィルタの使い分け",
+            "## 向いていないこと",
+            "深い階層の再帰検索。",
+            "tracked / untracked を含む Git 状態確認。",
             "README-ja.md",
             "CLI-ja.md",
         ],
@@ -599,11 +619,13 @@ fn japanese_docs_have_separated_roles() {
         &cli,
         "docs/CLI-ja.md",
         &[
+            "Context Recovery（作業文脈の再構築）",
             "## コマンド署名",
             "## オプション一覧",
             "## 環境変数",
             "## 終了コード",
             "## 出力契約",
+            "## 非目標",
         ],
     );
     assert_contains_none(
@@ -648,8 +670,12 @@ fn current_contract_docs_capture_child_activity_hint_behavior() {
         &cli,
         "docs/CLI.md",
         &[
+            "Context Recovery in one folder",
             "directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself",
             "Current Timezone: UTC±HH:MM",
+            "## 5.1 Non-Goals",
+            "Recursive search is out of scope;",
+            "Rich VCS state inspection is out of scope;",
         ],
     );
 
@@ -658,9 +684,11 @@ fn current_contract_docs_capture_child_activity_hint_behavior() {
         &cli_ja,
         "docs/CLI-ja.md",
         &[
+            "Context Recovery（作業文脈の再構築）",
             "ディレクトリ行では、直下の子要素のほうが親より新しい場合に ` [child: active]` / ` [child: today]` の補助表示が time の後ろに付きます。",
             "この補助表示は TTY 専用です。",
             "JSON Lines に child activity 専用フィールドはありません。",
+            "## 非目標",
         ],
     );
 
