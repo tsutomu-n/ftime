@@ -134,7 +134,7 @@ Typical output:
 update available: 1.0.5 -> 1.0.6
 ftime updated 1.0.5 -> 1.0.6 in /home/tn/.local/bin
 ftime is already up to date at 1.0.5 in /home/tn/.local/bin
-ftime now points to 1.0.5 (was 1.0.6) in /home/tn/.local/bin
+ftime now points to 1.0.6 (was 1.0.5) in /home/tn/.local/bin
 ```
 
 When invoked via a symlink, `ftime --self-update` updates that symlink directory.

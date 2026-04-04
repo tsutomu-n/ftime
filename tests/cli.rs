@@ -599,7 +599,7 @@ fn tty_child_activity_hint_is_not_shown_for_symlink_entries() {
 
     let symlink_line = stdout
         .lines()
-        .find(|line| line.contains("docs-link ->"))
+        .find(|line| line.contains("docs-link"))
         .expect("symlink row should exist");
 
     assert!(!symlink_line.contains("[child:"));
