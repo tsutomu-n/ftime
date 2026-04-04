@@ -1,5 +1,7 @@
 # Demo Capture Workspace
 
+`ftime`: time-bucketed directory listing for fast context recovery.
+
 This directory exists only for public demo capture.
 
 Use it to generate a clean scene for GIF / MP4 recording without exposing repo-local noise such as maintainer files, agent scratch directories, or release tooling.
