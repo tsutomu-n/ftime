@@ -52,13 +52,13 @@ History
 
 ## 他のツールとの違い
 
-| ツール | 向いていること | `ftime` との違い |
-| --- | --- | --- |
-| `ls -lt` | 時刻順の素早い一覧確認 | 時間バケットには分かれない |
-| `eza` | metadata を含む豊富な一覧表示 | 時間バケットは built-in ではない |
-| `fd` | 再帰検索やフィルタ | 再帰前提の道具 |
-| `bat` | ファイル内容の確認 | フォルダ全体の最近の動きは見ない |
-| `ftime` | 1フォルダの最近の動きの把握 | バケット + サイズを一目で見られる |
+| ツール   | 向いていること                | `ftime` との違い                  |
+| -------- | ----------------------------- | --------------------------------- |
+| `ls -lt` | 時刻順の素早い一覧確認        | 時間バケットには分かれない        |
+| `eza`    | metadata を含む豊富な一覧表示 | 時間バケットは built-in ではない  |
+| `fd`     | 再帰検索やフィルタ            | 再帰前提の道具                    |
+| `bat`    | ファイル内容の確認            | フォルダ全体の最近の動きは見ない  |
+| `ftime`  | 1フォルダの最近の動きの把握   | バケット + サイズを一目で見られる |
 
 ## インストール
 
@@ -134,7 +134,7 @@ ftime --self-update
 ```text
 update available: 1.0.5 -> 1.0.6
 ftime updated 1.0.5 -> 1.0.6 in /home/tn/.local/bin
-ftime is already up to date at 1.0.5 in /home/tn/.local/bin
+ftime is already up to date at 1.0.6 in /home/tn/.local/bin
 ftime now points to 1.0.6 (was 1.0.5) in /home/tn/.local/bin
 ```
 
