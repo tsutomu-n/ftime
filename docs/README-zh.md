@@ -135,7 +135,7 @@ ftime --self-update
 update available: 1.0.5 -> 1.0.6
 ftime updated 1.0.5 -> 1.0.6 in /home/tn/.local/bin
 ftime is already up to date at 1.0.5 in /home/tn/.local/bin
-ftime now points to 1.0.5 (was 1.0.6) in /home/tn/.local/bin
+ftime now points to 1.0.6 (was 1.0.5) in /home/tn/.local/bin
 ```
 
 如果通过 symlink 启动，`ftime --self-update` 会更新该 symlink 所在目录。

@@ -8,7 +8,7 @@ v1.0.5 adds TTY-only child activity hints for directory rows, closes the remaini
 - TTY directory rows may now show `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself.
 - Child activity hints remain advisory only: they do not reclassify the parent bucket and never appear in plain text or JSON output.
 - Added CLI coverage for symlink directory rows and unreadable directories so child activity hints stay suppressed in those cases.
-- Updated the current v1 docs so README / spec / CLI references match the shipped child activity hint behavior.
+- Updated the current public docs so README / user guide / CLI references match the shipped child activity hint behavior.
 
 ## Current v1 Contract Snapshot
 - Dotfiles are included by default.
