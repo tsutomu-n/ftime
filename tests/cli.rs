@@ -1,6 +1,7 @@
 mod support;
 
 use assert_cmd::Command;
+use chrono::{DateTime, Local};
 use filetime::{FileTime, set_file_mtime};
 use predicates::prelude::*;
 use serde_json::Value;
@@ -13,6 +14,11 @@ use tempfile::tempdir;
 #[allow(deprecated)]
 fn bin() -> Command {
     Command::cargo_bin("ftime").unwrap()
+}
+
+fn local_history_date(ts: SystemTime) -> String {
+    let dt: DateTime<Local> = ts.into();
+    dt.format("%Y-%m-%d").to_string()
 }
 
 #[test]
@@ -691,6 +697,168 @@ fn check_update_reports_when_latest_is_renumbered_lower() {
             "latest published release is 1.9.9 (current binary reports {})",
             support::package_version()
         )));
+}
+
+#[test]
+fn human_output_globally_aligns_columns_and_moves_symlink_targets_to_suffix() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+
+    let hidden = dir.path().join(".hidden");
+    fs::write(&hidden, b"hidden-bytes!").unwrap();
+    set_file_mtime(
+        &hidden,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let readme = dir.path().join("README.md");
+    fs::write(&readme, vec![b'x'; 1200]).unwrap();
+    set_file_mtime(
+        &readme,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let docs = dir.path().join("docs");
+    fs::create_dir(&docs).unwrap();
+    let docs_child = docs.join("guide.md");
+    fs::write(&docs_child, b"guide").unwrap();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+    let docs_mtime = now - Duration::from_secs(9 * 24 * 3600);
+    set_file_mtime(&docs, FileTime::from_system_time(docs_mtime)).unwrap();
+
+    let license = dir.path().join("LICENSE");
+    fs::write(&license, vec![b'l'; 2048]).unwrap();
+    let license_mtime = now - Duration::from_secs(10 * 24 * 3600);
+    set_file_mtime(&license, FileTime::from_system_time(license_mtime)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--color")
+        .arg("never")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let expected = format!(
+        concat!(
+            "Today (2)\n",
+            "  {:<9}  {:>7}  {:>10}\n",
+            "  {:<9}  {:>7}  {:>10}\n",
+            "\n",
+            "History (2)\n",
+            "  {:<9}  {:>7}  {:>10}{}\n",
+            "  {:<9}  {:>7}  {:>10}\n",
+            "\n"
+        ),
+        ".hidden",
+        "13 B",
+        "2h",
+        "README.md",
+        "1.2 KiB",
+        "2h",
+        "docs/",
+        "—",
+        local_history_date(docs_mtime),
+        " [child: today]",
+        "LICENSE",
+        "2.0 KiB",
+        local_history_date(license_mtime),
+    );
+
+    assert_eq!(stdout, expected);
+}
+
+#[test]
+fn human_output_places_symlink_target_after_the_time_column() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join("README.md");
+    fs::write(&target, b"target").unwrap();
+
+    let link = dir.path().join("link_to_readme");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(&target, &link).unwrap();
+
+    let link_mtime = fs::symlink_metadata(&link).unwrap().modified().unwrap();
+    let dt: DateTime<Local> = link_mtime.into();
+    let absolute = format!(
+        "{} ({})",
+        dt.format("%Y-%m-%d %H:%M:%S"),
+        dt.format("UTC%:z")
+    );
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--absolute")
+        .arg("--color")
+        .arg("never")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let expected_line = format!(
+        "  {:<14}  {:>3}  {} -> README.md",
+        "link_to_readme", "—", absolute,
+    );
+
+    assert!(stdout.contains(&expected_line), "{stdout}");
+    assert!(
+        !stdout.contains("link_to_readme -> README.md  —"),
+        "{stdout}"
+    );
+}
+
+#[test]
+fn color_always_uses_semantic_bucket_colors() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+
+    let active = dir.path().join("active.txt");
+    fs::write(&active, b"a").unwrap();
+    set_file_mtime(
+        &active,
+        FileTime::from_system_time(now - Duration::from_secs(5 * 60)),
+    )
+    .unwrap();
+
+    let weekly = dir.path().join("weekly.txt");
+    fs::write(&weekly, b"w").unwrap();
+    set_file_mtime(
+        &weekly,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let history = dir.path().join("history.txt");
+    fs::write(&history, b"h").unwrap();
+    set_file_mtime(
+        &history,
+        FileTime::from_system_time(now - Duration::from_secs(10 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--color")
+        .arg("always")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("\u{1b}[1;32mActive (1)\u{1b}[0m"));
+    assert!(stdout.contains("\u{1b}[1;32m"));
+    assert!(stdout.contains("5m\u{1b}[0m"));
+    assert!(stdout.contains("\u{1b}[1;36mThis Week (1)\u{1b}[0m"));
+    assert!(stdout.contains("\u{1b}[36m"));
+    assert!(stdout.contains("2d\u{1b}[0m"));
+    assert!(stdout.contains("History (1)"));
 }
 
 #[test]

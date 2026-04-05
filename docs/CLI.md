@@ -50,7 +50,7 @@ Default output is always the human view.
 - Row structure is `<name>  <size>  <time>  <optional-suffix>`
 - Directories show `—` in the size column
 - Directories end in `/`
-- Symlinks render as `name -> target`
+- Symlinks keep `name  size  time` aligned and render `-> target` in the optional suffix
 - child hint is advisory only and never changes bucket classification
 - Empty state is `No matching entries`
 - Optional footer for unreadable entries is `Skipped N unreadable entries`

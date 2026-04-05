@@ -43,6 +43,30 @@ enum TimeTone {
     History,
 }
 
+#[derive(Debug, Clone)]
+struct RenderedRow {
+    bucket: TimeBucket,
+    name: String,
+    size: String,
+    time: String,
+    suffix: String,
+    is_dir: bool,
+}
+
+#[derive(Debug, Clone)]
+struct RenderedBucket {
+    bucket: TimeBucket,
+    header: String,
+    rows: Vec<RenderedRow>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct ColumnWidths {
+    name: usize,
+    size: usize,
+    time: usize,
+}
+
 pub fn render(buckets: &Bucketed, stats: &ScanStats, options: RenderOptions<'_>) -> Result<()> {
     colored::control::set_override(should_colorize(options.color_mode));
 
@@ -54,34 +78,44 @@ pub fn render(buckets: &Bucketed, stats: &ScanStats, options: RenderOptions<'_>)
         return Ok(());
     }
 
-    render_bucket(
+    let mut rendered = Vec::new();
+    push_rendered_bucket(
+        &mut rendered,
         buckets.active.as_slice(),
         TimeBucket::Active,
         ACTIVE_LIMIT,
         false,
         options,
     );
-    render_bucket(
+    push_rendered_bucket(
+        &mut rendered,
         buckets.today.as_slice(),
         TimeBucket::Today,
         TODAY_LIMIT,
         false,
         options,
     );
-    render_bucket(
+    push_rendered_bucket(
+        &mut rendered,
         buckets.week.as_slice(),
         TimeBucket::ThisWeek,
         WEEK_LIMIT,
         false,
         options,
     );
-    render_bucket(
+    push_rendered_bucket(
+        &mut rendered,
         buckets.history.as_slice(),
         TimeBucket::History,
         HISTORY_LIMIT,
         options.show_all_history,
         options,
     );
+
+    let widths = column_widths(&rendered);
+    for bucket in &rendered {
+        render_bucket(bucket, widths, options.use_icons);
+    }
 
     if stats.skipped_unreadable > 0 {
         println!("Skipped {} unreadable entries", stats.skipped_unreadable);
@@ -90,7 +124,8 @@ pub fn render(buckets: &Bucketed, stats: &ScanStats, options: RenderOptions<'_>)
     Ok(())
 }
 
-fn render_bucket(
+fn push_rendered_bucket(
+    out: &mut Vec<RenderedBucket>,
     entries: &[FileEntry],
     bucket: TimeBucket,
     preview_limit: usize,
@@ -107,33 +142,76 @@ fn render_bucket(
         preview_limit
     };
 
-    println!(
-        "{}",
-        style_header(
-            bucket,
-            &bucket_header(bucket, shown, entries.len(), show_all),
-            options.use_icons
-        )
-    );
+    let rows = entries[..shown]
+        .iter()
+        .map(|entry| render_row(entry, bucket, options))
+        .collect();
 
-    for entry in &entries[..shown] {
-        let time_str = if options.use_absolute {
-            absolute_time(entry.mtime)
+    out.push(RenderedBucket {
+        bucket,
+        header: bucket_header(bucket, shown, entries.len(), show_all),
+        rows,
+    });
+}
+
+fn render_bucket(bucket: &RenderedBucket, widths: ColumnWidths, use_icons: bool) {
+    println!("{}", style_header(bucket.bucket, &bucket.header, use_icons));
+
+    for row in &bucket.rows {
+        let name = format!("{:<width$}", row.name, width = widths.name);
+        let size = format!("{:>width$}", row.size, width = widths.size);
+        let time = format!("{:>width$}", row.time, width = widths.time);
+        let suffix = if row.suffix.is_empty() {
+            String::new()
         } else {
-            relative_time(options.now, entry.mtime)
+            format!(" {}", row.suffix)
         };
-        let child_hint =
-            format_child_activity_hint_suffix(entry, options.now, bucket, options.scan_opts);
+
         println!(
             "  {}  {}  {}{}",
-            format_name(entry, options.base),
-            format_size(entry.size),
-            style_time_text(bucket, &time_str),
-            child_hint
+            style_name(&name, row),
+            size,
+            style_time_text(row.bucket, &time),
+            suffix
         );
     }
 
     println!();
+}
+
+fn render_row(entry: &FileEntry, bucket: TimeBucket, options: RenderOptions<'_>) -> RenderedRow {
+    let time = if options.use_absolute {
+        absolute_time(entry.mtime)
+    } else {
+        relative_time(options.now, entry.mtime)
+    };
+
+    RenderedRow {
+        bucket,
+        name: format_name(entry, options.base),
+        size: format_size(entry.size),
+        time,
+        suffix: format_suffix(entry, options.base, options.now, bucket, options.scan_opts),
+        is_dir: entry.is_dir(),
+    }
+}
+
+fn column_widths(buckets: &[RenderedBucket]) -> ColumnWidths {
+    let mut widths = ColumnWidths::default();
+
+    for bucket in buckets {
+        for row in &bucket.rows {
+            widths.name = widths.name.max(display_width(&row.name));
+            widths.size = widths.size.max(display_width(&row.size));
+            widths.time = widths.time.max(display_width(&row.time));
+        }
+    }
+
+    widths
+}
+
+fn display_width(text: &str) -> usize {
+    text.chars().count()
 }
 
 fn bucket_header(bucket: TimeBucket, shown: usize, total: usize, show_all: bool) -> String {
@@ -151,11 +229,12 @@ fn style_header(bucket: TimeBucket, header: &str, use_icons: bool) -> String {
     } else {
         format!("{icon} {header}")
     };
+
     match bucket {
         TimeBucket::Active => text.green().bold().to_string(),
         TimeBucket::Today => text.bold().to_string(),
-        TimeBucket::ThisWeek => text.truecolor(180, 180, 180).bold().to_string(),
-        TimeBucket::History => text.truecolor(130, 130, 130).bold().to_string(),
+        TimeBucket::ThisWeek => text.cyan().bold().to_string(),
+        TimeBucket::History => text.to_string(),
     }
 }
 
@@ -168,22 +247,38 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
 
     if entry.is_dir() {
         format!("{rel}/")
-    } else if entry.is_symlink() {
-        let target = entry
-            .symlink_target
-            .as_ref()
-            .and_then(|p| p.strip_prefix(base).ok().map(|pp| pp.display().to_string()))
-            .unwrap_or_else(|| {
-                entry
-                    .symlink_target
-                    .as_ref()
-                    .map(|p| p.display().to_string())
-                    .unwrap_or_else(|| "<unresolved>".to_string())
-            });
-        format!("{rel} -> {target}")
     } else {
         rel
     }
+}
+
+fn format_suffix(
+    entry: &FileEntry,
+    base: &Path,
+    now: SystemTime,
+    bucket: TimeBucket,
+    scan_opts: &ScanOptions,
+) -> String {
+    if entry.is_symlink() {
+        return format_symlink_target_suffix(entry, base);
+    }
+
+    format_child_activity_hint_suffix(entry, now, bucket, scan_opts)
+}
+
+fn format_symlink_target_suffix(entry: &FileEntry, base: &Path) -> String {
+    let target = entry
+        .symlink_target
+        .as_ref()
+        .and_then(|p| p.strip_prefix(base).ok().map(|pp| pp.display().to_string()))
+        .unwrap_or_else(|| {
+            entry
+                .symlink_target
+                .as_ref()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "<unresolved>".to_string())
+        });
+    format!("-> {target}")
 }
 
 fn classify_time_tone(bucket: TimeBucket, time_str: &str) -> TimeTone {
@@ -204,8 +299,16 @@ fn style_time_text(bucket: TimeBucket, time_str: &str) -> String {
         TimeTone::Skew => time_str.yellow().bold().to_string(),
         TimeTone::Active => time_str.green().bold().to_string(),
         TimeTone::Today => time_str.normal().to_string(),
-        TimeTone::ThisWeek => time_str.truecolor(180, 180, 180).to_string(),
-        TimeTone::History => time_str.truecolor(130, 130, 130).to_string(),
+        TimeTone::ThisWeek => time_str.cyan().to_string(),
+        TimeTone::History => time_str.to_string(),
+    }
+}
+
+fn style_name(text: &str, row: &RenderedRow) -> String {
+    if row.is_dir {
+        text.bold().to_string()
+    } else {
+        text.to_string()
     }
 }
 
@@ -226,8 +329,8 @@ fn format_child_activity_hint_suffix(
 
 fn format_child_activity_hint(hint: ChildActivityHint) -> String {
     match hint {
-        ChildActivityHint::Active => " [child: active]".dimmed().to_string(),
-        ChildActivityHint::Today => " [child: today]".dimmed().to_string(),
+        ChildActivityHint::Active => "[child: active]".to_string(),
+        ChildActivityHint::Today => "[child: today]".to_string(),
     }
 }
 
@@ -346,5 +449,68 @@ mod tests {
             "History (5/7)"
         );
         assert_eq!(bucket_header(TimeBucket::Active, 3, 3, false), "Active (3)");
+    }
+
+    #[test]
+    fn column_widths_use_the_longest_visible_row_across_buckets() {
+        let buckets = vec![
+            RenderedBucket {
+                bucket: TimeBucket::Today,
+                header: "Today (1)".to_string(),
+                rows: vec![RenderedRow {
+                    bucket: TimeBucket::Today,
+                    name: "README.md".to_string(),
+                    size: "1.2 KiB".to_string(),
+                    time: "2h".to_string(),
+                    suffix: String::new(),
+                    is_dir: false,
+                }],
+            },
+            RenderedBucket {
+                bucket: TimeBucket::History,
+                header: "History (1)".to_string(),
+                rows: vec![RenderedRow {
+                    bucket: TimeBucket::History,
+                    name: "link_to_readme".to_string(),
+                    size: "—".to_string(),
+                    time: "2026-03-01".to_string(),
+                    suffix: "-> README.md".to_string(),
+                    is_dir: false,
+                }],
+            },
+        ];
+
+        assert_eq!(
+            column_widths(&buckets),
+            ColumnWidths {
+                name: "link_to_readme".chars().count(),
+                size: "1.2 KiB".chars().count(),
+                time: "2026-03-01".chars().count(),
+            }
+        );
+    }
+
+    #[test]
+    fn semantic_palette_is_theme_safe() {
+        colored::control::set_override(true);
+
+        assert_eq!(
+            style_header(TimeBucket::ThisWeek, "This Week (1)", false),
+            "\u{1b}[1;36mThis Week (1)\u{1b}[0m"
+        );
+        assert_eq!(
+            style_header(TimeBucket::History, "History (1)", false),
+            "History (1)"
+        );
+        assert_eq!(
+            style_time_text(TimeBucket::ThisWeek, "2d"),
+            "\u{1b}[36m2d\u{1b}[0m"
+        );
+        assert_eq!(
+            style_time_text(TimeBucket::History, "2026-03-01"),
+            "2026-03-01"
+        );
+
+        colored::control::set_override(false);
     }
 }

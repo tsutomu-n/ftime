@@ -64,21 +64,22 @@ Time buckets act as cognitive scaffolding: `Active`, `Today`, `This Week`, and `
 
 ```text
 Active (1)
-  Cargo.toml  2.1 KiB  12s
+  Cargo.toml  2.1 KiB          12s
 
 Today (1)
-  README.md  8.4 KiB  2h
+  README.md   8.4 KiB          2h
 
 This Week (1)
-  docs/  —  3d [child: today]
+  docs/           —           3d [child: today]
 
 History (1)
-  target/  —  2026-03-16 [child: active]
+  target/         —   2026-03-16 [child: active]
 ```
 
 Directories show `—` in the size column.
 Directory rows may show a child activity hint when a direct child is more recent than the directory itself.
 The hint is advisory only: the parent directory keeps its own bucket and sort position based on the directory's `mtime`.
+Symlink rows keep `name  size  time` aligned and show `-> target` as a suffix after the time column.
 
 ## Tool fit
 
