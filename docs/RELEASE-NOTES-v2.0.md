@@ -1,4 +1,10 @@
-# ftime v2.0.0 Release Notes
+# ftime v2.0.1 Release Notes
+
+## Patch highlights
+
+- Human TTY output now uses globally aligned `name  size  time` columns.
+- Symlink rows keep the main columns aligned and move `-> target` to the suffix.
+- Bucket colors were simplified for theme-safe scanning: `Active` stays strongest, `This Week` uses cyan, `History` falls back to the default foreground.
 
 ## Breaking changes
 

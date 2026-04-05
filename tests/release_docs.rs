@@ -75,7 +75,7 @@ fn cli_contract_documents_v2_shapes() {
         &cli,
         "docs/CLI.md",
         &[
-            "# ftime v2.0.0 CLI Contract",
+            "# ftime v2.0.1 CLI Contract",
             "`-a, --all`",
             "`--all-history`",
             "`--hide-dots`",
