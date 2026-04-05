@@ -6,7 +6,7 @@ English | [日本語](docs/README-ja.md) | [中文](docs/README-zh.md)
 
 > What changed in this folder recently?
 
-The name stands for `files by time`. It scans only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can see recent changes without recursive noise.
+The name stands for `files by time`. It scans only the first level of a directory, sorts entries by `mtime`, and groups them into time buckets so you can recover context without recursive noise.
 
 [![release](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml/badge.svg)](https://github.com/tsutomu-n/ftime/actions/workflows/release.yml)
 
@@ -15,7 +15,9 @@ The name stands for `files by time`. It scans only the first level of a director
 - Read-only by design: no delete, rename, or write operations
 - Depth-1 only: see the current folder, not the whole tree
 - Buckets: `Active` / `Today` / `This Week` / `History`
-- Human-readable sizes in TTY output; plain text and JSON Lines available for scripts
+- Human-first bucket view by default
+- hidden files stay visible by default while hidden directories stay hidden
+- Use `--plain` or `--json` when you want machine-oriented output
 
 ## Why `ftime`?
 
@@ -33,7 +35,11 @@ ftime
 ftime ~/Downloads
 ftime ./target
 ftime /var/log/app
-ftime --exclude-dots
+ftime -a
+ftime --all-history
+ftime --hide-dots
+ftime --files-only --ext rs,toml
+ftime --plain
 ftime --json | jq -r '.path'
 ```
 
@@ -57,18 +63,21 @@ Time buckets act as cognitive scaffolding: `Active`, `Today`, `This Week`, and `
 ## Example output
 
 ```text
-Active
-  • Cargo.toml | 2.1 KiB | 12s ago
-Today
-  • README.md | 8.4 KiB | 2h ago
-This Week
-  • docs/ | - | 3d ago [child: today]
-History
-  • target/ | - | 2w ago [child: active]
+Active (1)
+  Cargo.toml  2.1 KiB  12s
+
+Today (1)
+  README.md  8.4 KiB  2h
+
+This Week (1)
+  docs/  —  3d [child: today]
+
+History (1)
+  target/  —  2026-03-16 [child: active]
 ```
 
-Directories show `-` in the size column.
-Directory rows may show a child activity hint when a direct child is more recent than the directory itself. This hint is TTY-only and never appears in plain text or JSON Lines output.
+Directories show `—` in the size column.
+Directory rows may show a child activity hint when a direct child is more recent than the directory itself.
 The hint is advisory only: the parent directory keeps its own bucket and sort position based on the directory's `mtime`.
 
 ## Tool fit
@@ -127,11 +136,16 @@ Uninstall steps are documented in `## Uninstall`, including custom install direc
 
 Common flags:
 
-- `-a, --all`: expand `History` in TTY mode
+- `-a, --all`: show hidden files and hidden directories
+- `--all-history`: expand the History bucket
+- `--hide-dots`: hide all hidden entries
+- `--ext`: focus on selected regular file extensions while keeping directory context
+- `--files-only`: only show regular files
 - `-A, --absolute`: show absolute local timestamps like `2026-03-16 20:49:28 (UTC+09:00)`
-- `--exclude-dots`: hide dotfiles
-- `--ext`: focus on selected file extensions; directories are excluded
+- `--plain`: emit `path<TAB>bucket<TAB>time`
 - `--json`: emit one JSON object per line for scripts
+- `--no-hints`: disable `[child: ...]` hints
+- `--color <auto|always|never>`: control ANSI color in human output
 - `--check-update`: report whether a newer published release is available
 - `--self-update`: update the current installed binary to the latest published release
 - `--no-ignore`: temporarily disable ignore rules to verify what was filtered out
@@ -146,15 +160,13 @@ ftime --self-update
 Typical output:
 
 ```text
-update available: 1.0.5 -> 1.0.6
-ftime updated 1.0.5 -> 1.0.6 in /home/tn/.local/bin
-ftime is already up to date at 1.0.5 in /home/tn/.local/bin
-ftime now points to 1.0.6 (was 1.0.5) in /home/tn/.local/bin
+update available: 2.0.0 -> 2.0.1
+ftime updated 2.0.0 -> 2.0.1 in /home/tn/.local/bin
+ftime is already up to date at 2.0.0 in /home/tn/.local/bin
+ftime now points to 2.0.1 (was 2.0.0) in /home/tn/.local/bin
 ```
 
 When invoked via a symlink, `ftime --self-update` updates that symlink directory.
-
-If your current binary predates `--self-update`, reinstall once from the latest GitHub Releases installer.
 
 ## Uninstall
 

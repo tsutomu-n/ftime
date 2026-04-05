@@ -5,17 +5,12 @@ pub trait IconProvider {
     fn bucket_icon(&self, bucket: TimeBucket) -> &'static str;
 }
 
-/// 従来の絵文字アイコン（デフォルト）。
+/// デフォルトではアイコンを出さない。
 pub struct DefaultIconProvider;
 
 impl IconProvider for DefaultIconProvider {
-    fn bucket_icon(&self, bucket: TimeBucket) -> &'static str {
-        match bucket {
-            TimeBucket::Active => "🔥",
-            TimeBucket::Today => "☕",
-            TimeBucket::ThisWeek => "📅",
-            TimeBucket::History => "💤",
-        }
+    fn bucket_icon(&self, _bucket: TimeBucket) -> &'static str {
+        ""
     }
 }
 

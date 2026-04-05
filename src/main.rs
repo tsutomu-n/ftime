@@ -5,49 +5,69 @@ mod view;
 
 use anyhow::{Context, Result, bail};
 use clap::Parser;
-use engine::{ScanOptions, bucketize, scan_dir};
+use engine::{DotMode, ScanOptions, bucketize, scan_dir};
 use std::env;
-use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process;
 use util::ignore::{load_ignore_patterns, load_local_ignore};
+use view::tty::ColorMode;
 
 #[derive(Parser, Debug)]
 #[command(
     name = "ftime",
     version,
     about = "files by time: a read-only File Time CLI",
-    after_help = "If your installed binary predates --self-update, reinstall once from the latest GitHub Releases installer."
+    after_help = "Default output is the human bucket view. Use --plain or --json for script-friendly output."
 )]
 struct Cli {
+    /// Emit plain TSV output
+    #[arg(long = "plain")]
+    plain: bool,
+
     /// Emit JSON Lines output
     #[cfg(feature = "json")]
     #[arg(long = "json")]
     json: bool,
 
+    /// Show hidden files and hidden directories
+    #[arg(short = 'a', long = "all")]
+    all: bool,
+
+    /// Hide all hidden entries
+    #[arg(long = "hide-dots")]
+    hide_dots: bool,
+
     /// Disable ignore rules (built-in and ~/.ftimeignore)
     #[arg(long = "no-ignore")]
     no_ignore: bool,
 
-    /// Disable best-effort labels (e.g., Fresh)
-    #[arg(long = "no-labels")]
-    no_labels: bool,
-
-    /// Show full History bucket
-    #[arg(short = 'a', long = "all")]
-    show_all_history: bool,
-
-    /// Filter files by comma-separated extensions (case-insensitive)
+    /// Filter regular files by comma-separated extensions (case-insensitive)
     #[arg(long = "ext")]
     ext: Option<String>,
 
-    /// Show Nerd Font icons (opt-in)
-    #[arg(short = 'I', long = "icons")]
-    use_icons: bool,
+    /// Only show regular files
+    #[arg(long = "files-only")]
+    files_only: bool,
+
+    /// Expand the History bucket
+    #[arg(long = "all-history")]
+    all_history: bool,
 
     /// Emit absolute local timestamps with UTC offset instead of relative time
     #[arg(short = 'A', long = "absolute")]
     absolute_time: bool,
+
+    /// Disable directory child activity hints
+    #[arg(long = "no-hints")]
+    no_hints: bool,
+
+    /// Color handling for human output
+    #[arg(long = "color", value_enum, default_value_t = ColorMode::Auto)]
+    color: ColorMode,
+
+    /// Show Nerd Font icons (opt-in)
+    #[arg(short = 'I', long = "icons")]
+    use_icons: bool,
 
     /// Check whether a newer published release is available
     #[arg(long = "check-update")]
@@ -57,17 +77,13 @@ struct Cli {
     #[arg(long = "self-update")]
     self_update: bool,
 
-    /// Exclude dotfiles from scan results
-    #[arg(long = "exclude-dots")]
-    exclude_dots: bool,
-
     /// Target directory (defaults to current directory)
     path: Option<PathBuf>,
 }
 
 fn main() {
     if let Err(err) = run() {
-        eprintln!("{}", err);
+        eprintln!("{err}");
         process::exit(1);
     }
 }
@@ -91,12 +107,18 @@ fn run() -> Result<()> {
             bail!("{update_flag} cannot be combined with scan options or PATH");
         }
 
+        if cli.plain {
+            bail!("{update_flag} cannot be combined with scan options or PATH");
+        }
+
         return if cli.self_update {
             util::update::self_update()
         } else {
             util::update::check_for_update()
         };
     }
+
+    validate_output_flags(&cli)?;
 
     let path = match cli.path {
         Some(p) => p,
@@ -109,54 +131,93 @@ fn run() -> Result<()> {
         bail!("{} is not a directory", path.display());
     }
 
-    if env::var_os("NO_COLOR").is_some() {
-        colored::control::set_override(false);
-    }
+    let dot_mode = if cli.all {
+        DotMode::All
+    } else if cli.hide_dots {
+        DotMode::None
+    } else {
+        DotMode::Default
+    };
 
+    let use_ignore = !cli.no_ignore;
     let scan_opts = ScanOptions {
-        exclude_dots: cli.exclude_dots,
+        dot_mode,
         ext_filter: cli.ext.as_ref().map(|s| {
             s.split(',')
-                .map(|p| p.trim().to_lowercase())
+                .map(|p| p.trim().trim_start_matches('.').to_lowercase())
                 .filter(|x| !x.is_empty())
                 .collect()
         }),
-        no_ignore: cli.no_ignore,
-        ignore_patterns: if cli.no_ignore {
-            Vec::new()
-        } else {
+        use_ignore,
+        ignore_patterns: if use_ignore {
             load_ignore_patterns()
-        },
-        local_ignore_patterns: if cli.no_ignore {
-            Vec::new()
         } else {
-            load_local_ignore(&path)
+            Vec::new()
         },
-        no_labels: cli.no_labels,
+        local_ignore_patterns: if use_ignore {
+            load_local_ignore(&path)
+        } else {
+            Vec::new()
+        },
+        files_only: cli.files_only,
+        use_hints: !cli.no_hints,
     };
 
     let scan = scan_dir(&path, &scan_opts)?;
-    let bucketed = bucketize(&scan.entries, scan.now, &scan_opts);
-    let force_tty = env::var_os("FTIME_FORCE_TTY").is_some();
 
     #[cfg(feature = "json")]
     if cli.json {
-        return view::json::render(&bucketed, scan.now, &path);
+        return view::json::render(&scan.entries, scan.now, &path);
     }
 
-    if force_tty || std::io::stdout().is_terminal() {
-        view::tty::render(
-            &bucketed,
-            scan.now,
-            &path,
-            cli.show_all_history,
-            cli.use_icons,
-            cli.absolute_time,
-            &scan_opts,
-        )?;
-    } else {
-        view::text::render(&scan.entries, scan.now, &path, cli.absolute_time)?;
+    if cli.plain {
+        return view::text::render(&scan.entries, scan.now, &path, cli.absolute_time);
     }
+
+    let bucketed = bucketize(&scan.entries, scan.now);
+    view::tty::render(
+        &bucketed,
+        &scan.stats,
+        view::tty::RenderOptions {
+            now: scan.now,
+            base: &path,
+            show_all_history: cli.all_history,
+            use_icons: cli.use_icons,
+            use_absolute: cli.absolute_time,
+            color_mode: cli.color,
+            scan_opts: &scan_opts,
+        },
+    )?;
+    Ok(())
+}
+
+fn validate_output_flags(cli: &Cli) -> Result<()> {
+    #[cfg(feature = "json")]
+    if cli.plain && cli.json {
+        bail!("--plain and --json cannot be combined");
+    }
+
+    if cli.all && cli.hide_dots {
+        bail!("-a and --hide-dots cannot be combined");
+    }
+
+    #[cfg(feature = "json")]
+    if cli.json
+        && (cli.absolute_time
+            || cli.all_history
+            || cli.no_hints
+            || cli.use_icons
+            || cli.color != ColorMode::Auto)
+    {
+        bail!("--json cannot be combined with human-only flags");
+    }
+
+    if cli.plain
+        && (cli.all_history || cli.no_hints || cli.use_icons || cli.color != ColorMode::Auto)
+    {
+        bail!("--plain cannot be combined with human-only flags");
+    }
+
     Ok(())
 }
 
@@ -170,13 +231,17 @@ fn update_flag_name(cli: &Cli) -> &'static str {
 
 fn has_scan_options(cli: &Cli) -> bool {
     cli.path.is_some()
+        || cli.plain
         || cli.no_ignore
-        || cli.no_labels
-        || cli.show_all_history
+        || cli.all
+        || cli.hide_dots
         || cli.ext.is_some()
+        || cli.files_only
+        || cli.all_history
         || cli.use_icons
         || cli.absolute_time
-        || cli.exclude_dots
+        || cli.no_hints
+        || cli.color != ColorMode::Auto
 }
 
 #[cfg(test)]
@@ -201,7 +266,7 @@ mod tests {
 
     #[test]
     fn has_scan_options_detects_scan_flags() {
-        let cli = parse_cli(&["ftime", "--check-update", "--exclude-dots"]);
+        let cli = parse_cli(&["ftime", "--check-update", "--hide-dots"]);
         assert!(has_scan_options(&cli));
     }
 

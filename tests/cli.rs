@@ -7,8 +7,6 @@ use serde_json::Value;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -31,41 +29,6 @@ fn fails_when_path_is_file() {
 }
 
 #[test]
-fn hidden_files_included_by_default_and_excluded_with_flag() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join("visible")).unwrap();
-    File::create(dir.path().join(".hidden")).unwrap();
-
-    bin()
-        .current_dir(dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("visible"))
-        .stdout(predicate::str::contains(".hidden"));
-
-    bin()
-        .current_dir(dir.path())
-        .arg("--exclude-dots")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("visible"))
-        .stdout(predicate::str::is_match("\\.hidden").unwrap().not());
-}
-
-#[test]
-fn removed_hidden_flag_is_rejected() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join(".hidden")).unwrap();
-
-    bin()
-        .current_dir(dir.path())
-        .arg("-H")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("-H"));
-}
-
-#[test]
 fn version_reports_current_package_version() {
     bin()
         .arg("--version")
@@ -78,28 +41,508 @@ fn version_reports_current_package_version() {
 }
 
 #[test]
-fn help_mentions_file_time_concept_and_reinstall_note() {
-    bin()
-        .arg("--help")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains(
-            "files by time: a read-only File Time CLI",
-        ))
-        .stdout(predicate::str::contains("--check-update"))
-        .stdout(predicate::str::contains(
-            "If your installed binary predates --self-update",
-        ));
+fn help_mentions_v2_flags() {
+    let output = bin().arg("--help").output().unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    for flag in [
+        "--plain",
+        "--json",
+        "--hide-dots",
+        "--all-history",
+        "--files-only",
+        "--no-hints",
+        "--color",
+    ] {
+        assert!(stdout.contains(flag), "help missing {flag}");
+    }
 }
 
 #[test]
-fn help_lists_check_update_before_self_update() {
-    let output = bin().arg("--help").output().unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let check = stdout.find("--check-update").unwrap();
-    let update = stdout.find("--self-update").unwrap();
+fn default_output_stays_human_even_when_piped() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("f1")).unwrap();
 
-    assert!(check < update);
+    let output = bin().arg(dir.path()).output().unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("Active (1)"));
+    assert!(stdout.contains("f1"));
+    assert!(!stdout.contains('\t'));
+}
+
+#[test]
+fn plain_output_is_three_column_tsv() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("f1")).unwrap();
+
+    let output = bin().arg(dir.path()).arg("--plain").output().unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let line = stdout.lines().next().unwrap();
+    let cols: Vec<&str> = line.split('\t').collect();
+
+    assert_eq!(cols.len(), 3);
+    assert_eq!(cols[0], "f1");
+    assert_eq!(cols[1], "active");
+}
+
+#[test]
+fn absolute_time_flag_changes_plain_output_format() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--plain")
+        .arg("--absolute")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let line = stdout.lines().next().unwrap();
+    let cols: Vec<&str> = line.split('\t').collect();
+
+    assert_eq!(cols.len(), 3);
+    assert!(
+        predicate::str::is_match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)$")
+            .unwrap()
+            .eval(cols[2])
+    );
+}
+
+#[test]
+fn default_dot_policy_shows_hidden_files_but_not_hidden_directories() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("visible")).unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("visible"));
+    assert!(stdout.contains(".hidden"));
+    assert!(!stdout.contains(".hidden_dir/"));
+}
+
+#[test]
+fn all_flag_shows_hidden_files_and_directories() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
+
+    bin()
+        .arg(dir.path())
+        .arg("-a")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(".hidden"))
+        .stdout(predicate::str::contains(".hidden_dir/"));
+}
+
+#[test]
+fn hide_dots_hides_hidden_files_and_directories() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
+    File::create(dir.path().join("visible")).unwrap();
+
+    bin()
+        .arg(dir.path())
+        .arg("--hide-dots")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("visible"))
+        .stdout(predicate::str::contains(".hidden").not())
+        .stdout(predicate::str::contains(".hidden_dir/").not());
+}
+
+#[test]
+fn removed_hidden_flag_is_rejected() {
+    bin()
+        .arg("--exclude-dots")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--exclude-dots"));
+}
+
+#[test]
+fn removed_labels_flag_is_rejected() {
+    bin()
+        .arg("--no-labels")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--no-labels"));
+}
+
+#[test]
+fn history_bucket_previews_by_default_and_expands_with_all_history() {
+    let dir = tempdir().unwrap();
+    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
+    for i in 0..7 {
+        let path = dir.path().join(format!("old-{i}"));
+        File::create(&path).unwrap();
+        set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
+    }
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("History (5/7)"));
+    assert!(!stdout.contains("old-6"));
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--all-history")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("History (7)"));
+    assert!(stdout.contains("old-6"));
+}
+
+#[test]
+fn ext_filter_keeps_directories_and_symlinks() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("keep.rs")).unwrap();
+    File::create(dir.path().join("drop.txt")).unwrap();
+    fs::create_dir(dir.path().join("docs")).unwrap();
+
+    let link_path = dir.path().join("link_to_keep");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(dir.path().join("keep.rs"), &link_path).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(dir.path().join("keep.rs"), &link_path).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--plain")
+        .arg("--ext")
+        .arg("rs")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("keep.rs\t"));
+    assert!(stdout.contains("docs\t"));
+    assert!(stdout.contains("link_to_keep\t"));
+    assert!(!stdout.contains("drop.txt\t"));
+}
+
+#[test]
+fn files_only_excludes_directories_and_symlinks() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("keep.rs")).unwrap();
+    fs::create_dir(dir.path().join("docs")).unwrap();
+
+    let link_path = dir.path().join("link_to_keep");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(dir.path().join("keep.rs"), &link_path).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(dir.path().join("keep.rs"), &link_path).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--plain")
+        .arg("--files-only")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("keep.rs\t"));
+    assert!(!stdout.contains("docs\t"));
+    assert!(!stdout.contains("link_to_keep\t"));
+}
+
+#[test]
+fn human_output_shows_compact_skew_without_footer_or_fresh_label() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("future-file");
+    File::create(&file_path).unwrap();
+    let future = SystemTime::now() + Duration::from_secs(5 * 60);
+    set_file_mtime(&file_path, FileTime::from_system_time(future)).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("[skew]"));
+    assert!(!stdout.contains("Current Timezone:"));
+    assert!(!stdout.contains("Fresh"));
+}
+
+#[test]
+fn human_output_supports_no_hints() {
+    let dir = tempdir().unwrap();
+    let docs_dir = dir.path().join("docs");
+    fs::create_dir(&docs_dir).unwrap();
+    let docs_child = docs_dir.join("guide.md");
+    File::create(&docs_child).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &docs_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("[child: active]"));
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--no-hints")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(!stdout.contains("[child:"));
+}
+
+#[test]
+fn plain_and_json_do_not_include_child_hints() {
+    let dir = tempdir().unwrap();
+    let docs_dir = dir.path().join("docs");
+    fs::create_dir(&docs_dir).unwrap();
+    let docs_child = docs_dir.join("guide.md");
+    File::create(&docs_child).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &docs_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let plain_output = bin().arg(dir.path()).arg("--plain").output().unwrap();
+    let plain_stdout = String::from_utf8(plain_output.stdout).unwrap();
+    assert!(!plain_stdout.contains("[child:"));
+
+    let json_output = bin().arg(dir.path()).arg("--json").output().unwrap();
+    let json_stdout = String::from_utf8(json_output.stdout).unwrap();
+    let first = json_stdout.lines().next().expect("one line present");
+    let value: Value = serde_json::from_str(first).unwrap();
+    assert!(value.get("child_activity").is_none());
+}
+
+#[test]
+fn plain_and_json_conflicts_are_rejected() {
+    bin().arg("--plain").arg("--json").assert().failure();
+}
+
+#[test]
+fn all_and_hide_dots_conflict_is_rejected() {
+    bin().arg("-a").arg("--hide-dots").assert().failure();
+}
+
+#[test]
+fn json_rejects_human_only_flags() {
+    for flag in [
+        "--absolute",
+        "--all-history",
+        "--no-hints",
+        "--icons",
+        "--color",
+    ] {
+        let mut cmd = bin();
+        cmd.arg("--json").arg(flag);
+        if flag == "--color" {
+            cmd.arg("always");
+        }
+        cmd.assert().failure();
+    }
+}
+
+#[test]
+fn plain_rejects_human_only_flags_except_absolute() {
+    for flag in ["--all-history", "--no-hints", "--icons", "--color"] {
+        let mut cmd = bin();
+        cmd.arg("--plain").arg(flag);
+        if flag == "--color" {
+            cmd.arg("always");
+        }
+        cmd.assert().failure();
+    }
+}
+
+#[test]
+fn plain_output_formats_dirs_and_symlinks_as_undecorated_paths() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("file");
+    File::create(&file_path).unwrap();
+    let subdir = dir.path().join("subdir");
+    fs::create_dir(&subdir).unwrap();
+    let link_path = dir.path().join("link_to_file");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&file_path, &link_path).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(&file_path, &link_path).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--plain")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("file\t"));
+    assert!(stdout.contains("subdir\t"));
+    assert!(stdout.contains("link_to_file\t"));
+    assert!(!stdout.contains("->"));
+    assert!(!stdout.contains("subdir/"));
+}
+
+#[test]
+fn ignores_ds_store_and_thumbs_db_even_with_hidden_default() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("visible")).unwrap();
+    File::create(dir.path().join(".DS_Store")).unwrap();
+    File::create(dir.path().join("Thumbs.db")).unwrap();
+    File::create(dir.path().join(".hidden")).unwrap();
+
+    let out_default = bin()
+        .current_dir(dir.path())
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(out_default.stdout).unwrap();
+    assert!(stdout.contains("visible"));
+    assert!(stdout.contains(".hidden"));
+    assert!(!stdout.contains(".DS_Store"));
+    assert!(!stdout.contains("Thumbs.db"));
+}
+
+#[test]
+fn json_output_contains_expected_fields_without_label() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("f1");
+    File::create(&file_path).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let first = stdout.lines().next().expect("one line present");
+    assert!(first.starts_with("{\"path\":\"f1\",\"bucket\":\"active\",\"mtime\":"));
+    assert!(!first.contains("\"label\""));
+
+    let v: Value = serde_json::from_str(first).unwrap();
+    assert_eq!(v.get("path").unwrap(), "f1");
+    assert_eq!(v.get("bucket").unwrap(), "active");
+    assert_eq!(v.get("is_dir").unwrap(), false);
+    assert_eq!(v.get("size").and_then(Value::as_u64), Some(0));
+}
+
+#[test]
+fn json_output_omits_size_for_directories() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("subdir")).unwrap();
+
+    let output = bin()
+        .current_dir(dir.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let first = stdout.lines().next().expect("one line present");
+    let v: Value = serde_json::from_str(first).unwrap();
+    assert_eq!(v.get("is_dir").unwrap(), true);
+    assert!(v.get("size").is_none());
+}
+
+#[test]
+fn no_matching_entries_message_mentions_filters() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--hide-dots")
+        .env("FTIME_FORCE_TTY", "1")
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("No matching entries"));
+    assert!(stdout.contains("filters:"));
+}
+
+#[test]
+fn global_ignore_file_is_respected_and_no_ignore_overrides() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("keep.log")).unwrap();
+    File::create(dir.path().join("skip.tmp")).unwrap();
+
+    let ig = tempdir().unwrap();
+    let ig_path = ig.path().join("ignore");
+    let mut f = File::create(&ig_path).unwrap();
+    writeln!(f, "*.tmp").unwrap();
+    writeln!(f, "# comment").unwrap();
+    writeln!(f).unwrap();
+
+    let out = bin()
+        .current_dir(dir.path())
+        .env("FTIME_IGNORE", &ig_path)
+        .arg("--plain")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("keep.log"));
+    assert!(!stdout.contains("skip.tmp"));
+
+    let out_no = bin()
+        .current_dir(dir.path())
+        .env("FTIME_IGNORE", &ig_path)
+        .arg("--plain")
+        .arg("--no-ignore")
+        .output()
+        .unwrap();
+    let stdout_no = String::from_utf8(out_no.stdout).unwrap();
+    assert!(stdout_no.contains("skip.tmp"));
 }
 
 #[cfg(unix)]
@@ -224,11 +667,11 @@ fn check_update_reports_when_already_current() {
 fn check_update_reports_when_update_is_available() {
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.6")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "2.0.1")
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            "update available: {} -> 1.0.6",
+            "update available: {} -> 2.0.1",
             support::package_version()
         )));
 }
@@ -241,11 +684,11 @@ fn check_update_reports_when_latest_is_renumbered_lower() {
             "FTIME_SELF_UPDATE_CURRENT_VERSION",
             support::package_version(),
         )
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.0.0")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "1.9.9")
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            "latest published release is 1.0.0 (current binary reports {})",
+            "latest published release is 1.9.9 (current binary reports {})",
             support::package_version()
         )));
 }
@@ -263,558 +706,4 @@ fn self_update_rejects_cargo_build_outputs() {
         .stderr(predicate::str::contains(
             "--self-update is not available for cargo build outputs",
         ));
-}
-
-#[test]
-fn history_bucket_collapses_and_expands() {
-    let dir = tempdir().unwrap();
-    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
-    for i in 0..25 {
-        let path = dir.path().join(format!("old-{i}"));
-        File::create(&path).unwrap();
-        set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
-    }
-
-    bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("History (25 files hidden)"));
-
-    bin()
-        .arg(dir.path())
-        .arg("-a")
-        .env("FTIME_FORCE_TTY", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("💤 History"))
-        .stdout(predicate::str::contains("... and 5 more items"));
-}
-
-#[test]
-fn icons_flag_keeps_output_stable() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-
-    let old_path = dir.path().join("old");
-    File::create(&old_path).unwrap();
-    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
-    set_file_mtime(&old_path, FileTime::from_system_time(old_time)).unwrap();
-
-    bin()
-        .arg(dir.path())
-        .arg("--icons")
-        .env("FTIME_FORCE_TTY", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("History"));
-}
-
-#[test]
-fn pipe_mode_outputs_two_tsv_columns_without_headers() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-
-    let output = bin().arg(dir.path()).output().unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let line = stdout.lines().next().unwrap();
-
-    assert_eq!(line.split('\t').count(), 2);
-    assert!(stdout.contains("f1\t"));
-    assert!(!stdout.contains("Active Context"));
-}
-
-#[test]
-fn absolute_time_flag_changes_pipe_output_format() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
-    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
-
-    let output = bin().arg(dir.path()).arg("--absolute").output().unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let line = stdout.lines().next().unwrap();
-    let cols: Vec<&str> = line.split('\t').collect();
-
-    assert_eq!(cols.len(), 2);
-    assert!(
-        predicate::str::is_match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)$")
-            .unwrap()
-            .eval(cols[1])
-    );
-}
-
-#[test]
-fn tty_output_shows_size_column_and_absolute_time() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
-    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .arg("--absolute")
-        .env("FTIME_FORCE_TTY", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(stdout.contains("0 B"));
-    assert!(stdout.contains("|"));
-    assert!(
-        predicate::str::is_match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)")
-            .unwrap()
-            .eval(&stdout)
-    );
-}
-
-#[test]
-fn tty_output_shows_skew_warning_and_timezone_footer() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("future-file");
-    File::create(&file_path).unwrap();
-    let future = SystemTime::now() + Duration::from_secs(5 * 60);
-    set_file_mtime(&file_path, FileTime::from_system_time(future)).unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(stdout.contains("[Skew]"));
-    assert!(
-        predicate::str::is_match(r"Current Timezone: UTC[+-]\d{2}:\d{2}")
-            .unwrap()
-            .eval(&stdout)
-    );
-}
-
-#[test]
-fn tty_output_with_no_color_keeps_text_contract_without_ansi() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("future-file");
-    File::create(&file_path).unwrap();
-    let future = SystemTime::now() + Duration::from_secs(5 * 60);
-    set_file_mtime(&file_path, FileTime::from_system_time(future)).unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(stdout.contains("[Skew]"));
-    assert!(stdout.contains("Current Timezone: "));
-    assert!(!stdout.contains("\u{1b}["));
-}
-
-#[test]
-fn tty_output_shows_child_activity_hints_only_for_directories() {
-    let dir = tempdir().unwrap();
-    let docs_dir = dir.path().join("docs");
-    fs::create_dir(&docs_dir).unwrap();
-    let docs_child = docs_dir.join("guide.md");
-    File::create(&docs_child).unwrap();
-
-    let target_dir = dir.path().join("target");
-    fs::create_dir(&target_dir).unwrap();
-    let target_child = target_dir.join("artifact.bin");
-    File::create(&target_child).unwrap();
-
-    let readme = dir.path().join("README.md");
-    File::create(&readme).unwrap();
-
-    let now = SystemTime::now();
-    set_file_mtime(
-        &docs_child,
-        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &target_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &docs_dir,
-        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &target_dir,
-        FileTime::from_system_time(now - Duration::from_secs(14 * 24 * 3600)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &readme,
-        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
-    )
-    .unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(stdout.contains("docs/ | - |"));
-    assert!(stdout.contains("[child: today]"));
-    assert!(stdout.contains("target/ | - |"));
-    assert!(stdout.contains("[child: active]"));
-    assert!(!stdout.contains("README.md | 0 B | 2 hours ago [child:"));
-}
-
-#[test]
-fn pipe_and_json_output_do_not_include_child_activity_hints() {
-    let dir = tempdir().unwrap();
-    let docs_dir = dir.path().join("docs");
-    fs::create_dir(&docs_dir).unwrap();
-    let docs_child = docs_dir.join("guide.md");
-    File::create(&docs_child).unwrap();
-    let now = SystemTime::now();
-    set_file_mtime(
-        &docs_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &docs_dir,
-        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
-    )
-    .unwrap();
-
-    let pipe_output = bin().arg(dir.path()).output().unwrap();
-    let pipe_stdout = String::from_utf8(pipe_output.stdout).unwrap();
-    assert!(!pipe_stdout.contains("[child:"));
-
-    let json_output = bin().arg(dir.path()).arg("--json").output().unwrap();
-    let json_stdout = String::from_utf8(json_output.stdout).unwrap();
-    let first = json_stdout.lines().next().expect("one line present");
-    let value: Value = serde_json::from_str(first).unwrap();
-    assert!(value.get("child_activity").is_none());
-}
-
-#[test]
-fn tty_child_activity_hint_respects_exclude_dots_and_child_local_ignore() {
-    let dir = tempdir().unwrap();
-    let hidden_dir = dir.path().join("hidden-only");
-    fs::create_dir(&hidden_dir).unwrap();
-    let hidden_child = hidden_dir.join(".recent.log");
-    File::create(&hidden_child).unwrap();
-
-    let ignored_dir = dir.path().join("ignored-only");
-    fs::create_dir(&ignored_dir).unwrap();
-    fs::write(ignored_dir.join(".ftimeignore"), "recent.log\n").unwrap();
-    let ignored_child = ignored_dir.join("recent.log");
-    File::create(&ignored_child).unwrap();
-
-    let now = SystemTime::now();
-    set_file_mtime(
-        &hidden_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &ignored_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &hidden_dir,
-        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &ignored_dir,
-        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
-    )
-    .unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .arg("--exclude-dots")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    let hidden_line = stdout
-        .lines()
-        .find(|line| line.contains("hidden-only/ | - |"))
-        .expect("hidden-only directory row should exist");
-    let ignored_line = stdout
-        .lines()
-        .find(|line| line.contains("ignored-only/ | - |"))
-        .expect("ignored-only directory row should exist");
-
-    assert!(!hidden_line.contains("[child:"));
-    assert!(!ignored_line.contains("[child:"));
-}
-
-#[test]
-fn tty_child_activity_hint_is_not_shown_for_symlink_entries() {
-    let dir = tempdir().unwrap();
-    let real_dir = dir.path().join("docs");
-    fs::create_dir(&real_dir).unwrap();
-    let recent_child = real_dir.join("guide.md");
-    File::create(&recent_child).unwrap();
-
-    let link_dir = dir.path().join("docs-link");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&real_dir, &link_dir).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_dir(&real_dir, &link_dir).unwrap();
-
-    let now = SystemTime::now();
-    set_file_mtime(
-        &recent_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &real_dir,
-        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
-    )
-    .unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    let symlink_line = stdout
-        .lines()
-        .find(|line| line.contains("docs-link"))
-        .expect("symlink row should exist");
-
-    assert!(!symlink_line.contains("[child:"));
-}
-
-#[cfg(unix)]
-#[test]
-fn tty_child_activity_hint_is_not_shown_for_unreadable_directories() {
-    let dir = tempdir().unwrap();
-    let locked_dir = dir.path().join("locked");
-    fs::create_dir(&locked_dir).unwrap();
-    let recent_child = locked_dir.join("recent.log");
-    File::create(&recent_child).unwrap();
-
-    let now = SystemTime::now();
-    set_file_mtime(
-        &recent_child,
-        FileTime::from_system_time(now - Duration::from_secs(30)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &locked_dir,
-        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
-    )
-    .unwrap();
-
-    fs::set_permissions(&locked_dir, std::fs::Permissions::from_mode(0o000)).unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-
-    fs::set_permissions(&locked_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let locked_line = stdout
-        .lines()
-        .find(|line| line.contains("locked/ | - |"))
-        .expect("locked directory row should exist");
-
-    assert!(output.status.success());
-    assert!(!locked_line.contains("[child:"));
-}
-
-#[test]
-fn pipe_mode_formats_dirs_and_symlinks_as_plain_paths() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("file");
-    File::create(&file_path).unwrap();
-
-    let subdir = dir.path().join("subdir");
-    std::fs::create_dir(&subdir).unwrap();
-
-    let link_path = dir.path().join("link_to_file");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&file_path, &link_path).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(&file_path, &link_path).unwrap();
-
-    let now = SystemTime::now();
-    set_file_mtime(&file_path, FileTime::from_system_time(now)).unwrap();
-    set_file_mtime(
-        &subdir,
-        FileTime::from_system_time(now - Duration::from_secs(1)),
-    )
-    .unwrap();
-    set_file_mtime(
-        &link_path,
-        FileTime::from_system_time(now - Duration::from_secs(2)),
-    )
-    .unwrap();
-
-    let output = bin().current_dir(dir.path()).output().unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(stdout.contains("file\t"));
-    assert!(stdout.contains("subdir\t"));
-    assert!(stdout.contains("link_to_file\t"));
-    assert!(!stdout.contains("->"));
-}
-
-#[test]
-fn ignores_ds_store_and_thumbs_db_even_with_hidden_default() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join("visible")).unwrap();
-    File::create(dir.path().join(".DS_Store")).unwrap();
-    File::create(dir.path().join("Thumbs.db")).unwrap();
-    File::create(dir.path().join(".hidden")).unwrap();
-
-    let out_default = bin().current_dir(dir.path()).output().unwrap();
-    let stdout = String::from_utf8(out_default.stdout).unwrap();
-    assert!(stdout.contains("visible"));
-    assert!(stdout.contains(".hidden"));
-    assert!(!stdout.contains(".DS_Store"));
-    assert!(!stdout.contains("Thumbs.db"));
-}
-
-#[test]
-fn json_output_contains_expected_fields_including_size_for_files() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-
-    let output = bin()
-        .current_dir(dir.path())
-        .arg("--json")
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let mut lines = stdout.lines();
-    let first = lines.next().expect("one line present");
-    let v: Value = serde_json::from_str(first).unwrap();
-    assert_eq!(v.get("path").unwrap(), "f1");
-    assert!(v.get("bucket").is_some());
-    assert!(v.get("mtime").is_some());
-    assert!(v.get("relative_time").is_some());
-    assert_eq!(v.get("is_dir").unwrap(), false);
-    assert_eq!(v.get("size").and_then(Value::as_u64), Some(0));
-}
-
-#[test]
-fn json_output_omits_size_for_directories() {
-    let dir = tempdir().unwrap();
-    std::fs::create_dir(dir.path().join("subdir")).unwrap();
-
-    let output = bin()
-        .current_dir(dir.path())
-        .arg("--json")
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let mut lines = stdout.lines();
-    let first = lines.next().expect("one line present");
-    let v: Value = serde_json::from_str(first).unwrap();
-    assert_eq!(v.get("is_dir").unwrap(), true);
-    assert!(v.get("size").is_none());
-}
-
-#[test]
-fn ext_filter_filters_files_case_insensitively() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join("keep.rs")).unwrap();
-    File::create(dir.path().join("keep.RS")).unwrap();
-    File::create(dir.path().join("drop.txt")).unwrap();
-
-    let output = bin()
-        .current_dir(dir.path())
-        .arg("--ext")
-        .arg("rs")
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("keep.rs"));
-    assert!(stdout.contains("keep.RS"));
-    assert!(!stdout.contains("drop.txt"));
-}
-
-#[test]
-fn global_ignore_file_is_respected_and_no_ignore_overrides() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join("keep.log")).unwrap();
-    File::create(dir.path().join("skip.tmp")).unwrap();
-
-    let ig = tempdir().unwrap();
-    let ig_path = ig.path().join("ignore");
-    let mut f = File::create(&ig_path).unwrap();
-    writeln!(f, "*.tmp").unwrap();
-    writeln!(f, "# comment").unwrap();
-    writeln!(f).unwrap();
-
-    let out = bin()
-        .current_dir(dir.path())
-        .env("FTIME_IGNORE", &ig_path)
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(stdout.contains("keep.log"));
-    assert!(!stdout.contains("skip.tmp"));
-
-    let out_no = bin()
-        .current_dir(dir.path())
-        .env("FTIME_IGNORE", &ig_path)
-        .arg("--no-ignore")
-        .output()
-        .unwrap();
-    let stdout_no = String::from_utf8(out_no.stdout).unwrap();
-    assert!(stdout_no.contains("skip.tmp"));
-}
-
-#[test]
-fn fresh_label_shows_and_can_be_disabled() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("newfile");
-    File::create(&file_path).unwrap();
-
-    let out = bin()
-        .current_dir(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(stdout.contains("Fresh"));
-
-    let out2 = bin()
-        .current_dir(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .arg("--no-labels")
-        .output()
-        .unwrap();
-    let stdout2 = String::from_utf8(out2.stdout).unwrap();
-    assert!(!stdout2.contains("Fresh"));
 }

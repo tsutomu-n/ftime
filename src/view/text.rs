@@ -1,5 +1,5 @@
 use crate::model::FileEntry;
-use crate::util::time::{absolute_time, relative_time};
+use crate::util::time::{absolute_time, classify_bucket, relative_time};
 use anyhow::Result;
 use std::path::Path;
 use std::time::SystemTime;
@@ -21,7 +21,8 @@ pub fn render(
         } else {
             relative_time(now, entry.mtime)
         };
-        println!("{}\t{}", path, time_str);
+        let bucket = classify_bucket(now, entry.mtime);
+        println!("{path}\t{}\t{time_str}", bucket.key());
     }
     Ok(())
 }

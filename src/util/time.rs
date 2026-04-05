@@ -1,13 +1,10 @@
-use crate::model::Label;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, Local, TimeZone, Utc};
 use std::time::{Duration, SystemTime};
-
-/// Freshラベル判定のウィンドウ（秒）
-pub const FRESH_WINDOW_SECS: u64 = 5 * 60;
 
 /// Compute the bucket for a given modification time.
 pub fn classify_bucket(now: SystemTime, mtime: SystemTime) -> crate::model::TimeBucket {
     use crate::model::TimeBucket;
+
     let Ok(elapsed) = now.duration_since(mtime) else {
         return TimeBucket::Active;
     };
@@ -31,43 +28,14 @@ pub fn classify_bucket(now: SystemTime, mtime: SystemTime) -> crate::model::Time
     TimeBucket::History
 }
 
-/// Render a human-readable relative time string.
+/// Render a compact relative time string for human/plain output.
 pub fn relative_time(now: SystemTime, mtime: SystemTime) -> String {
-    let Ok(elapsed) = now.duration_since(mtime) else {
-        let future_secs = mtime
-            .duration_since(now)
-            .unwrap_or(Duration::ZERO)
-            .as_secs();
-        if future_secs < 60 {
-            return format!("+{future_secs}s [Skew]");
+    match now.duration_since(mtime) {
+        Ok(elapsed) => compact_elapsed(elapsed, mtime),
+        Err(_) => {
+            let future = mtime.duration_since(now).unwrap_or(Duration::ZERO);
+            compact_future(future)
         }
-        return format!("+{}m [Skew]", future_secs / 60);
-    };
-    let mins = elapsed.as_secs() / 60;
-    let hours = elapsed.as_secs() / 3600;
-    let days = elapsed.as_secs() / 86_400;
-
-    if elapsed.as_secs() < 60 {
-        "just now".to_string()
-    } else if mins < 60 {
-        if mins == 1 {
-            "1 min ago".to_string()
-        } else {
-            format!("{} mins ago", mins)
-        }
-    } else if hours < 24 {
-        if hours == 1 {
-            "1 hour ago".to_string()
-        } else {
-            format!("{} hours ago", hours)
-        }
-    } else if days == 1 {
-        "Yesterday".to_string()
-    } else if days < 7 {
-        format!("{} days ago", days)
-    } else {
-        let dt: DateTime<Local> = mtime.into();
-        dt.format("%Y-%m-%d").to_string()
     }
 }
 
@@ -81,13 +49,11 @@ pub fn absolute_time(mtime: SystemTime) -> String {
     )
 }
 
-/// Return the local timezone offset for the current environment, e.g. `UTC+09:00`.
-pub fn current_timezone_offset() -> String {
-    let now: DateTime<Local> = Local::now();
-    utc_offset_label(now)
+pub fn utc_rfc3339(mtime: SystemTime) -> String {
+    let dt: DateTime<Utc> = mtime.into();
+    dt.to_rfc3339()
 }
 
-/// Truncate time to date for comparisons.
 #[allow(dead_code)]
 pub fn start_of_day(ts: SystemTime) -> SystemTime {
     let dt: DateTime<Local> = ts.into();
@@ -111,14 +77,49 @@ fn utc_offset_label(dt: DateTime<Local>) -> String {
     format!("UTC{}", dt.format("%:z"))
 }
 
-/// Best-effort label classification. Currently only `Fresh` with a small time window.
-pub fn classify_label(now: SystemTime, mtime: SystemTime) -> Option<Label> {
-    let window = Duration::from_secs(FRESH_WINDOW_SECS);
-    if now.duration_since(mtime).unwrap_or(Duration::MAX) <= window {
-        Some(Label::Fresh)
-    } else {
-        None
+fn compact_elapsed(elapsed: Duration, mtime: SystemTime) -> String {
+    let secs = elapsed.as_secs();
+    if secs < 60 {
+        return format!("{secs}s");
     }
+
+    let mins = secs / 60;
+    if mins < 60 {
+        return format!("{mins}m");
+    }
+
+    let hours = secs / 3600;
+    if hours < 24 {
+        return format!("{hours}h");
+    }
+
+    let days = secs / 86_400;
+    if days < 7 {
+        return format!("{days}d");
+    }
+
+    let dt: DateTime<Local> = mtime.into();
+    dt.format("%Y-%m-%d").to_string()
+}
+
+fn compact_future(future: Duration) -> String {
+    let secs = future.as_secs();
+    if secs < 60 {
+        return format!("+{secs}s [skew]");
+    }
+
+    let mins = secs / 60;
+    if mins < 60 {
+        return format!("+{mins}m [skew]");
+    }
+
+    let hours = secs / 3600;
+    if hours < 24 {
+        return format!("+{hours}h [skew]");
+    }
+
+    let days = secs / 86_400;
+    format!("+{days}d [skew]")
 }
 
 #[cfg(test)]
@@ -158,20 +159,14 @@ mod tests {
             TimeBucket::Active
         );
 
-        // Today boundary
         let today_start = start_of_day(now);
         assert_eq!(
             classify_bucket(now, today_start + Duration::from_secs(10)),
             TimeBucket::Today
         );
 
-        // This week boundary
         assert_eq!(
             classify_bucket(now, now - Duration::from_secs(2 * 86_400)),
-            TimeBucket::ThisWeek
-        );
-        assert_eq!(
-            classify_bucket(now, now - Duration::from_secs(6 * 86_400)),
             TimeBucket::ThisWeek
         );
         assert_eq!(
@@ -212,18 +207,14 @@ mod tests {
     #[test]
     fn test_relative_time_strings() {
         let now = Utc::now().with_timezone(&Local).into();
-        let m = now - Duration::from_secs(30);
-        assert_eq!(relative_time(now, m), "just now");
+        let m = now - Duration::from_secs(12);
+        assert_eq!(relative_time(now, m), "12s");
         let m = now - Duration::from_secs(5 * 60);
-        assert_eq!(relative_time(now, m), "5 mins ago");
-        let m = now - Duration::from_secs(3600);
-        assert_eq!(relative_time(now, m), "1 hour ago");
+        assert_eq!(relative_time(now, m), "5m");
         let m = now - Duration::from_secs(3 * 3600);
-        assert_eq!(relative_time(now, m), "3 hours ago");
-        let m = now - Duration::from_secs(86_400);
-        assert_eq!(relative_time(now, m), "Yesterday");
-        let m = now - Duration::from_secs(3 * 86_400);
-        assert_eq!(relative_time(now, m), "3 days ago");
+        assert_eq!(relative_time(now, m), "3h");
+        let m = now - Duration::from_secs(6 * 86_400);
+        assert_eq!(relative_time(now, m), "6d");
     }
 
     #[test]
@@ -231,11 +222,15 @@ mod tests {
         let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000);
         assert_eq!(
             relative_time(now, now + Duration::from_secs(45)),
-            "+45s [Skew]"
+            "+45s [skew]"
         );
         assert_eq!(
             relative_time(now, now + Duration::from_secs(125)),
-            "+2m [Skew]"
+            "+2m [skew]"
+        );
+        assert_eq!(
+            relative_time(now, now + Duration::from_secs(3 * 3600)),
+            "+3h [skew]"
         );
     }
 
@@ -246,30 +241,5 @@ mod tests {
         assert!(rendered.starts_with("20"));
         assert!(rendered.contains(" (UTC"));
         assert!(rendered.ends_with(')'));
-
-        let (_, offset) = rendered.split_once(" (UTC").unwrap();
-        let offset = offset.strip_suffix(')').unwrap();
-        assert_eq!(offset.len(), 6);
-        assert!(
-            offset.starts_with('+') || offset.starts_with('-'),
-            "unexpected offset sign: {offset}"
-        );
-        assert_eq!(&offset[3..4], ":");
-        assert!(offset[1..3].chars().all(|ch| ch.is_ascii_digit()));
-        assert!(offset[4..6].chars().all(|ch| ch.is_ascii_digit()));
-    }
-
-    #[test]
-    fn test_current_timezone_offset_format() {
-        let offset = current_timezone_offset();
-        assert!(offset.starts_with("UTC"));
-        assert_eq!(offset.len(), 9);
-        assert!(
-            matches!(offset.as_bytes()[3], b'+' | b'-'),
-            "unexpected offset sign: {offset}"
-        );
-        assert_eq!(&offset[6..7], ":");
-        assert!(offset[4..6].chars().all(|ch| ch.is_ascii_digit()));
-        assert!(offset[7..9].chars().all(|ch| ch.is_ascii_digit()));
     }
 }

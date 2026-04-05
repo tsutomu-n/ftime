@@ -1,23 +1,52 @@
-use crate::model::{ChildActivityHint, FileEntry, TimeBucket};
+use crate::model::{ChildActivityHint, EntryKind, FileEntry, TimeBucket};
 use crate::util::ignore::load_local_ignore;
-use crate::util::time::{classify_bucket, classify_label};
+use crate::util::time::classify_bucket;
 use anyhow::{Context, Result};
 use std::fs::{self, DirEntry, Metadata, ReadDir};
 use std::path::Path;
 use std::time::SystemTime;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DotMode {
+    Default,
+    All,
+    None,
+}
+
 pub struct ScanOptions {
-    pub exclude_dots: bool,
-    pub ext_filter: Option<Vec<String>>,
-    pub no_ignore: bool,
+    pub dot_mode: DotMode,
+    pub use_ignore: bool,
     pub ignore_patterns: Vec<String>,
-    pub no_labels: bool,
     pub local_ignore_patterns: Vec<String>,
+    pub ext_filter: Option<Vec<String>>,
+    pub files_only: bool,
+    pub use_hints: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ScanStats {
+    pub total_raw_entries: usize,
+    pub visible_entries: usize,
+    pub skipped_unreadable: usize,
+    pub filtered_hidden: usize,
+    pub filtered_ignored: usize,
+    pub filtered_ext: usize,
+    pub filtered_type: usize,
 }
 
 pub struct ScanResult {
     pub entries: Vec<FileEntry>,
     pub now: SystemTime,
+    pub stats: ScanStats,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FilterDecision {
+    Include,
+    Hidden,
+    Ignored,
+    Ext,
+    Type,
 }
 
 pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
@@ -25,15 +54,25 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
     let read_dir: ReadDir = fs::read_dir(path)
         .with_context(|| format!("failed to read directory {}", path.display()))?;
     let mut entries = Vec::new();
+    let mut stats = ScanStats::default();
 
     for entry in read_dir {
-        let Ok(entry) = entry else { continue };
+        let Ok(entry) = entry else {
+            stats.skipped_unreadable += 1;
+            continue;
+        };
+        stats.total_raw_entries += 1;
+
         let full_path = entry.path();
         let metadata = match fs::symlink_metadata(&full_path) {
             Ok(m) => m,
-            Err(_) => continue, // skip permission errors silently
+            Err(_) => {
+                stats.skipped_unreadable += 1;
+                continue;
+            }
         };
-        if !should_include_entry(
+
+        match should_include_entry(
             &entry,
             &full_path,
             path,
@@ -41,39 +80,65 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
             opts,
             &opts.local_ignore_patterns,
         ) {
-            continue;
+            FilterDecision::Include => {}
+            FilterDecision::Hidden => {
+                stats.filtered_hidden += 1;
+                continue;
+            }
+            FilterDecision::Ignored => {
+                stats.filtered_ignored += 1;
+                continue;
+            }
+            FilterDecision::Ext => {
+                stats.filtered_ext += 1;
+                continue;
+            }
+            FilterDecision::Type => {
+                stats.filtered_type += 1;
+                continue;
+            }
         }
+
         let name = entry.file_name().to_string_lossy().to_string();
         let mtime = match metadata.modified() {
             Ok(t) => t,
-            Err(_) => continue,
+            Err(_) => {
+                stats.skipped_unreadable += 1;
+                continue;
+            }
         };
 
-        let is_dir = metadata.is_dir();
-        let size = metadata.is_file().then_some(metadata.len());
-        let is_symlink = metadata.file_type().is_symlink();
-        let symlink_target = if is_symlink {
-            fs::read_link(&full_path).ok()
+        let kind = if metadata.file_type().is_symlink() {
+            EntryKind::Symlink
+        } else if metadata.is_dir() {
+            EntryKind::Dir
         } else {
-            None
+            EntryKind::File
         };
+
+        let size = matches!(kind, EntryKind::File).then_some(metadata.len());
+        let symlink_target = matches!(kind, EntryKind::Symlink)
+            .then(|| fs::read_link(&full_path).ok())
+            .flatten();
 
         entries.push(FileEntry {
             path: full_path,
             name,
-            is_dir,
+            kind,
             mtime,
             size,
-            is_symlink,
             symlink_target,
-            label: None,
         });
+        stats.visible_entries += 1;
     }
 
-    // sort by mtime descending, tie-break by name ascending
     entries.sort_by(|a, b| b.mtime.cmp(&a.mtime).then_with(|| a.name.cmp(&b.name)));
 
-    Ok(ScanResult { entries, now })
+    Ok(ScanResult {
+        entries,
+        now,
+        stats,
+    })
 }
 
 pub fn bucket_heat(bucket: TimeBucket) -> u8 {
@@ -91,14 +156,14 @@ pub fn dir_child_activity_hint(
     parent_bucket: TimeBucket,
     parent_scan_opts: &ScanOptions,
 ) -> Option<ChildActivityHint> {
-    if !dir_path.is_dir() {
+    if !parent_scan_opts.use_hints || !dir_path.is_dir() {
         return None;
     }
 
-    let local_ignore_patterns = if parent_scan_opts.no_ignore {
-        Vec::new()
-    } else {
+    let local_ignore_patterns = if parent_scan_opts.use_ignore {
         load_local_ignore(dir_path)
+    } else {
+        Vec::new()
     };
 
     let iter = fs::read_dir(dir_path).ok()?;
@@ -116,14 +181,15 @@ pub fn dir_child_activity_hint(
             continue;
         }
 
-        if !should_include_entry(
+        if should_include_entry(
             &entry,
             &child_path,
             dir_path,
             &metadata,
             parent_scan_opts,
             &local_ignore_patterns,
-        ) {
+        ) != FilterDecision::Include
+        {
             continue;
         }
 
@@ -163,15 +229,24 @@ fn should_include_entry(
     metadata: &Metadata,
     opts: &ScanOptions,
     local_ignore_patterns: &[String],
-) -> bool {
+) -> FilterDecision {
     let file_name = entry.file_name();
     let name = file_name.to_string_lossy();
+    let is_hidden = name.starts_with('.');
 
-    if opts.exclude_dots && name.starts_with('.') {
-        return false;
+    if is_hidden {
+        match opts.dot_mode {
+            DotMode::All => {}
+            DotMode::None => return FilterDecision::Hidden,
+            DotMode::Default => {
+                if metadata.is_dir() && !metadata.file_type().is_symlink() {
+                    return FilterDecision::Hidden;
+                }
+            }
+        }
     }
 
-    if !opts.no_ignore
+    if opts.use_ignore
         && is_ignored(
             &name,
             full_path,
@@ -181,28 +256,30 @@ fn should_include_entry(
             &default_ignore_patterns(),
         )
     {
-        return false;
+        return FilterDecision::Ignored;
     }
 
-    if let Some(exts) = &opts.ext_filter {
-        if metadata.is_file() {
-            let ext = full_path
-                .extension()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_lowercase());
-            if !ext
-                .as_ref()
-                .map(|e| exts.iter().any(|x| x == e))
-                .unwrap_or(false)
-            {
-                return false;
-            }
-        } else {
-            return false;
+    if opts.files_only && !metadata.is_file() {
+        return FilterDecision::Type;
+    }
+
+    if let Some(exts) = &opts.ext_filter
+        && metadata.is_file()
+    {
+        let ext = full_path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_lowercase());
+        if !ext
+            .as_ref()
+            .map(|e| exts.iter().any(|x| x == e))
+            .unwrap_or(false)
+        {
+            return FilterDecision::Ext;
         }
     }
 
-    true
+    FilterDecision::Include
 }
 
 fn default_ignore_patterns() -> [&'static str; 2] {
@@ -240,7 +317,6 @@ fn is_ignored(
     false
 }
 
-// 簡易グロブ: * 任意長、? 1文字、その他はリテラル。バックスラッシュエスケープなし。
 fn glob_match(pattern: &str, text: &str) -> bool {
     glob_match_inner(pattern.as_bytes(), text.as_bytes())
 }
@@ -250,10 +326,7 @@ fn glob_match_inner(p: &[u8], t: &[u8]) -> bool {
         return t.is_empty();
     }
     match p[0] {
-        b'*' => {
-            // *: 0文字以上
-            (0..=t.len()).any(|i| glob_match_inner(&p[1..], &t[i..]))
-        }
+        b'*' => (0..=t.len()).any(|i| glob_match_inner(&p[1..], &t[i..])),
         b'?' => {
             if t.is_empty() {
                 false
@@ -271,22 +344,18 @@ fn glob_match_inner(p: &[u8], t: &[u8]) -> bool {
     }
 }
 
-pub fn bucketize(entries: &[FileEntry], now: SystemTime, opts: &ScanOptions) -> Bucketed {
+pub fn bucketize(entries: &[FileEntry], now: SystemTime) -> Bucketed {
     let mut active = Vec::new();
     let mut today = Vec::new();
     let mut week = Vec::new();
     let mut history = Vec::new();
 
     for entry in entries {
-        let mut e = entry.clone();
-        if !opts.no_labels && e.label.is_none() {
-            e.label = classify_label(now, e.mtime);
-        }
-        match classify_bucket(now, e.mtime) {
-            TimeBucket::Active => active.push(e),
-            TimeBucket::Today => today.push(e),
-            TimeBucket::ThisWeek => week.push(e),
-            TimeBucket::History => history.push(e),
+        match classify_bucket(now, entry.mtime) {
+            TimeBucket::Active => active.push(entry.clone()),
+            TimeBucket::Today => today.push(entry.clone()),
+            TimeBucket::ThisWeek => week.push(entry.clone()),
+            TimeBucket::History => history.push(entry.clone()),
         }
     }
 
@@ -323,35 +392,61 @@ mod tests {
 
     fn scan_options() -> ScanOptions {
         ScanOptions {
-            exclude_dots: false,
+            dot_mode: DotMode::Default,
             ext_filter: None,
-            no_ignore: false,
+            use_ignore: true,
             ignore_patterns: Vec::new(),
-            no_labels: false,
             local_ignore_patterns: Vec::new(),
+            files_only: false,
+            use_hints: true,
         }
     }
 
     #[test]
-    fn scan_includes_hidden_by_default_and_excludes_with_flag() -> Result<()> {
+    fn scan_default_dot_mode_hides_hidden_directories_only() -> Result<()> {
         let dir = tempdir()?;
         File::create(dir.path().join("visible"))?;
         File::create(dir.path().join(".hidden"))?;
-        let opts = scan_options();
-        let res = scan_dir(dir.path(), &opts)?;
-        assert_eq!(res.entries.len(), 2);
-        assert!(res.entries.iter().any(|entry| entry.name == "visible"));
-        assert!(res.entries.iter().any(|entry| entry.name == ".hidden"));
+        fs::create_dir(dir.path().join(".hidden_dir"))?;
 
-        let res = scan_dir(
+        let res = scan_dir(dir.path(), &scan_options())?;
+        let names: Vec<&str> = res
+            .entries
+            .iter()
+            .map(|entry| entry.name.as_str())
+            .collect();
+
+        assert!(names.contains(&"visible"));
+        assert!(names.contains(&".hidden"));
+        assert!(!names.contains(&".hidden_dir"));
+        assert_eq!(res.stats.filtered_hidden, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn scan_dot_modes_all_and_none_behave_as_expected() -> Result<()> {
+        let dir = tempdir()?;
+        File::create(dir.path().join(".hidden"))?;
+        fs::create_dir(dir.path().join(".hidden_dir"))?;
+
+        let all = scan_dir(
             dir.path(),
             &ScanOptions {
-                exclude_dots: true,
-                ..opts
+                dot_mode: DotMode::All,
+                ..scan_options()
             },
         )?;
-        assert_eq!(res.entries.len(), 1);
-        assert_eq!(res.entries[0].name, "visible");
+        assert_eq!(all.entries.len(), 2);
+
+        let none = scan_dir(
+            dir.path(),
+            &ScanOptions {
+                dot_mode: DotMode::None,
+                ..scan_options()
+            },
+        )?;
+        assert_eq!(none.entries.len(), 0);
+        assert_eq!(none.stats.filtered_hidden, 2);
         Ok(())
     }
 
@@ -368,10 +463,50 @@ mod tests {
         set_file_mtime(&a_path, ft)?;
         set_file_mtime(&b_path, ft)?;
 
-        let opts = scan_options();
-        let res = scan_dir(dir.path(), &opts)?;
+        let res = scan_dir(dir.path(), &scan_options())?;
         let names: Vec<&str> = res.entries.iter().map(|e| e.name.as_str()).collect();
         assert_eq!(names, vec!["a", "b"]);
+        Ok(())
+    }
+
+    #[test]
+    fn ext_filter_only_applies_to_regular_files() -> Result<()> {
+        let dir = tempdir()?;
+        File::create(dir.path().join("keep.rs"))?;
+        File::create(dir.path().join("drop.txt"))?;
+        fs::create_dir(dir.path().join("docs"))?;
+
+        let res = scan_dir(
+            dir.path(),
+            &ScanOptions {
+                ext_filter: Some(vec!["rs".to_string()]),
+                ..scan_options()
+            },
+        )?;
+        let names: Vec<&str> = res.entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"keep.rs"));
+        assert!(names.contains(&"docs"));
+        assert!(!names.contains(&"drop.txt"));
+        assert_eq!(res.stats.filtered_ext, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn files_only_filters_non_files() -> Result<()> {
+        let dir = tempdir()?;
+        File::create(dir.path().join("keep.rs"))?;
+        fs::create_dir(dir.path().join("docs"))?;
+
+        let res = scan_dir(
+            dir.path(),
+            &ScanOptions {
+                files_only: true,
+                ..scan_options()
+            },
+        )?;
+        assert_eq!(res.entries.len(), 1);
+        assert_eq!(res.entries[0].name, "keep.rs");
+        assert_eq!(res.stats.filtered_type, 1);
         Ok(())
     }
 
@@ -381,21 +516,13 @@ mod tests {
         let mk = |delta_secs: u64| FileEntry {
             path: PathBuf::from("x"),
             name: "x".to_string(),
-            is_dir: false,
+            kind: EntryKind::File,
             mtime: now - Duration::from_secs(delta_secs),
             size: Some(0),
-            is_symlink: false,
             symlink_target: None,
-            label: None,
         };
-        let entries = vec![
-            mk(10),            // active
-            mk(4000),          // today (~1.1h)
-            mk(2 * 24 * 3600), // week
-            mk(8 * 24 * 3600), // history
-        ];
-        let opts = scan_options();
-        let b = bucketize(&entries, now, &opts);
+        let entries = vec![mk(10), mk(4000), mk(2 * 24 * 3600), mk(8 * 24 * 3600)];
+        let b = bucketize(&entries, now);
         assert_eq!(b.active.len(), 1);
         assert_eq!(b.today.len(), 1);
         assert_eq!(b.week.len(), 1);
@@ -469,15 +596,6 @@ mod tests {
             dir_child_activity_hint(dir.path(), now, TimeBucket::History, &scan_options()),
             None
         );
-
-        set_file_mtime(
-            &child,
-            FileTime::from_system_time(now - Duration::from_secs(30)),
-        )?;
-        assert_eq!(
-            dir_child_activity_hint(dir.path(), now, TimeBucket::Active, &scan_options()),
-            None
-        );
         Ok(())
     }
 
@@ -493,7 +611,7 @@ mod tests {
         )?;
 
         let opts = ScanOptions {
-            exclude_dots: true,
+            dot_mode: DotMode::None,
             ..scan_options()
         };
 

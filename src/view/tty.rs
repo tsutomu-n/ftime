@@ -1,15 +1,38 @@
-use crate::engine::{Bucketed, ScanOptions, dir_child_activity_hint};
+use crate::engine::{Bucketed, ScanOptions, ScanStats, dir_child_activity_hint};
 use crate::model::{ChildActivityHint, FileEntry, TimeBucket};
-use crate::util::time::{absolute_time, current_timezone_offset, relative_time};
+use crate::util::time::{absolute_time, relative_time};
 #[cfg(feature = "icons")]
 use crate::view::icon::NerdIconProvider;
 use crate::view::icon::{DefaultIconProvider, IconProvider};
 use anyhow::Result;
+use clap::ValueEnum;
 use colored::Colorize;
+use std::io::IsTerminal;
 use std::path::Path;
 use std::time::SystemTime;
 
-const LIMIT: usize = 20;
+const ACTIVE_LIMIT: usize = 20;
+const TODAY_LIMIT: usize = 20;
+const WEEK_LIMIT: usize = 20;
+const HISTORY_LIMIT: usize = 5;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ColorMode {
+    Auto,
+    Always,
+    Never,
+}
+
+#[derive(Clone, Copy)]
+pub struct RenderOptions<'a> {
+    pub now: SystemTime,
+    pub base: &'a Path,
+    pub show_all_history: bool,
+    pub use_icons: bool,
+    pub use_absolute: bool,
+    pub color_mode: ColorMode,
+    pub scan_opts: &'a ScanOptions,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TimeTone {
@@ -20,136 +43,120 @@ enum TimeTone {
     History,
 }
 
-pub fn render(
-    buckets: &Bucketed,
-    now: SystemTime,
-    base: &Path,
-    show_all_history: bool,
-    use_icons: bool,
-    use_absolute: bool,
-    scan_opts: &ScanOptions,
-) -> Result<()> {
+pub fn render(buckets: &Bucketed, stats: &ScanStats, options: RenderOptions<'_>) -> Result<()> {
+    colored::control::set_override(should_colorize(options.color_mode));
+
     if buckets.total() == 0 {
-        println!("No recent files found");
+        println!("No matching entries");
+        if let Some(filters) = filters_summary(options.scan_opts) {
+            println!("{filters}");
+        }
         return Ok(());
     }
 
-    let provider = select_provider(use_icons);
-    let tz_offset = current_timezone_offset();
-
     render_bucket(
-        &header(
-            provider.as_ref(),
-            TimeBucket::Active,
-            bucket_title(TimeBucket::Active),
-        ),
-        &buckets.active,
+        buckets.active.as_slice(),
         TimeBucket::Active,
-        now,
-        base,
-        use_absolute,
-        scan_opts,
+        ACTIVE_LIMIT,
+        false,
+        options,
     );
     render_bucket(
-        &header(
-            provider.as_ref(),
-            TimeBucket::Today,
-            bucket_title(TimeBucket::Today),
-        ),
-        &buckets.today,
+        buckets.today.as_slice(),
         TimeBucket::Today,
-        now,
-        base,
-        use_absolute,
-        scan_opts,
+        TODAY_LIMIT,
+        false,
+        options,
     );
     render_bucket(
-        &header(
-            provider.as_ref(),
-            TimeBucket::ThisWeek,
-            bucket_title(TimeBucket::ThisWeek),
-        ),
-        &buckets.week,
+        buckets.week.as_slice(),
         TimeBucket::ThisWeek,
-        now,
-        base,
-        use_absolute,
-        scan_opts,
+        WEEK_LIMIT,
+        false,
+        options,
+    );
+    render_bucket(
+        buckets.history.as_slice(),
+        TimeBucket::History,
+        HISTORY_LIMIT,
+        options.show_all_history,
+        options,
     );
 
-    if show_all_history || buckets.history.len() <= LIMIT {
-        render_bucket(
-            &header(
-                provider.as_ref(),
-                TimeBucket::History,
-                bucket_title(TimeBucket::History),
-            ),
-            &buckets.history,
-            TimeBucket::History,
-            now,
-            base,
-            use_absolute,
-            scan_opts,
-        );
-    } else if !buckets.history.is_empty() {
-        println!(
-            "{} ({} files hidden)",
-            header(
-                provider.as_ref(),
-                TimeBucket::History,
-                bucket_title(TimeBucket::History),
-            ),
-            buckets.history.len()
-        );
+    if stats.skipped_unreadable > 0 {
+        println!("Skipped {} unreadable entries", stats.skipped_unreadable);
     }
-
-    println!("Current Timezone: {}", tz_offset.dimmed());
 
     Ok(())
 }
 
 fn render_bucket(
-    header: &str,
     entries: &[FileEntry],
     bucket: TimeBucket,
-    now: SystemTime,
-    base: &Path,
-    use_absolute: bool,
-    scan_opts: &ScanOptions,
+    preview_limit: usize,
+    show_all: bool,
+    options: RenderOptions<'_>,
 ) {
     if entries.is_empty() {
         return;
     }
-    println!("{}", header.bold());
 
-    let (list, remainder) = if entries.len() > LIMIT {
-        (&entries[..LIMIT], Some(entries.len() - LIMIT))
+    let shown = if show_all || entries.len() <= preview_limit {
+        entries.len()
     } else {
-        (entries, None)
+        preview_limit
     };
 
-    for entry in list {
-        let label = format_label(entry);
-        let time_str = if use_absolute {
+    println!(
+        "{}",
+        style_header(
+            bucket,
+            &bucket_header(bucket, shown, entries.len(), show_all),
+            options.use_icons
+        )
+    );
+
+    for entry in &entries[..shown] {
+        let time_str = if options.use_absolute {
             absolute_time(entry.mtime)
         } else {
-            relative_time(now, entry.mtime)
+            relative_time(options.now, entry.mtime)
         };
-        let display_time = style_time_text(bucket, &time_str);
-        let child_hint = format_child_activity_hint_suffix(entry, now, bucket, scan_opts);
+        let child_hint =
+            format_child_activity_hint_suffix(entry, options.now, bucket, options.scan_opts);
         println!(
-            "  • {} | {} | {}{}",
-            format_name(entry, base),
+            "  {}  {}  {}{}",
+            format_name(entry, options.base),
             format_size(entry.size),
-            display_time,
-            label + &child_hint
+            style_time_text(bucket, &time_str),
+            child_hint
         );
     }
 
-    if let Some(rest) = remainder {
-        println!("  ... and {} more items", rest);
-    }
     println!();
+}
+
+fn bucket_header(bucket: TimeBucket, shown: usize, total: usize, show_all: bool) -> String {
+    if show_all || shown == total {
+        format!("{} ({total})", bucket.title())
+    } else {
+        format!("{} ({shown}/{total})", bucket.title())
+    }
+}
+
+fn style_header(bucket: TimeBucket, header: &str, use_icons: bool) -> String {
+    let icon = icon_prefix(bucket, use_icons);
+    let text = if icon.is_empty() {
+        header.to_string()
+    } else {
+        format!("{icon} {header}")
+    };
+    match bucket {
+        TimeBucket::Active => text.green().bold().to_string(),
+        TimeBucket::Today => text.bold().to_string(),
+        TimeBucket::ThisWeek => text.truecolor(180, 180, 180).bold().to_string(),
+        TimeBucket::History => text.truecolor(130, 130, 130).bold().to_string(),
+    }
 }
 
 fn format_name(entry: &FileEntry, base: &Path) -> String {
@@ -159,9 +166,9 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
         .map(|p| p.display().to_string())
         .unwrap_or_else(|_| entry.name.clone());
 
-    if entry.is_dir {
-        format!("{}/", rel).bold().blue().to_string()
-    } else if entry.is_symlink {
+    if entry.is_dir() {
+        format!("{rel}/")
+    } else if entry.is_symlink() {
         let target = entry
             .symlink_target
             .as_ref()
@@ -173,14 +180,14 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
                     .map(|p| p.display().to_string())
                     .unwrap_or_else(|| "<unresolved>".to_string())
             });
-        format!("{} -> {}", rel.normal().yellow(), target.dimmed())
+        format!("{rel} -> {target}")
     } else {
-        rel.normal().to_string()
+        rel
     }
 }
 
 fn classify_time_tone(bucket: TimeBucket, time_str: &str) -> TimeTone {
-    if time_str.contains("[Skew]") {
+    if time_str.contains("[skew]") {
         TimeTone::Skew
     } else {
         match bucket {
@@ -198,14 +205,7 @@ fn style_time_text(bucket: TimeBucket, time_str: &str) -> String {
         TimeTone::Active => time_str.green().bold().to_string(),
         TimeTone::Today => time_str.normal().to_string(),
         TimeTone::ThisWeek => time_str.truecolor(180, 180, 180).to_string(),
-        TimeTone::History => time_str.truecolor(100, 100, 100).to_string(),
-    }
-}
-
-fn format_label(entry: &FileEntry) -> String {
-    match entry.label {
-        Some(crate::model::Label::Fresh) => "  ✨ Fresh".to_string(),
-        None => "".to_string(),
+        TimeTone::History => time_str.truecolor(130, 130, 130).to_string(),
     }
 }
 
@@ -215,7 +215,7 @@ fn format_child_activity_hint_suffix(
     bucket: TimeBucket,
     scan_opts: &ScanOptions,
 ) -> String {
-    if !entry.is_dir || entry.is_symlink {
+    if !scan_opts.use_hints || !entry.is_dir() || entry.is_symlink() {
         return String::new();
     }
 
@@ -233,7 +233,7 @@ fn format_child_activity_hint(hint: ChildActivityHint) -> String {
 
 fn format_size(size: Option<u64>) -> String {
     let Some(size) = size else {
-        return "-".to_string();
+        return "—".to_string();
     };
 
     if size < 1024 {
@@ -259,34 +259,55 @@ fn format_size(size: Option<u64>) -> String {
     }
 }
 
-fn bucket_title(bucket: TimeBucket) -> &'static str {
-    match bucket {
-        TimeBucket::Active => "Active",
-        TimeBucket::Today => "Today",
-        TimeBucket::ThisWeek => "This Week",
-        TimeBucket::History => "History",
-    }
-}
+fn filters_summary(scan_opts: &ScanOptions) -> Option<String> {
+    let dots = match scan_opts.dot_mode {
+        crate::engine::DotMode::Default => "default".to_string(),
+        crate::engine::DotMode::All => "all".to_string(),
+        crate::engine::DotMode::None => "none".to_string(),
+    };
 
-fn header(provider: &dyn IconProvider, bucket: TimeBucket, label: &str) -> String {
-    let icon = provider.bucket_icon(bucket);
-    if icon.is_empty() {
-        label.to_string()
+    let mut parts = vec![format!("dots={dots}")];
+    parts.push(format!(
+        "ignore={}",
+        if scan_opts.use_ignore { "on" } else { "off" }
+    ));
+
+    if let Some(exts) = &scan_opts.ext_filter {
+        parts.push(format!("ext={}", exts.join(",")));
+    }
+    if scan_opts.files_only {
+        parts.push("type=files-only".to_string());
+    }
+
+    if parts == ["dots=default".to_string(), "ignore=on".to_string()] {
+        None
     } else {
-        format!("{icon} {label}")
+        Some(format!("filters: {}", parts.join(", ")))
     }
 }
 
-fn select_provider(use_icons: bool) -> Box<dyn IconProvider> {
+fn should_colorize(mode: ColorMode) -> bool {
+    match mode {
+        ColorMode::Always => true,
+        ColorMode::Never => false,
+        ColorMode::Auto => {
+            std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none()
+        }
+    }
+}
+
+fn icon_prefix(bucket: TimeBucket, use_icons: bool) -> &'static str {
     #[cfg(feature = "icons")]
     {
         if use_icons {
-            return Box::new(NerdIconProvider);
+            let provider = NerdIconProvider;
+            return provider.bucket_icon(bucket);
         }
     }
-    #[cfg(not(feature = "icons"))]
+
     let _ = use_icons;
-    Box::new(DefaultIconProvider)
+    let provider = DefaultIconProvider;
+    provider.bucket_icon(bucket)
 }
 
 #[cfg(test)]
@@ -296,7 +317,7 @@ mod tests {
     #[test]
     fn classify_time_tone_prefers_skew_over_bucket_colors() {
         assert_eq!(
-            classify_time_tone(TimeBucket::History, "+5m [Skew]"),
+            classify_time_tone(TimeBucket::History, "+5m [skew]"),
             TimeTone::Skew
         );
     }
@@ -304,15 +325,12 @@ mod tests {
     #[test]
     fn classify_time_tone_uses_bucket_heatmap_for_non_skew_values() {
         assert_eq!(
-            classify_time_tone(TimeBucket::Active, "just now"),
+            classify_time_tone(TimeBucket::Active, "12s"),
             TimeTone::Active
         );
+        assert_eq!(classify_time_tone(TimeBucket::Today, "2h"), TimeTone::Today);
         assert_eq!(
-            classify_time_tone(TimeBucket::Today, "2 hours ago"),
-            TimeTone::Today
-        );
-        assert_eq!(
-            classify_time_tone(TimeBucket::ThisWeek, "3 days ago"),
+            classify_time_tone(TimeBucket::ThisWeek, "3d"),
             TimeTone::ThisWeek
         );
         assert_eq!(
@@ -322,10 +340,11 @@ mod tests {
     }
 
     #[test]
-    fn bucket_titles_are_concise_and_match_readme_language() {
-        assert_eq!(bucket_title(TimeBucket::Active), "Active");
-        assert_eq!(bucket_title(TimeBucket::Today), "Today");
-        assert_eq!(bucket_title(TimeBucket::ThisWeek), "This Week");
-        assert_eq!(bucket_title(TimeBucket::History), "History");
+    fn bucket_headers_show_preview_counts() {
+        assert_eq!(
+            bucket_header(TimeBucket::History, 5, 7, false),
+            "History (5/7)"
+        );
+        assert_eq!(bucket_header(TimeBucket::Active, 3, 3, false), "Active (3)");
     }
 }

@@ -1,83 +1,88 @@
-# ftime v1.0.5 CLI Contract
+# ftime v2.0.0 CLI Contract
 
-`ftime` is a read-only CLI for Context Recovery in one folder. Its main job is to rebuild recent working context with time buckets, then make the next thing to inspect easier to spot.
+`ftime` is a read-only CLI for Context Recovery in one folder.
 
 ## 1. Command Signature
+
 ```bash
-ftime [OPTIONS] [PATH]
+ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--no-hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
 ```
 
-## 2. Arguments
-*   `[PATH]` (Optional):
-    *   Target directory to scan.
-    *   Default: `.` (Current directory).
-    *   Constraint: Must be a directory. If a file is passed, exit with error code 1.
+Default output is always the human view.
 
-## 3. Options
-| Flag | Long Flag | Description |
-| :--- | :--- | :--- |
-| `--json` | `--json` | Emit JSON Lines output (fields: path, bucket, mtime, relative_time, is_dir, is_symlink, optional size, optional symlink_target, optional label). |
-|  | `--ext` | Filter files by comma-separated extensions (case-insensitive). Directories are excluded. |
-|  | `--no-ignore` | Disable built-in ignores and `~/.ftimeignore` for this run. |
-|  | `--no-labels` | Disable best-effort labels (e.g., Fresh). |
-| `-A` | `--absolute` | Emit absolute local timestamps in `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` format for TTY and pipe output. |
-| `-a` | `--all` | Expand the "History" bucket (TTY mode only). |
-| `-I` | `--icons` | Show Nerd Font icons in bucket headers (requires binary built with `--features icons`; otherwise falls back to default emoji). |
-|  | `--check-update` | Check whether a newer published release is available. Prints `update available`, `already up to date`, or a renumbered-release notice. |
-|  | `--self-update` | Update the current installed binary to the latest published release using the latest installer asset for the current platform. When invoked via a symlink, update that symlink's directory. |
-|  | `--exclude-dots` | Exclude hidden files (starting with `.`). By default, dotfiles are included except for built-in ignores such as `.DS_Store`. |
-| `-h` | `--help` | Print help message. |
-| `-V` | `--version` | Print version information. |
-|  |  | Note: `--icons` is a no-op when the binary is built without the `icons` feature (no error). |
+## 2. Core Behavior
 
-## 4. Environment Variables
-*   `NO_COLOR`: If present (including empty string), disable color output. **Always takes precedence** over other coloring decisions.
-*   `FTIME_FORCE_TTY`: If present, force TTY-style grouped output even when stdout is piped or redirected. Coloring still obeys `NO_COLOR`. In TTY mode, the time column uses a bucket-aware heatmap, future mtimes are rendered as `+Ns [Skew]` or `+Nm [Skew]`, directory rows may append `[child: active]` or `[child: today]` when a direct child is hotter than the directory itself, and a `Current Timezone: UTC±HH:MM` footer is appended.
-*   `FTIME_IGNORE`: Override path to global ignore file (defaults to `~/.ftimeignore`). Patterns are simple globs, one per line; `#` starts a comment, empty lines are skipped.
-*   Nerd Fonts: To see Nerd Font glyphs with `--icons`, build the binary with `cargo build --features icons` (or install via a package that enables the `icons` feature) and use a terminal configured with a Nerd Font. Without the font or feature, output gracefully falls back to the default emoji headers.
+- Scan only depth 1 of the target directory.
+- Sort visible entries by `mtime` descending, then `name` ascending.
+- Default hidden policy: hidden files and hidden symlinks stay visible, hidden directories stay hidden.
+- Built-in ignore patterns are `.DS_Store` and `Thumbs.db`.
+- `--ext` filters regular files only. Directories and symlinks stay visible unless `--files-only` is also set.
 
-## 5. Compatibility Policy (v1.0)
-*   v1.0 establishes the first public CLI contract for the current implementation.
-*   Future CLI flag removals or default-behavior changes require a new major version.
-*   Output formats (TTY/pipe/JSON) are stable; pipe output remains 2 columns, and JSON may omit optional fields when not applicable.
-*   No experimental options are defined in v1.0 (future experiments must be marked explicitly).
-*   Important flags: `--all`, `--absolute`, `--exclude-dots`, `--json`. Color is controlled by `NO_COLOR` (no `--no-color` flag).
-*   Update flow: `--check-update` inspects the latest published release without installing it, while `--self-update` installs it in place.
+## 3. Flags
 
-## 5.1 Non-Goals
-*   Recursive search is out of scope; use `fd` or `find` for deep trees.
-*   Rich VCS state inspection is out of scope; use `git status` when you need tracked and untracked state.
-*   Destructive actions are out of scope; `ftime` remains read-only.
-*   General-purpose one-shot extraction is not the primary goal; `ftime` first organizes recent activity into context-oriented buckets.
+- `-a, --all`: show hidden files and hidden directories
+- `--all-history`: expand the History bucket
+- `--hide-dots`: hide all hidden entries
+- `--no-ignore`: disable built-in ignore plus `FTIME_IGNORE`, `~/.ftimeignore`, and local `.ftimeignore`
+- `--ext <csv>`: filter regular files by comma-separated extensions
+- `--files-only`: only show regular files
+- `-A, --absolute`: human/plain time column becomes `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)`
+- `--no-hints`: disable directory child hint calculation
+- `--plain`: emit `path<TAB>bucket<TAB>time`
+- `--json`: emit JSON Lines
+- `--color <auto|always|never>`: human-output ANSI color control
+- `-I, --icons`: enable icons only when the binary was built with the `icons` feature
+- `--check-update`, `--self-update`: update flow commands
 
-## 6. Exit Codes
-*   `0`: Success.
-*   `1`: General error (e.g., directory not found, permission denied on target root, target is a file). Per-entry I/O errors are skipped and scanning continues.
+## 4. Validation Rules
 
-## 7. Usage Examples
-```bash
-# Basic usage
-ftime
+- `--plain` and `--json` cannot be combined
+- `-a` and `--hide-dots` cannot be combined
+- `--json` rejects `--absolute`, `--all-history`, `--no-hints`, `--icons`, and explicit `--color`
+- `--plain` rejects `--all-history`, `--no-hints`, `--icons`, and explicit `--color`
+- Update commands cannot be combined with scan flags or `PATH`
 
-# Scan specific directory
-ftime ~/Downloads
+## 5. Human Output
 
-# Show history bucket and absolute timestamps
-ftime -a -A
+- Bucket order is `Active`, `Today`, `This Week`, `History`
+- Preview limits are 20 / 20 / 20 / 5, unless `--all-history` is set
+- Header shape is either `Active (3)` or `History (5/42)`
+- Row structure is `<name>  <size>  <time>  <optional-suffix>`
+- Directories show `—` in the size column
+- Directories end in `/`
+- Symlinks render as `name -> target`
+- child hint is advisory only and never changes bucket classification
+- Empty state is `No matching entries`
+- Optional footer for unreadable entries is `Skipped N unreadable entries`
 
-# Exclude dotfiles
-ftime --exclude-dots
+## 6. Plain Output
 
-# Force TTY output to inspect Skew and timezone footer
-FTIME_FORCE_TTY=1 ftime
+- One line per visible entry
+- Shape: `path<TAB>bucket<TAB>time`
+- No color, no header, no size, no child hint
+- Directories and symlinks use undecorated paths
 
-# Build with Nerd Font icons feature and enable icons at runtime
-cargo build --features icons
-./target/debug/ftime --icons
+## 7. JSON Lines
 
-# JSON output (one JSON object per line)
-ftime --json | jq .
+- One JSON object per visible entry
+- Field order: `path`, `bucket`, `mtime`, `relative_time`, `is_dir`, `is_symlink`, optional `size`, optional `symlink_target`
+- `mtime` is UTC RFC3339
+- JSON Lines never include child hint, preview metadata, diagnostics footer, or label fields
 
-# Pipe usage (outputs plain text)
-ftime | grep ".rs"
-```
+## 8. Human Diagnostics
+
+- Filters summary may appear after `No matching entries`
+- `No matching entries`
+- `Skipped N unreadable entries`
+
+## 9. Environment
+
+- `NO_COLOR` disables color only when `--color` is left at `auto`
+- `FTIME_IGNORE` overrides the global ignore file path
+
+## 10. Non-Goals
+
+- Recursive search
+- VCS state inspection
+- Destructive actions
+- Config files

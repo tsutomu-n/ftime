@@ -26,9 +26,19 @@ Enter
 Sleep 400ms
 Show
 
-Type "ftime -a"
+Type "ftime --all-history"
 Enter
 Sleep 2200ms
+
+Hide
+Type "clear"
+Enter
+Sleep 400ms
+Show
+
+Type "ftime --plain"
+Enter
+Sleep 1800ms
 
 Hide
 Type "clear"
