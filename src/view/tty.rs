@@ -10,11 +10,13 @@ use colored::Colorize;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::time::SystemTime;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const ACTIVE_LIMIT: usize = 20;
 const TODAY_LIMIT: usize = 20;
 const WEEK_LIMIT: usize = 20;
 const HISTORY_LIMIT: usize = 5;
+const MAX_NAME_DISPLAY_WIDTH: usize = 28;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum ColorMode {
@@ -158,9 +160,9 @@ fn render_bucket(bucket: &RenderedBucket, widths: ColumnWidths, use_icons: bool)
     println!("{}", style_header(bucket.bucket, &bucket.header, use_icons));
 
     for row in &bucket.rows {
-        let name = format!("{:<width$}", row.name, width = widths.name);
-        let size = format!("{:>width$}", row.size, width = widths.size);
-        let time = format!("{:>width$}", row.time, width = widths.time);
+        let name = pad_to_display_width(&row.name, widths.name, Alignment::Left);
+        let size = pad_to_display_width(&row.size, widths.size, Alignment::Right);
+        let time = pad_to_display_width(&row.time, widths.time, Alignment::Right);
         let suffix = if row.suffix.is_empty() {
             String::new()
         } else {
@@ -211,7 +213,7 @@ fn column_widths(buckets: &[RenderedBucket]) -> ColumnWidths {
 }
 
 fn display_width(text: &str) -> usize {
-    text.chars().count()
+    UnicodeWidthStr::width(text)
 }
 
 fn bucket_header(bucket: TimeBucket, shown: usize, total: usize, show_all: bool) -> String {
@@ -245,11 +247,13 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
         .map(|p| p.display().to_string())
         .unwrap_or_else(|_| entry.name.clone());
 
-    if entry.is_dir() {
+    let name = if entry.is_dir() {
         format!("{rel}/")
     } else {
         rel
-    }
+    };
+
+    truncate_name_for_human(&name, entry.is_dir())
 }
 
 fn format_suffix(
@@ -360,6 +364,79 @@ fn format_size(size: Option<u64>) -> String {
     } else {
         format!("{value:.1} {unit}")
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Alignment {
+    Left,
+    Right,
+}
+
+fn pad_to_display_width(text: &str, width: usize, alignment: Alignment) -> String {
+    let padding = " ".repeat(width.saturating_sub(display_width(text)));
+    match alignment {
+        Alignment::Left => format!("{text}{padding}"),
+        Alignment::Right => format!("{padding}{text}"),
+    }
+}
+
+fn truncate_name_for_human(name: &str, is_dir: bool) -> String {
+    if display_width(name) <= MAX_NAME_DISPLAY_WIDTH {
+        return name.to_string();
+    }
+
+    if is_dir {
+        return truncate_directory_name(name);
+    }
+
+    truncate_file_name(name)
+}
+
+fn truncate_directory_name(name: &str) -> String {
+    let base = name.strip_suffix('/').unwrap_or(name);
+    truncate_with_suffix(base, "~/")
+}
+
+fn truncate_file_name(name: &str) -> String {
+    if let Some((stem, ext)) = split_extension(name) {
+        let suffix = format!("~{ext}");
+        if display_width(&suffix) < MAX_NAME_DISPLAY_WIDTH {
+            return truncate_with_suffix(stem, &suffix);
+        }
+    }
+
+    truncate_with_suffix(name, "~")
+}
+
+fn split_extension(name: &str) -> Option<(&str, &str)> {
+    let dot = name.rfind('.')?;
+    if dot == 0 || dot == name.len() - 1 {
+        return None;
+    }
+
+    Some((&name[..dot], &name[dot..]))
+}
+
+fn truncate_with_suffix(text: &str, suffix: &str) -> String {
+    let available = MAX_NAME_DISPLAY_WIDTH.saturating_sub(display_width(suffix));
+    let prefix = take_prefix_by_display_width(text, available);
+    format!("{prefix}{suffix}")
+}
+
+fn take_prefix_by_display_width(text: &str, max_width: usize) -> String {
+    let mut out = String::new();
+    let mut used = 0;
+
+    for ch in text.chars() {
+        let ch_width = UnicodeWidthChar::width(ch).unwrap_or(0);
+        if used + ch_width > max_width {
+            break;
+        }
+        out.push(ch);
+        used += ch_width;
+    }
+
+    out
 }
 
 fn filters_summary(scan_opts: &ScanOptions) -> Option<String> {
@@ -483,10 +560,31 @@ mod tests {
         assert_eq!(
             column_widths(&buckets),
             ColumnWidths {
-                name: "link_to_readme".chars().count(),
-                size: "1.2 KiB".chars().count(),
-                time: "2026-03-01".chars().count(),
+                name: display_width("link_to_readme"),
+                size: display_width("1.2 KiB"),
+                time: display_width("2026-03-01"),
             }
+        );
+    }
+
+    #[test]
+    fn display_width_counts_full_width_cells() {
+        assert_eq!(display_width("日本語.txt"), 10);
+    }
+
+    #[test]
+    fn truncate_name_for_human_preserves_file_extension() {
+        assert_eq!(
+            truncate_name_for_human("あいうえおかきくけこさしすせそ.pdf", false),
+            "あいうえおかきくけこさ~.pdf"
+        );
+    }
+
+    #[test]
+    fn truncate_name_for_human_keeps_directory_slash() {
+        assert_eq!(
+            truncate_name_for_human("あいうえおかきくけこさしすせそ/", true),
+            "あいうえおかきくけこさしす~/"
         );
     }
 

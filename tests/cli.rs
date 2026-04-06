@@ -775,6 +775,111 @@ fn human_output_globally_aligns_columns_and_moves_symlink_targets_to_suffix() {
 }
 
 #[test]
+fn human_output_aligns_columns_using_unicode_display_width() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+
+    let wide = dir.path().join("日本語.txt");
+    fs::write(&wide, b"w").unwrap();
+    set_file_mtime(
+        &wide,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let ascii = dir.path().join("a.txt");
+    fs::write(&ascii, b"a").unwrap();
+    set_file_mtime(
+        &ascii,
+        FileTime::from_system_time(now - Duration::from_secs(3 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--color")
+        .arg("never")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let expected = format!(
+        concat!(
+            "Today (2)\n",
+            "  日本語.txt  1 B  2h\n",
+            "  a.txt{}  1 B  3h\n",
+            "\n"
+        ),
+        " ".repeat(5),
+    );
+
+    assert_eq!(stdout, expected);
+}
+
+#[test]
+fn human_output_truncates_long_unicode_file_names_but_plain_and_json_keep_them() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+    let long_name = "あいうえおかきくけこさしすせそ.pdf";
+    let truncated = "あいうえおかきくけこさ~.pdf";
+    let path = dir.path().join(long_name);
+
+    fs::write(&path, b"x").unwrap();
+    set_file_mtime(
+        &path,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let human = bin()
+        .arg(dir.path())
+        .arg("--color")
+        .arg("never")
+        .output()
+        .unwrap();
+    let human_stdout = String::from_utf8(human.stdout).unwrap();
+
+    assert!(human_stdout.contains(truncated), "{human_stdout}");
+    assert!(!human_stdout.contains(long_name), "{human_stdout}");
+
+    let plain = bin().arg(dir.path()).arg("--plain").output().unwrap();
+    let plain_stdout = String::from_utf8(plain.stdout).unwrap();
+    assert!(plain_stdout.contains(long_name), "{plain_stdout}");
+
+    let json = bin().arg(dir.path()).arg("--json").output().unwrap();
+    let json_stdout = String::from_utf8(json.stdout).unwrap();
+    assert!(json_stdout.contains(long_name), "{json_stdout}");
+}
+
+#[test]
+fn human_output_truncates_long_unicode_directory_names_and_keeps_the_slash() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+    let long_name = "あいうえおかきくけこさしすせそ";
+    let truncated = "あいうえおかきくけこさしす~/";
+    let path = dir.path().join(long_name);
+
+    fs::create_dir(&path).unwrap();
+    set_file_mtime(
+        &path,
+        FileTime::from_system_time(now - Duration::from_secs(2 * 3600)),
+    )
+    .unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--no-hints")
+        .arg("--color")
+        .arg("never")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains(truncated), "{stdout}");
+    assert!(!stdout.contains(&format!("{long_name}/")), "{stdout}");
+}
+
+#[test]
 fn human_output_places_symlink_target_after_the_time_column() {
     let dir = tempdir().unwrap();
     let target = dir.path().join("README.md");

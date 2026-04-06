@@ -48,8 +48,10 @@ Default output is always the human view.
 - Preview limits are 20 / 20 / 20 / 5, unless `--all-history` is set
 - Header shape is either `Active (3)` or `History (5/42)`
 - Row structure is `<name>  <size>  <time>  <optional-suffix>`
+- Columns align by Unicode display width, not raw character count
 - Directories show `—` in the size column
 - Directories end in `/`
+- Human output may truncate long names to fit the name column; plain/json always keep the full value
 - Symlinks keep `name  size  time` aligned and render `-> target` in the optional suffix
 - child hint is advisory only and never changes bucket classification
 - Empty state is `No matching entries`

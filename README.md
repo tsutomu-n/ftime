@@ -79,6 +79,8 @@ History (1)
 Directories show `—` in the size column.
 Directory rows may show a child activity hint when a direct child is more recent than the directory itself.
 The hint is advisory only: the parent directory keeps its own bucket and sort position based on the directory's `mtime`.
+Human output aligns columns by Unicode display width, so Japanese/full-width names do not skew the `size` and `time` columns.
+When a human-view name gets too long, `ftime` truncates only the displayed name while keeping the full name in `--plain` and `--json`.
 Symlink rows keep `name  size  time` aligned and show `-> target` as a suffix after the time column.
 
 ## Tool fit
