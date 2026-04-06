@@ -21,6 +21,16 @@ fn local_history_date(ts: SystemTime) -> String {
     dt.format("%Y-%m-%d").to_string()
 }
 
+fn next_patch_version() -> String {
+    let mut parts: Vec<u64> = support::package_version()
+        .split('.')
+        .map(|part| part.parse().unwrap())
+        .collect();
+    let last = parts.len() - 1;
+    parts[last] += 1;
+    format!("{}.{}.{}", parts[0], parts[1], parts[2])
+}
+
 #[test]
 fn fails_when_path_is_file() {
     let dir = tempdir().unwrap();
@@ -671,14 +681,17 @@ fn check_update_reports_when_already_current() {
 
 #[test]
 fn check_update_reports_when_update_is_available() {
+    let latest = next_patch_version();
+
     bin()
         .arg("--check-update")
-        .env("FTIME_SELF_UPDATE_LATEST_VERSION", "2.0.3")
+        .env("FTIME_SELF_UPDATE_LATEST_VERSION", &latest)
         .assert()
         .success()
         .stdout(predicate::str::contains(format!(
-            "update available: {} -> 2.0.3",
-            support::package_version()
+            "update available: {} -> {}",
+            support::package_version(),
+            latest
         )));
 }
 

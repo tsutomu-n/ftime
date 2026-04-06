@@ -1,10 +1,10 @@
-# ftime v2.0.2 Release Notes
+# ftime v2.0.3 Release Notes
 
 ## Patch highlights
 
-- Human TTY output now aligns columns by Unicode display width, so Japanese and other full-width names no longer skew `size` and `time`.
-- Long names in the human view now truncate to a compact `~` form while preserving the file extension or trailing `/` where possible.
-- `--plain` and `--json` continue to emit full names, so machine-readable output stays lossless.
+- The root README is now a lighter landing page focused on value, common examples, and the shortest install path.
+- Deep command comparisons moved to `docs/COMMANDS.md`, which now serves as the canonical task-oriented command guide.
+- Install, update, and uninstall instructions moved to `docs/INSTALL.md`, reducing duplication across README variants.
 
 ## Breaking changes
 
