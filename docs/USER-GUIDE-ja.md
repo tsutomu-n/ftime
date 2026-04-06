@@ -36,3 +36,5 @@ ftime --json | jq -r '.path'
 - `README-ja.md`
 - `CLI-ja.md`
 - `ftime-overview-ja.md`
+- `COMMANDS.md`
+- `INSTALL.md`

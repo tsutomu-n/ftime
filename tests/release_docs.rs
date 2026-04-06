@@ -45,24 +45,26 @@ fn readme_surfaces_v2_contract() {
             "What changed in this folder recently?",
             "Human-first bucket view by default",
             "hidden files stay visible by default while hidden directories stay hidden",
-            "## Command quick reference",
-            "| `ftime --no-ignore` | Show ignored entries too |",
-            "| `ftime --check-update` | Check for a newer published release |",
-            "| `ftime --version` | Print the installed version |",
+            "## Common examples",
+            "## Example output",
+            "## Install",
+            "## Learn More",
+            "docs/COMMANDS.md",
+            "docs/INSTALL.md",
             "ftime --plain",
             "ftime --json | jq -r '.path'",
-            "`-a, --all`: show hidden files and hidden directories",
-            "`--all-history`: expand the History bucket",
-            "`--hide-dots`: hide all hidden entries",
-            "`--files-only`: only show regular files",
-            "`--no-hints`: disable `[child: ...]` hints",
-            "`--color <auto|always|never>`",
+            "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh | bash",
         ],
     );
     assert_contains_none(
         &root,
         "README.md",
         &[
+            "## Command quick reference",
+            "## Tool fit",
+            "Common flags:",
+            "## Update",
+            "## Uninstall",
             "Current Timezone: UTC±HH:MM",
             "Fresh",
             "--exclude-dots",
@@ -104,6 +106,42 @@ fn cli_contract_documents_v2_shapes() {
 }
 
 #[test]
+fn commands_and_install_docs_are_canonical() {
+    let commands = support::read_repo_file("docs/COMMANDS.md");
+    assert_contains_all(
+        &commands,
+        "docs/COMMANDS.md",
+        &[
+            "# ftime Command Guide",
+            "| `ftime --no-ignore` | Show ignored entries too |",
+            "| `ftime --check-update` | Check for a newer published release |",
+            "Hidden-entry comparison",
+            "$ ftime -a",
+            "Output-mode comparison",
+            "`path<TAB>bucket<TAB>time`",
+            "JSON Lines",
+            "CLI.md",
+        ],
+    );
+
+    let install = support::read_repo_file("docs/INSTALL.md");
+    assert_contains_all(
+        &install,
+        "docs/INSTALL.md",
+        &[
+            "# ftime Install and Update Guide",
+            "GitHub Releases (recommended)",
+            "cargo install ftime --locked",
+            "cargo install --path . --force",
+            "ftime --check-update",
+            "ftime --self-update",
+            "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash",
+            "cargo uninstall ftime",
+        ],
+    );
+}
+
+#[test]
 fn japanese_docs_track_v2_roles() {
     let readme = support::read_repo_file("docs/README-ja.md");
     assert_contains_all(
@@ -112,9 +150,9 @@ fn japanese_docs_track_v2_roles() {
         &[
             "このフォルダで最近何が変わった？",
             "デフォルトは人間向け bucket view",
-            "## コマンド早見表",
-            "`ftime --check-update`",
-            "`ftime --version`",
+            "詳しいコマンド比較",
+            "COMMANDS.md",
+            "INSTALL.md",
             "`--all-history`",
             "`--hide-dots`",
             "`--plain`",
@@ -124,7 +162,12 @@ fn japanese_docs_track_v2_roles() {
     assert_contains_none(
         &readme,
         "docs/README-ja.md",
-        &["--exclude-dots", "--no-labels", "Fresh"],
+        &[
+            "--exclude-dots",
+            "--no-labels",
+            "Fresh",
+            "## コマンド早見表",
+        ],
     );
 
     let cli = support::read_repo_file("docs/CLI-ja.md");
@@ -155,6 +198,8 @@ fn japanese_docs_track_v2_roles() {
             "`ftime -a`",
             "`ftime --hide-dots`",
             "`ftime --check-update`",
+            "COMMANDS.md",
+            "INSTALL.md",
         ],
     );
 
@@ -162,7 +207,13 @@ fn japanese_docs_track_v2_roles() {
     assert_contains_all(
         &overview,
         "docs/ftime-overview-ja.md",
-        &["README-ja.md", "CLI-ja.md", "USER-GUIDE-ja.md"],
+        &[
+            "README-ja.md",
+            "CLI-ja.md",
+            "USER-GUIDE-ja.md",
+            "COMMANDS.md",
+            "INSTALL.md",
+        ],
     );
 }
 
@@ -174,9 +225,9 @@ fn chinese_readme_tracks_v2_core_flags() {
         "docs/README-zh.md",
         &[
             "这个文件夹最近有什么变化？",
-            "## 命令速查",
-            "`ftime --check-update`",
-            "`ftime --version`",
+            "详细命令比较",
+            "COMMANDS.md",
+            "INSTALL.md",
             "`--all-history`",
             "`--hide-dots`",
             "`--plain`",
@@ -187,7 +238,7 @@ fn chinese_readme_tracks_v2_core_flags() {
     assert_contains_none(
         &zh,
         "docs/README-zh.md",
-        &["--exclude-dots", "--no-labels", "Fresh"],
+        &["--exclude-dots", "--no-labels", "Fresh", "## 命令速查"],
     );
 }
 
@@ -236,6 +287,8 @@ fn demo_assets_and_release_notes_reference_v2_commands() {
 fn public_doc_set_remains_canonical() {
     for path in [
         "README.md",
+        "docs/COMMANDS.md",
+        "docs/INSTALL.md",
         "docs/CLI.md",
         "docs/CLI-ja.md",
         "docs/README-ja.md",

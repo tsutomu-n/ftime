@@ -67,67 +67,58 @@ fn uninstall_succeeds_when_binary_is_missing() {
 
 #[test]
 fn uninstall_docs_cover_release_and_cargo_paths() {
-    for path in ["README.md", "docs/README-ja.md", "docs/README-zh.md"] {
-        let content = support::read_repo_file(path);
-
-        assert!(
-            !content.contains(
-                "INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash"
-            ),
-            "broken custom uninstall example remains in {path}"
-        );
-        assert!(
-            !content.contains(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh"
-            ),
-            "tagged uninstall.sh URL remains in {path}"
-        );
-        assert!(
-            !content.contains(
-                "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1"
-            ),
-            "tagged uninstall.ps1 URL remains in {path}"
-        );
-        assert_contains_all(
-            &content,
-            path,
-            &[
-                "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash",
-                "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | env INSTALL_DIR=/custom/bin bash",
-                "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
-                "-InstallDir 'C:\\custom\\bin'",
-                "cargo uninstall ftime",
-            ],
-        );
-    }
-}
-
-#[test]
-fn japanese_uninstall_docs_explain_unix_and_windows_custom_args() {
-    let content = support::read_repo_file("docs/README-ja.md");
+    let path = "docs/INSTALL.md";
+    let content = support::read_repo_file(path);
 
     assert!(
-        !content.contains("同じ場所を `INSTALL_DIR` で渡します。"),
-        "outdated Japanese wording remains"
+        !content.contains(
+            "INSTALL_DIR=/custom/bin curl -fsSL https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh | bash"
+        ),
+        "broken custom uninstall example remains in {path}"
+    );
+    assert!(
+        !content.contains(
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.sh"
+        ),
+        "tagged uninstall.sh URL remains in {path}"
+    );
+    assert!(
+        !content.contains(
+            "https://raw.githubusercontent.com/tsutomu-n/ftime/v1.0.0/scripts/uninstall.ps1"
+        ),
+        "tagged uninstall.ps1 URL remains in {path}"
     );
     assert_contains_all(
         &content,
-        "docs/README-ja.md",
-        &["`INSTALL_DIR`", "`-InstallDir`"],
+        path,
+        &[
+            "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash",
+            "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | env INSTALL_DIR=/custom/bin bash",
+            "https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.ps1",
+            "-InstallDir 'C:\\custom\\bin'",
+            "cargo uninstall ftime",
+        ],
     );
 }
 
 #[test]
-fn chinese_readme_has_uninstall_section() {
-    let content = support::read_repo_file("docs/README-zh.md");
+fn install_guide_explains_unix_and_windows_custom_args() {
+    let content = support::read_repo_file("docs/INSTALL.md");
 
     assert_contains_all(
         &content,
-        "docs/README-zh.md",
-        &[
-            "## 卸载",
-            "### GitHub Releases 安装",
-            "### `cargo install` / `cargo install --path .` 安装",
-        ],
+        "docs/INSTALL.md",
+        &["INSTALL_DIR=/custom/bin", "-InstallDir 'C:\\custom\\bin'"],
     );
+}
+
+#[test]
+fn localized_readmes_link_to_install_guide() {
+    for path in ["README.md", "docs/README-ja.md", "docs/README-zh.md"] {
+        let content = support::read_repo_file(path);
+        assert!(
+            content.contains("INSTALL.md") || content.contains("docs/INSTALL.md"),
+            "{path} should link to the install guide"
+        );
+    }
 }

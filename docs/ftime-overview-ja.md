@@ -5,7 +5,8 @@
 ## どのドキュメントを読むべきか
 
 - 概要をつかむ: `README-ja.md`
-- コマンド差分の早見表を見る: `README-ja.md`
+- コマンド差分の早見表を見る: `COMMANDS.md`
 - 普段の使い方を見る: `USER-GUIDE-ja.md`
+- install / update / uninstall を確認する: `INSTALL.md`
 - フラグと出力契約を確認する: `CLI-ja.md`
 - 英語の正本を見る: `CLI.md`

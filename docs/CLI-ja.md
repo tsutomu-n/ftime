@@ -49,4 +49,6 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 
 - `README-ja.md`
 - `USER-GUIDE-ja.md`
+- `COMMANDS.md`
+- `INSTALL.md`
 - `CLI.md`
