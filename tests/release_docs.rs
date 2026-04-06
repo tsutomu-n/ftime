@@ -45,6 +45,10 @@ fn readme_surfaces_v2_contract() {
             "What changed in this folder recently?",
             "Human-first bucket view by default",
             "hidden files stay visible by default while hidden directories stay hidden",
+            "## Command quick reference",
+            "| `ftime --no-ignore` | Show ignored entries too |",
+            "| `ftime --check-update` | Check for a newer published release |",
+            "| `ftime --version` | Print the installed version |",
             "ftime --plain",
             "ftime --json | jq -r '.path'",
             "`-a, --all`: show hidden files and hidden directories",
@@ -108,6 +112,9 @@ fn japanese_docs_track_v2_roles() {
         &[
             "このフォルダで最近何が変わった？",
             "デフォルトは人間向け bucket view",
+            "## コマンド早見表",
+            "`ftime --check-update`",
+            "`ftime --version`",
             "`--all-history`",
             "`--hide-dots`",
             "`--plain`",
@@ -130,10 +137,32 @@ fn japanese_docs_track_v2_roles() {
             "`--hide-dots`",
             "`--files-only`",
             "`--plain`",
+            "`--check-update`",
+            "`--self-update`",
             "`--no-hints`",
             "`--color <auto|always|never>`",
+            "Unicode 表示幅",
             "No matching entries",
         ],
+    );
+
+    let guide = support::read_repo_file("docs/USER-GUIDE-ja.md");
+    assert_contains_all(
+        &guide,
+        "docs/USER-GUIDE-ja.md",
+        &[
+            "## 使い分け",
+            "`ftime -a`",
+            "`ftime --hide-dots`",
+            "`ftime --check-update`",
+        ],
+    );
+
+    let overview = support::read_repo_file("docs/ftime-overview-ja.md");
+    assert_contains_all(
+        &overview,
+        "docs/ftime-overview-ja.md",
+        &["README-ja.md", "CLI-ja.md", "USER-GUIDE-ja.md"],
     );
 }
 
@@ -145,6 +174,9 @@ fn chinese_readme_tracks_v2_core_flags() {
         "docs/README-zh.md",
         &[
             "这个文件夹最近有什么变化？",
+            "## 命令速查",
+            "`ftime --check-update`",
+            "`ftime --version`",
             "`--all-history`",
             "`--hide-dots`",
             "`--plain`",
