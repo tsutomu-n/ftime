@@ -1,10 +1,10 @@
-# ftime v2.0.1 Release Notes
+# ftime v2.0.2 Release Notes
 
 ## Patch highlights
 
-- Human TTY output now uses globally aligned `name  size  time` columns.
-- Symlink rows keep the main columns aligned and move `-> target` to the suffix.
-- Bucket colors were simplified for theme-safe scanning: `Active` stays strongest, `This Week` uses cyan, `History` falls back to the default foreground.
+- Human TTY output now aligns columns by Unicode display width, so Japanese and other full-width names no longer skew `size` and `time`.
+- Long names in the human view now truncate to a compact `~` form while preserving the file extension or trailing `/` where possible.
+- `--plain` and `--json` continue to emit full names, so machine-readable output stays lossless.
 
 ## Breaking changes
 

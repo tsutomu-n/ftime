@@ -163,10 +163,10 @@ ftime --self-update
 Typical output:
 
 ```text
-update available: 2.0.1 -> 2.0.2
-ftime updated 2.0.1 -> 2.0.2 in /home/tn/.local/bin
-ftime is already up to date at 2.0.1 in /home/tn/.local/bin
-ftime now points to 2.0.2 (was 2.0.1) in /home/tn/.local/bin
+update available: 2.0.2 -> 2.0.3
+ftime updated 2.0.2 -> 2.0.3 in /home/tn/.local/bin
+ftime is already up to date at 2.0.2 in /home/tn/.local/bin
+ftime now points to 2.0.3 (was 2.0.2) in /home/tn/.local/bin
 ```
 
 When invoked via a symlink, `ftime --self-update` updates that symlink directory.

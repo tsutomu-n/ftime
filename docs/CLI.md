@@ -1,4 +1,4 @@
-# ftime v2.0.1 CLI Contract
+# ftime v2.0.2 CLI Contract
 
 `ftime` is a read-only CLI for Context Recovery in one folder.
 
