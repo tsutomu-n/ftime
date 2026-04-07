@@ -776,7 +776,7 @@ fn human_output_globally_aligns_columns_and_moves_symlink_targets_to_suffix() {
         "1.2 KiB",
         "2h",
         "docs/",
-        "—",
+        "<dir>",
         local_history_date(docs_mtime),
         " [child: today]",
         "LICENSE",
@@ -922,8 +922,8 @@ fn human_output_places_symlink_target_after_the_time_column() {
     let stdout = String::from_utf8(output.stdout).unwrap();
 
     let expected_line = format!(
-        "  {:<14}  {:>3}  {} -> README.md",
-        "link_to_readme", "—", absolute,
+        "  {:<14}  {:>5}  {} -> README.md",
+        "link_to_readme", "<lnk>", absolute,
     );
 
     assert!(stdout.contains(&expected_line), "{stdout}");
@@ -931,6 +931,38 @@ fn human_output_places_symlink_target_after_the_time_column() {
         !stdout.contains("link_to_readme -> README.md  —"),
         "{stdout}"
     );
+}
+
+#[test]
+fn color_always_colors_only_the_symlink_name_not_placeholder_or_target() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join("README.md");
+    fs::write(&target, b"target").unwrap();
+
+    let link = dir.path().join("link_to_readme");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(&target, &link).unwrap();
+
+    let output = bin()
+        .arg(dir.path())
+        .arg("--absolute")
+        .arg("--color")
+        .arg("always")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let line = stdout
+        .lines()
+        .find(|line| line.contains("link_to_readme"))
+        .expect("symlink row present");
+
+    assert!(line.contains("\u{1b}["), "{line}");
+    assert!(line.contains("link_to_readme\u{1b}[0m  <lnk>  "), "{line}");
+    assert!(line.contains(" -> README.md"), "{line}");
+    assert!(!line.contains("<lnk>\u{1b}["), "{line}");
+    assert!(!line.contains("README.md\u{1b}["), "{line}");
 }
 
 #[test]
