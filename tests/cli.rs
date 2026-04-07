@@ -8,6 +8,7 @@ use serde_json::Value;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tempfile::tempdir;
 
@@ -29,6 +30,76 @@ fn next_patch_version() -> String {
     let last = parts.len() - 1;
     parts[last] += 1;
     format!("{}.{}.{}", parts[0], parts[1], parts[2])
+}
+
+fn stdout(mut cmd: Command) -> String {
+    let output = cmd.output().unwrap();
+    assert!(
+        output.status.success(),
+        "command failed:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap()
+}
+
+fn human_stdout(path: &Path) -> String {
+    human_stdout_with_args(path, &[])
+}
+
+fn human_stdout_with_args(path: &Path, args: &[&str]) -> String {
+    let mut cmd = bin();
+    cmd.arg(path);
+    for arg in args {
+        cmd.arg(arg);
+    }
+    cmd.env("FTIME_FORCE_TTY", "1").env("NO_COLOR", "1");
+    stdout(cmd)
+}
+
+fn human_stdout_with_color(path: &Path, color: &str, args: &[&str]) -> String {
+    let mut cmd = bin();
+    cmd.arg(path);
+    for arg in args {
+        cmd.arg(arg);
+    }
+    cmd.arg("--color").arg(color);
+    stdout(cmd)
+}
+
+fn line_containing<'a>(stdout: &'a str, needle: &str) -> &'a str {
+    stdout
+        .lines()
+        .find(|line| line.contains(needle))
+        .unwrap_or_else(|| panic!("missing line containing `{needle}` in:\n{stdout}"))
+}
+
+fn strip_ansi(text: &str) -> String {
+    let mut out = String::new();
+    let mut chars = text.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' && chars.peek() == Some(&'[') {
+            chars.next();
+            for next in chars.by_ref() {
+                if ('@'..='~').contains(&next) {
+                    break;
+                }
+            }
+            continue;
+        }
+
+        out.push(ch);
+    }
+
+    out
+}
+
+fn create_file_symlink(target: &Path, link: &Path) {
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file(target, link).unwrap();
 }
 
 #[test]
@@ -135,13 +206,7 @@ fn default_dot_policy_shows_hidden_files_but_not_hidden_directories() {
     File::create(dir.path().join(".hidden")).unwrap();
     fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout(dir.path());
 
     assert!(stdout.contains("visible"));
     assert!(stdout.contains(".hidden"));
@@ -154,15 +219,10 @@ fn all_flag_shows_hidden_files_and_directories() {
     File::create(dir.path().join(".hidden")).unwrap();
     fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
 
-    bin()
-        .arg(dir.path())
-        .arg("-a")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains(".hidden"))
-        .stdout(predicate::str::contains(".hidden_dir/"));
+    let stdout = human_stdout_with_args(dir.path(), &["-a"]);
+
+    assert!(stdout.contains(".hidden"));
+    assert!(stdout.contains(".hidden_dir/"));
 }
 
 #[test]
@@ -172,16 +232,11 @@ fn hide_dots_hides_hidden_files_and_directories() {
     fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
     File::create(dir.path().join("visible")).unwrap();
 
-    bin()
-        .arg(dir.path())
-        .arg("--hide-dots")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("visible"))
-        .stdout(predicate::str::contains(".hidden").not())
-        .stdout(predicate::str::contains(".hidden_dir/").not());
+    let stdout = human_stdout_with_args(dir.path(), &["--hide-dots"]);
+
+    assert!(stdout.contains("visible"));
+    assert!(!stdout.contains(".hidden"));
+    assert!(!stdout.contains(".hidden_dir/"));
 }
 
 #[test]
@@ -212,24 +267,11 @@ fn history_bucket_previews_by_default_and_expands_with_all_history() {
         set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
     }
 
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout(dir.path());
     assert!(stdout.contains("History (5/7)"));
     assert!(!stdout.contains("old-6"));
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--all-history")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_args(dir.path(), &["--all-history"]);
     assert!(stdout.contains("History (7)"));
     assert!(stdout.contains("old-6"));
 }
@@ -242,10 +284,7 @@ fn ext_filter_keeps_directories_and_symlinks() {
     fs::create_dir(dir.path().join("docs")).unwrap();
 
     let link_path = dir.path().join("link_to_keep");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(dir.path().join("keep.rs"), &link_path).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(dir.path().join("keep.rs"), &link_path).unwrap();
+    create_file_symlink(&dir.path().join("keep.rs"), &link_path);
 
     let output = bin()
         .arg(dir.path())
@@ -269,10 +308,7 @@ fn files_only_excludes_directories_and_symlinks() {
     fs::create_dir(dir.path().join("docs")).unwrap();
 
     let link_path = dir.path().join("link_to_keep");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(dir.path().join("keep.rs"), &link_path).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(dir.path().join("keep.rs"), &link_path).unwrap();
+    create_file_symlink(&dir.path().join("keep.rs"), &link_path);
 
     let output = bin()
         .arg(dir.path())
@@ -295,13 +331,7 @@ fn human_output_shows_compact_skew_without_footer_or_fresh_label() {
     let future = SystemTime::now() + Duration::from_secs(5 * 60);
     set_file_mtime(&file_path, FileTime::from_system_time(future)).unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout(dir.path());
 
     assert!(stdout.contains("[skew]"));
     assert!(!stdout.contains("Current Timezone:"));
@@ -328,23 +358,10 @@ fn human_output_supports_no_hints() {
     )
     .unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout(dir.path());
     assert!(stdout.contains("[child: active]"));
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--no-hints")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_args(dir.path(), &["--no-hints"]);
     assert!(!stdout.contains("[child:"));
 }
 
@@ -427,10 +444,7 @@ fn plain_output_formats_dirs_and_symlinks_as_undecorated_paths() {
     let subdir = dir.path().join("subdir");
     fs::create_dir(&subdir).unwrap();
     let link_path = dir.path().join("link_to_file");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&file_path, &link_path).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(&file_path, &link_path).unwrap();
+    create_file_symlink(&file_path, &link_path);
 
     let output = bin()
         .current_dir(dir.path())
@@ -514,14 +528,7 @@ fn no_matching_entries_message_mentions_filters() {
     let dir = tempdir().unwrap();
     fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--hide-dots")
-        .env("FTIME_FORCE_TTY", "1")
-        .env("NO_COLOR", "1")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_args(dir.path(), &["--hide-dots"]);
 
     assert!(stdout.contains("No matching entries"));
     assert!(stdout.contains("filters:"));
@@ -750,41 +757,32 @@ fn human_output_globally_aligns_columns_and_moves_symlink_targets_to_suffix() {
     let license_mtime = now - Duration::from_secs(10 * 24 * 3600);
     set_file_mtime(&license, FileTime::from_system_time(license_mtime)).unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--color")
-        .arg("never")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_color(dir.path(), "never", &[]);
+    let lines: Vec<_> = stdout.lines().collect();
 
-    let expected = format!(
-        concat!(
-            "Today (2)\n",
-            "  {:<9}  {:>7}  {:>10}\n",
-            "  {:<9}  {:>7}  {:>10}\n",
-            "\n",
-            "History (2)\n",
-            "  {:<9}  {:>7}  {:>10}{}\n",
-            "  {:<9}  {:>7}  {:>10}\n",
-            "\n"
+    let expected = vec![
+        "Today (2)".to_string(),
+        format!("  {:<9}  {:>7}  {:>10}", ".hidden", "13 B", "2h"),
+        format!("  {:<9}  {:>7}  {:>10}", "README.md", "1.2 KiB", "2h"),
+        String::new(),
+        "History (2)".to_string(),
+        format!(
+            "  {:<9}  {:>7}  {:>10}{}",
+            "docs/",
+            "<dir>",
+            local_history_date(docs_mtime),
+            " [child: today]"
         ),
-        ".hidden",
-        "13 B",
-        "2h",
-        "README.md",
-        "1.2 KiB",
-        "2h",
-        "docs/",
-        "<dir>",
-        local_history_date(docs_mtime),
-        " [child: today]",
-        "LICENSE",
-        "2.0 KiB",
-        local_history_date(license_mtime),
-    );
+        format!(
+            "  {:<9}  {:>7}  {:>10}",
+            "LICENSE",
+            "2.0 KiB",
+            local_history_date(license_mtime)
+        ),
+        String::new(),
+    ];
 
-    assert_eq!(stdout, expected);
+    assert_eq!(lines, expected);
 }
 
 #[test]
@@ -808,13 +806,7 @@ fn human_output_aligns_columns_using_unicode_display_width() {
     )
     .unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--color")
-        .arg("never")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_color(dir.path(), "never", &[]);
 
     let expected = format!(
         concat!(
@@ -844,13 +836,7 @@ fn human_output_truncates_long_unicode_file_names_but_plain_and_json_keep_them()
     )
     .unwrap();
 
-    let human = bin()
-        .arg(dir.path())
-        .arg("--color")
-        .arg("never")
-        .output()
-        .unwrap();
-    let human_stdout = String::from_utf8(human.stdout).unwrap();
+    let human_stdout = human_stdout_with_color(dir.path(), "never", &[]);
 
     assert!(human_stdout.contains(truncated), "{human_stdout}");
     assert!(!human_stdout.contains(long_name), "{human_stdout}");
@@ -879,14 +865,7 @@ fn human_output_truncates_long_unicode_directory_names_and_keeps_the_slash() {
     )
     .unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--no-hints")
-        .arg("--color")
-        .arg("never")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_color(dir.path(), "never", &["--no-hints"]);
 
     assert!(stdout.contains(truncated), "{stdout}");
     assert!(!stdout.contains(&format!("{long_name}/")), "{stdout}");
@@ -899,10 +878,7 @@ fn human_output_places_symlink_target_after_the_time_column() {
     fs::write(&target, b"target").unwrap();
 
     let link = dir.path().join("link_to_readme");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&target, &link).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(&target, &link).unwrap();
+    create_file_symlink(&target, &link);
 
     let link_mtime = fs::symlink_metadata(&link).unwrap().modified().unwrap();
     let dt: DateTime<Local> = link_mtime.into();
@@ -912,14 +888,7 @@ fn human_output_places_symlink_target_after_the_time_column() {
         dt.format("UTC%:z")
     );
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--absolute")
-        .arg("--color")
-        .arg("never")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_color(dir.path(), "never", &["--absolute"]);
 
     let expected_line = format!(
         "  {:<14}  {:>5}  {} -> README.md",
@@ -940,30 +909,18 @@ fn color_always_colors_only_the_symlink_name_not_placeholder_or_target() {
     fs::write(&target, b"target").unwrap();
 
     let link = dir.path().join("link_to_readme");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&target, &link).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_file(&target, &link).unwrap();
+    create_file_symlink(&target, &link);
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--absolute")
-        .arg("--color")
-        .arg("always")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let line = stdout
-        .lines()
-        .find(|line| line.contains("link_to_readme"))
-        .expect("symlink row present");
+    let stdout = human_stdout_with_color(dir.path(), "always", &["--absolute"]);
+    let line = line_containing(&stdout, "link_to_readme");
+    let plain_line = strip_ansi(line);
 
     assert!(line.contains("\u{1b}["), "{line}");
-    assert!(line.contains("link_to_readme"), "{line}");
-        assert!(line.contains("\u{1b}[0m") && line.matches("<lnk>").count() == 1 && !line.contains("<lnk>\u{1b}["), "{line}");
-    assert!(line.contains(" -> README.md"), "{line}");
-    assert!(!line.contains("<lnk>\u{1b}["), "{line}");
-    assert!(!line.contains("README.md\u{1b}["), "{line}");
+    assert!(line.contains("\u{1b}[0m  <lnk>  \u{1b}["), "{line}");
+    assert!(line.contains("\u{1b}[0m -> README.md"), "{line}");
+    assert_eq!(plain_line.matches("<lnk>").count(), 1, "{line}");
+    assert!(plain_line.contains("link_to_readme  <lnk>  "), "{line}");
+    assert!(plain_line.ends_with(" -> README.md"), "{line}");
 }
 
 #[test]
@@ -995,13 +952,7 @@ fn color_always_uses_semantic_bucket_colors() {
     )
     .unwrap();
 
-    let output = bin()
-        .arg(dir.path())
-        .arg("--color")
-        .arg("always")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stdout = human_stdout_with_color(dir.path(), "always", &[]);
 
     assert!(stdout.contains("\u{1b}[1;32mActive (1)\u{1b}[0m"));
     assert!(stdout.contains("\u{1b}[1;32m"));
