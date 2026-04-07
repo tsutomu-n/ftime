@@ -960,7 +960,7 @@ fn color_always_colors_only_the_symlink_name_not_placeholder_or_target() {
 
     assert!(line.contains("\u{1b}["), "{line}");
     assert!(line.contains("link_to_readme"), "{line}");
-    assert!(line.contains("\u{1b}[0m  <lnk>  "), "{line}");
+        assert!(line.contains("\u{1b}[0m") && line.matches("<lnk>").count() == 1 && !line.contains("<lnk>\u{1b}["), "{line}");
     assert!(line.contains(" -> README.md"), "{line}");
     assert!(!line.contains("<lnk>\u{1b}["), "{line}");
     assert!(!line.contains("README.md\u{1b}["), "{line}");
