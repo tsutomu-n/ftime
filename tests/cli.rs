@@ -64,6 +64,7 @@ fn human_stdout_with_color(path: &Path, color: &str, args: &[&str]) -> String {
         cmd.arg(arg);
     }
     cmd.arg("--color").arg(color);
+    cmd.env("FTIME_FORCE_TTY", "1");
     stdout(cmd)
 }
 
