@@ -1,5 +1,5 @@
 use crate::engine::{Bucketed, ScanOptions, ScanStats, dir_child_activity_hint};
-use crate::model::{ChildActivityHint, FileEntry, TimeBucket};
+use crate::model::{ChildActivityHint, EntryKind, FileEntry, TimeBucket};
 use crate::util::time::{absolute_time, relative_time};
 #[cfg(feature = "icons")]
 use crate::view::icon::NerdIconProvider;
@@ -52,7 +52,7 @@ struct RenderedRow {
     size: String,
     time: String,
     suffix: String,
-    is_dir: bool,
+    kind: EntryKind,
 }
 
 #[derive(Debug, Clone)]
@@ -191,10 +191,10 @@ fn render_row(entry: &FileEntry, bucket: TimeBucket, options: RenderOptions<'_>)
     RenderedRow {
         bucket,
         name: format_name(entry, options.base),
-        size: format_size(entry.size),
+        size: format_size(entry),
         time,
         suffix: format_suffix(entry, options.base, options.now, bucket, options.scan_opts),
-        is_dir: entry.is_dir(),
+        kind: entry.kind,
     }
 }
 
@@ -309,10 +309,10 @@ fn style_time_text(bucket: TimeBucket, time_str: &str) -> String {
 }
 
 fn style_name(text: &str, row: &RenderedRow) -> String {
-    if row.is_dir {
-        text.bold().to_string()
-    } else {
-        text.to_string()
+    match row.kind {
+        EntryKind::Dir => text.blue().bold().to_string(),
+        EntryKind::Symlink => text.magenta().to_string(),
+        EntryKind::File => text.to_string(),
     }
 }
 
@@ -338,8 +338,16 @@ fn format_child_activity_hint(hint: ChildActivityHint) -> String {
     }
 }
 
-fn format_size(size: Option<u64>) -> String {
-    let Some(size) = size else {
+fn format_size(entry: &FileEntry) -> String {
+    if entry.is_symlink() {
+        return "<lnk>".to_string();
+    }
+
+    if entry.is_dir() {
+        return "<dir>".to_string();
+    }
+
+    let Some(size) = entry.size else {
         return "—".to_string();
     };
 
