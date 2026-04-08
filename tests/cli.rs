@@ -139,7 +139,7 @@ fn help_mentions_v2_flags() {
         "--hide-dots",
         "--all-history",
         "--files-only",
-        "--no-hints",
+        "--hints",
         "--color",
     ] {
         assert!(stdout.contains(flag), "help missing {flag}");
@@ -340,7 +340,7 @@ fn human_output_shows_compact_skew_without_footer_or_fresh_label() {
 }
 
 #[test]
-fn human_output_supports_no_hints() {
+fn human_output_supports_hints_opt_in() {
     let dir = tempdir().unwrap();
     let docs_dir = dir.path().join("docs");
     fs::create_dir(&docs_dir).unwrap();
@@ -360,10 +360,10 @@ fn human_output_supports_no_hints() {
     .unwrap();
 
     let stdout = human_stdout(dir.path());
-    assert!(stdout.contains("[child: active]"));
-
-    let stdout = human_stdout_with_args(dir.path(), &["--no-hints"]);
     assert!(!stdout.contains("[child:"));
+
+    let stdout = human_stdout_with_args(dir.path(), &["--hints"]);
+    assert!(stdout.contains("[child: active]"));
 }
 
 #[test]
@@ -412,7 +412,7 @@ fn json_rejects_human_only_flags() {
     for flag in [
         "--absolute",
         "--all-history",
-        "--no-hints",
+        "--hints",
         "--icons",
         "--color",
     ] {
@@ -427,7 +427,7 @@ fn json_rejects_human_only_flags() {
 
 #[test]
 fn plain_rejects_human_only_flags_except_absolute() {
-    for flag in ["--all-history", "--no-hints", "--icons", "--color"] {
+    for flag in ["--all-history", "--hints", "--icons", "--color"] {
         let mut cmd = bin();
         cmd.arg("--plain").arg(flag);
         if flag == "--color" {
@@ -763,19 +763,26 @@ fn human_output_globally_aligns_columns_and_moves_symlink_targets_to_suffix() {
 
     let expected = vec![
         "Today (2)".to_string(),
-        format!("  {:<9}  {:>7}  {:>10}", ".hidden", "13 B", "2h"),
-        format!("  {:<9}  {:>7}  {:>10}", "README.md", "1.2 KiB", "2h"),
+        format!("  {:<5}  {:<9}  {:>7}  {:>10}", "[FIL]", ".hidden", "13 B", "2h"),
+        format!(
+            "  {:<5}  {:<9}  {:>7}  {:>10}",
+            "[FIL]",
+            "README.md",
+            "1.2 KiB",
+            "2h"
+        ),
         String::new(),
         "History (2)".to_string(),
         format!(
-            "  {:<9}  {:>7}  {:>10}{}",
+            "  {:<5}  {:<9}  {:>7}  {:>10}",
+            "[DIR]",
             "docs/",
             "<dir>",
-            local_history_date(docs_mtime),
-            " [child: today]"
+            local_history_date(docs_mtime)
         ),
         format!(
-            "  {:<9}  {:>7}  {:>10}",
+            "  {:<5}  {:<9}  {:>7}  {:>10}",
+            "[FIL]",
             "LICENSE",
             "2.0 KiB",
             local_history_date(license_mtime)
@@ -812,8 +819,8 @@ fn human_output_aligns_columns_using_unicode_display_width() {
     let expected = format!(
         concat!(
             "Today (2)\n",
-            "  日本語.txt  1 B  2h\n",
-            "  a.txt{}  1 B  3h\n",
+            "  [FIL]  日本語.txt  1 B  2h\n",
+            "  [FIL]  a.txt{}  1 B  3h\n",
             "\n"
         ),
         " ".repeat(5),
@@ -866,14 +873,14 @@ fn human_output_truncates_long_unicode_directory_names_and_keeps_the_slash() {
     )
     .unwrap();
 
-    let stdout = human_stdout_with_color(dir.path(), "never", &["--no-hints"]);
+    let stdout = human_stdout_with_color(dir.path(), "never", &[]);
 
     assert!(stdout.contains(truncated), "{stdout}");
     assert!(!stdout.contains(&format!("{long_name}/")), "{stdout}");
 }
 
 #[test]
-fn human_output_places_symlink_target_after_the_time_column() {
+fn human_output_omits_symlink_target_from_the_default_human_view() {
     let dir = tempdir().unwrap();
     let target = dir.path().join("README.md");
     fs::write(&target, b"target").unwrap();
@@ -881,30 +888,16 @@ fn human_output_places_symlink_target_after_the_time_column() {
     let link = dir.path().join("link_to_readme");
     create_file_symlink(&target, &link);
 
-    let link_mtime = fs::symlink_metadata(&link).unwrap().modified().unwrap();
-    let dt: DateTime<Local> = link_mtime.into();
-    let absolute = format!(
-        "{} ({})",
-        dt.format("%Y-%m-%d %H:%M:%S"),
-        dt.format("UTC%:z")
-    );
-
     let stdout = human_stdout_with_color(dir.path(), "never", &["--absolute"]);
+    let line = line_containing(&stdout, "link_to_readme");
 
-    let expected_line = format!(
-        "  {:<14}  {:>5}  {} -> README.md",
-        "link_to_readme", "<lnk>", absolute,
-    );
-
-    assert!(stdout.contains(&expected_line), "{stdout}");
-    assert!(
-        !stdout.contains("link_to_readme -> README.md  —"),
-        "{stdout}"
-    );
+    assert!(line.contains("[LNK]"), "{line}");
+    assert!(line.contains("<lnk>"), "{line}");
+    assert!(!line.contains("-> README.md"), "{line}");
 }
 
 #[test]
-fn color_always_colors_only_the_symlink_name_not_placeholder_or_target() {
+fn color_always_colors_type_label_and_name_but_not_the_symlink_placeholder() {
     let dir = tempdir().unwrap();
     let target = dir.path().join("README.md");
     fs::write(&target, b"target").unwrap();
@@ -917,11 +910,37 @@ fn color_always_colors_only_the_symlink_name_not_placeholder_or_target() {
     let plain_line = strip_ansi(line);
 
     assert!(line.contains("\u{1b}["), "{line}");
-    assert!(line.contains("\u{1b}[0m  <lnk>  \u{1b}["), "{line}");
-    assert!(line.contains("\u{1b}[0m -> README.md"), "{line}");
+    assert!(plain_line.contains("[LNK]"), "{line}");
     assert_eq!(plain_line.matches("<lnk>").count(), 1, "{line}");
-    assert!(plain_line.contains("link_to_readme  <lnk>  "), "{line}");
-    assert!(plain_line.ends_with(" -> README.md"), "{line}");
+    assert!(plain_line.contains("link_to_readme"), "{line}");
+    assert!(!plain_line.contains("-> README.md"), "{line}");
+}
+
+#[test]
+fn human_output_shows_child_hints_only_when_requested() {
+    let dir = tempdir().unwrap();
+    let docs_dir = dir.path().join("docs");
+    fs::create_dir(&docs_dir).unwrap();
+    let docs_child = docs_dir.join("guide.md");
+    fs::write(&docs_child, b"guide").unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &docs_child,
+        FileTime::from_system_time(now - Duration::from_secs(30)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &docs_dir,
+        FileTime::from_system_time(now - Duration::from_secs(8 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let default_stdout = human_stdout_with_color(dir.path(), "never", &[]);
+    let hinted_stdout = human_stdout_with_color(dir.path(), "never", &["--hints"]);
+
+    assert!(!default_stdout.contains("[child:"), "{default_stdout}");
+    assert!(hinted_stdout.contains("[child: active]"), "{hinted_stdout}");
 }
 
 #[test]

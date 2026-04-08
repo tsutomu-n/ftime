@@ -57,9 +57,9 @@ struct Cli {
     #[arg(short = 'A', long = "absolute")]
     absolute_time: bool,
 
-    /// Disable directory child activity hints
-    #[arg(long = "no-hints")]
-    no_hints: bool,
+    /// Show directory child activity hints
+    #[arg(long = "hints")]
+    hints: bool,
 
     /// Color handling for human output
     #[arg(long = "color", value_enum, default_value_t = ColorMode::Auto)]
@@ -160,7 +160,7 @@ fn run() -> Result<()> {
             Vec::new()
         },
         files_only: cli.files_only,
-        use_hints: !cli.no_hints,
+        show_hints: cli.hints,
     };
 
     let scan = scan_dir(&path, &scan_opts)?;
@@ -205,15 +205,14 @@ fn validate_output_flags(cli: &Cli) -> Result<()> {
     if cli.json
         && (cli.absolute_time
             || cli.all_history
-            || cli.no_hints
+            || cli.hints
             || cli.use_icons
             || cli.color != ColorMode::Auto)
     {
         bail!("--json cannot be combined with human-only flags");
     }
 
-    if cli.plain
-        && (cli.all_history || cli.no_hints || cli.use_icons || cli.color != ColorMode::Auto)
+    if cli.plain && (cli.all_history || cli.hints || cli.use_icons || cli.color != ColorMode::Auto)
     {
         bail!("--plain cannot be combined with human-only flags");
     }
@@ -238,9 +237,9 @@ fn has_scan_options(cli: &Cli) -> bool {
         || cli.ext.is_some()
         || cli.files_only
         || cli.all_history
+        || cli.hints
         || cli.use_icons
         || cli.absolute_time
-        || cli.no_hints
         || cli.color != ColorMode::Auto
 }
 

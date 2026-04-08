@@ -5,7 +5,7 @@
 ## コマンド署名
 
 ```text
-ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--no-hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
+ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
 ```
 
 ## オプション一覧
@@ -17,7 +17,7 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 - `--ext <csv>`: regular file だけを拡張子で絞る
 - `--files-only`: regular file だけ表示
 - `-A, --absolute`: `time` を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` にする
-- `--no-hints`: directory の `[child: ...]` hint を消す
+- `--hints`: human view で directory の `[child: ...]` hint を表示する
 - `--plain`: `path<TAB>bucket<TAB>time`
 - `--json`: JSON Lines
 - `--color <auto|always|never>`: human output の色制御
@@ -29,16 +29,19 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 
 - `--plain` と `--json` は同時指定不可
 - `-a` と `--hide-dots` は同時指定不可
-- `--json` は `--absolute`, `--all-history`, `--no-hints`, `--icons`, 明示的 `--color` を受け付けない
-- `--plain` は `--all-history`, `--no-hints`, `--icons`, 明示的 `--color` を受け付けない
+- `--json` は `--absolute`, `--all-history`, `--hints`, `--icons`, 明示的 `--color` を受け付けない
+- `--plain` は `--all-history`, `--hints`, `--icons`, 明示的 `--color` を受け付けない
 - `--check-update` / `--self-update` は scan flag や `PATH` と同時指定不可
 
 ## 出力契約
 
 - デフォルトは human view
-- human row は `<name>  <size>  <time>  <optional-suffix>`
+- human row は `type | name | size | time`
 - 列揃えは raw 文字数ではなく Unicode 表示幅ベース
+- directory は `size` 列に `<dir>` を表示
+- symlink は `size` 列に `<lnk>` を表示
 - 長い名前は human view だけ省略表示されるが、`--plain` / `--json` は完全値を保つ
+- `[child: ...]` hint は `--hints` のときだけ付く
 - `--plain` は `path<TAB>bucket<TAB>time`
 - `--json` は JSON Lines
 - hidden file は既定で見せ、hidden directory は既定で隠す

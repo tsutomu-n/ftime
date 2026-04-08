@@ -20,7 +20,7 @@ pub struct ScanOptions {
     pub local_ignore_patterns: Vec<String>,
     pub ext_filter: Option<Vec<String>>,
     pub files_only: bool,
-    pub use_hints: bool,
+    pub show_hints: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -156,7 +156,7 @@ pub fn dir_child_activity_hint(
     parent_bucket: TimeBucket,
     parent_scan_opts: &ScanOptions,
 ) -> Option<ChildActivityHint> {
-    if !parent_scan_opts.use_hints || !dir_path.is_dir() {
+    if !parent_scan_opts.show_hints || !dir_path.is_dir() {
         return None;
     }
 
@@ -398,7 +398,7 @@ mod tests {
             ignore_patterns: Vec::new(),
             local_ignore_patterns: Vec::new(),
             files_only: false,
-            use_hints: true,
+            show_hints: true,
         }
     }
 

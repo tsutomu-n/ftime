@@ -48,6 +48,7 @@ enum TimeTone {
 #[derive(Debug, Clone)]
 struct RenderedRow {
     bucket: TimeBucket,
+    type_label: String,
     name: String,
     size: String,
     time: String,
@@ -64,6 +65,7 @@ struct RenderedBucket {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 struct ColumnWidths {
+    type_label: usize,
     name: usize,
     size: usize,
     time: usize,
@@ -160,6 +162,7 @@ fn render_bucket(bucket: &RenderedBucket, widths: ColumnWidths, use_icons: bool)
     println!("{}", style_header(bucket.bucket, &bucket.header, use_icons));
 
     for row in &bucket.rows {
+        let type_label = pad_to_display_width(&row.type_label, widths.type_label, Alignment::Left);
         let name = pad_to_display_width(&row.name, widths.name, Alignment::Left);
         let size = pad_to_display_width(&row.size, widths.size, Alignment::Right);
         let time = pad_to_display_width(&row.time, widths.time, Alignment::Right);
@@ -170,7 +173,8 @@ fn render_bucket(bucket: &RenderedBucket, widths: ColumnWidths, use_icons: bool)
         };
 
         println!(
-            "  {}  {}  {}{}",
+            "  {}  {}  {}  {}{}",
+            style_type_label(&type_label, row),
             style_name(&name, row),
             size,
             style_time_text(row.bucket, &time),
@@ -190,10 +194,11 @@ fn render_row(entry: &FileEntry, bucket: TimeBucket, options: RenderOptions<'_>)
 
     RenderedRow {
         bucket,
+        type_label: format_type_label(entry),
         name: format_name(entry, options.base),
         size: format_size(entry),
         time,
-        suffix: format_suffix(entry, options.base, options.now, bucket, options.scan_opts),
+        suffix: format_suffix(entry, options.now, bucket, options.scan_opts),
         kind: entry.kind,
     }
 }
@@ -203,6 +208,7 @@ fn column_widths(buckets: &[RenderedBucket]) -> ColumnWidths {
 
     for bucket in buckets {
         for row in &bucket.rows {
+            widths.type_label = widths.type_label.max(display_width(&row.type_label));
             widths.name = widths.name.max(display_width(&row.name));
             widths.size = widths.size.max(display_width(&row.size));
             widths.time = widths.time.max(display_width(&row.time));
@@ -256,33 +262,21 @@ fn format_name(entry: &FileEntry, base: &Path) -> String {
     truncate_name_for_human(&name, entry.is_dir())
 }
 
+fn format_type_label(entry: &FileEntry) -> String {
+    match entry.kind {
+        EntryKind::File => "[FIL]".to_string(),
+        EntryKind::Dir => "[DIR]".to_string(),
+        EntryKind::Symlink => "[LNK]".to_string(),
+    }
+}
+
 fn format_suffix(
     entry: &FileEntry,
-    base: &Path,
     now: SystemTime,
     bucket: TimeBucket,
     scan_opts: &ScanOptions,
 ) -> String {
-    if entry.is_symlink() {
-        return format_symlink_target_suffix(entry, base);
-    }
-
     format_child_activity_hint_suffix(entry, now, bucket, scan_opts)
-}
-
-fn format_symlink_target_suffix(entry: &FileEntry, base: &Path) -> String {
-    let target = entry
-        .symlink_target
-        .as_ref()
-        .and_then(|p| p.strip_prefix(base).ok().map(|pp| pp.display().to_string()))
-        .unwrap_or_else(|| {
-            entry
-                .symlink_target
-                .as_ref()
-                .map(|p| p.display().to_string())
-                .unwrap_or_else(|| "<unresolved>".to_string())
-        });
-    format!("-> {target}")
 }
 
 fn classify_time_tone(bucket: TimeBucket, time_str: &str) -> TimeTone {
@@ -311,8 +305,16 @@ fn style_time_text(bucket: TimeBucket, time_str: &str) -> String {
 fn style_name(text: &str, row: &RenderedRow) -> String {
     match row.kind {
         EntryKind::Dir => text.blue().bold().to_string(),
-        EntryKind::Symlink => text.magenta().to_string(),
+        EntryKind::Symlink => text.magenta().underline().to_string(),
         EntryKind::File => text.to_string(),
+    }
+}
+
+fn style_type_label(text: &str, row: &RenderedRow) -> String {
+    match row.kind {
+        EntryKind::Dir => text.blue().bold().to_string(),
+        EntryKind::Symlink => text.magenta().to_string(),
+        EntryKind::File => text.dimmed().to_string(),
     }
 }
 
@@ -322,7 +324,7 @@ fn format_child_activity_hint_suffix(
     bucket: TimeBucket,
     scan_opts: &ScanOptions,
 ) -> String {
-    if !scan_opts.use_hints || !entry.is_dir() || entry.is_symlink() {
+    if !scan_opts.show_hints || !entry.is_dir() || entry.is_symlink() {
         return String::new();
     }
 
@@ -544,11 +546,12 @@ mod tests {
                 header: "Today (1)".to_string(),
                 rows: vec![RenderedRow {
                     bucket: TimeBucket::Today,
+                    type_label: "[FIL]".to_string(),
                     name: "README.md".to_string(),
                     size: "1.2 KiB".to_string(),
                     time: "2h".to_string(),
                     suffix: String::new(),
-                    is_dir: false,
+                    kind: EntryKind::File,
                 }],
             },
             RenderedBucket {
@@ -556,11 +559,12 @@ mod tests {
                 header: "History (1)".to_string(),
                 rows: vec![RenderedRow {
                     bucket: TimeBucket::History,
+                    type_label: "[LNK]".to_string(),
                     name: "link_to_readme".to_string(),
                     size: "—".to_string(),
                     time: "2026-03-01".to_string(),
                     suffix: "-> README.md".to_string(),
-                    is_dir: false,
+                    kind: EntryKind::Symlink,
                 }],
             },
         ];
@@ -568,6 +572,7 @@ mod tests {
         assert_eq!(
             column_widths(&buckets),
             ColumnWidths {
+                type_label: display_width("[FIL]"),
                 name: display_width("link_to_readme"),
                 size: display_width("1.2 KiB"),
                 time: display_width("2026-03-01"),

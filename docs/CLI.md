@@ -1,11 +1,11 @@
-# ftime v2.0.3 CLI Contract
+# ftime v2.0.4 CLI Contract
 
 `ftime` is a read-only CLI for Context Recovery in one folder.
 
 ## 1. Command Signature
 
 ```bash
-ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--no-hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
+ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
 ```
 
 Default output is always the human view.
@@ -27,7 +27,7 @@ Default output is always the human view.
 - `--ext <csv>`: filter regular files by comma-separated extensions
 - `--files-only`: only show regular files
 - `-A, --absolute`: human/plain time column becomes `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)`
-- `--no-hints`: disable directory child hint calculation
+- `--hints`: show directory child hint calculation in human output
 - `--plain`: emit `path<TAB>bucket<TAB>time`
 - `--json`: emit JSON Lines
 - `--color <auto|always|never>`: human-output ANSI color control
@@ -38,8 +38,8 @@ Default output is always the human view.
 
 - `--plain` and `--json` cannot be combined
 - `-a` and `--hide-dots` cannot be combined
-- `--json` rejects `--absolute`, `--all-history`, `--no-hints`, `--icons`, and explicit `--color`
-- `--plain` rejects `--all-history`, `--no-hints`, `--icons`, and explicit `--color`
+- `--json` rejects `--absolute`, `--all-history`, `--hints`, `--icons`, and explicit `--color`
+- `--plain` rejects `--all-history`, `--hints`, `--icons`, and explicit `--color`
 - Update commands cannot be combined with scan flags or `PATH`
 
 ## 5. Human Output
@@ -47,13 +47,13 @@ Default output is always the human view.
 - Bucket order is `Active`, `Today`, `This Week`, `History`
 - Preview limits are 20 / 20 / 20 / 5, unless `--all-history` is set
 - Header shape is either `Active (3)` or `History (5/42)`
-- Row structure is `<name>  <size>  <time>  <optional-suffix>`
+- Row structure is `type | name | size | time`
 - Columns align by Unicode display width, not raw character count
-- Directories show `—` in the size column
+- Directories show `<dir>` in the size column
+- Symlinks show `<lnk>` in the size column
 - Directories end in `/`
 - Human output may truncate long names to fit the name column; plain/json always keep the full value
-- Symlinks keep `name  size  time` aligned and render `-> target` in the optional suffix
-- child hint is advisory only and never changes bucket classification
+- child hint is advisory only, never changes bucket classification, and appears only with `--hints`
 - Empty state is `No matching entries`
 - Optional footer for unreadable entries is `Skipped N unreadable entries`
 

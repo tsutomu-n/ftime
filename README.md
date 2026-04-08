@@ -46,20 +46,20 @@ ftime --json | jq -r '.path'
 
 ```text
 Active (1)
-  Cargo.toml  2.1 KiB          12s
+  [FIL]  Cargo.toml  2.1 KiB          12s
 
 Today (1)
-  README.md   8.4 KiB          2h
+  [FIL]  README.md   8.4 KiB          2h
 
 This Week (1)
-  docs/           —           3d [child: today]
+  [DIR]  docs/        <dir>          3d
 
 History (1)
-  target/         —   2026-03-16 [child: active]
+  [DIR]  target/      <dir>  2026-03-16
 ```
 
-Directories show `—` in the size column.
-Directory rows may show a child activity hint when a direct child is more recent than the directory itself.
+Directories show `<dir>` and symlinks show `<lnk>` in the size column.
+Pass `--hints` when you want directory child activity hints such as `[child: today]`.
 Use `--plain` or `--json` when you need full machine-readable values without human-view truncation or color.
 
 ## Install

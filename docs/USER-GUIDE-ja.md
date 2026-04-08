@@ -9,7 +9,7 @@
 - hidden を全部消したければ `ftime --hide-dots`
 - `History` を全部開くなら `ftime --all-history`
 - 機械処理なら `ftime --plain` か `ftime --json`
-- `--no-hints` で child hint を消せます
+- `--hints` で child hint を表示できます
 - 公開版の更新確認は `ftime --check-update`
 
 ## 典型的な使い方

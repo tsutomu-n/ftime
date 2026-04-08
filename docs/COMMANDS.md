@@ -6,7 +6,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 
 | Command | Use when | What changes |
 | --- | --- | --- |
-| `ftime` | Scan the current directory in the default human view | Shows buckets, size, time, and optional suffixes |
+| `ftime` | Scan the current directory in the default human view | Shows buckets, type, size, and time |
 | `ftime [PATH]` | Scan another directory | Same output shape, different target folder |
 | `ftime -a` | Show hidden directories too | Keeps hidden files visible and adds hidden directories |
 | `ftime --hide-dots` | Remove all hidden entries | Hides hidden files, hidden directories, and hidden symlinks |
@@ -16,7 +16,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 | `ftime --files-only --ext rs,toml` | Show only selected regular files | Combines file-only filtering with extension filtering |
 | `ftime --all-history` | Expand the History bucket | Removes the default `History` preview limit |
 | `ftime -A` | Inspect exact timestamps | Replaces relative times with local absolute timestamps |
-| `ftime --no-hints` | Silence `[child: ...]` hints | Directory rows keep their bucket but lose child activity suffixes |
+| `ftime --hints` | Show directory child hints in human view | Directory rows keep their bucket and add child activity suffixes |
 | `ftime --color never` | Force plain human output | Keeps the human view but strips ANSI color |
 | `ftime --color always` | Keep color through pipes | Forces ANSI color in the human view |
 | `ftime -I` | Enable Nerd Font icons | Adds bucket icons in builds with the `icons` feature |
@@ -33,40 +33,40 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 ```text
 $ ftime
 Today (2)
-  .env       312 B   2h
-  README.md  8.4 KiB 3h
+  [FIL]  .env       312 B     2h
+  [FIL]  README.md  8.4 KiB   3h
 
 This Week (1)
-  src/           —   2d [child: today]
+  [DIR]  src/      <dir>      2d
 ```
 
 ```text
 $ ftime -a
 Today (2)
-  .env       312 B   2h
-  README.md  8.4 KiB 3h
+  [FIL]  .env       312 B     2h
+  [FIL]  README.md  8.4 KiB   3h
 
 This Week (3)
-  .git/          —   1d [child: active]
-  .cache/        —   1d
-  src/           —   2d [child: today]
+  [DIR]  .git/     <dir>      1d
+  [DIR]  .cache/   <dir>      1d
+  [DIR]  src/      <dir>      2d
 ```
 
 ```text
 $ ftime --hide-dots
 Today (1)
-  README.md  8.4 KiB 3h
+  [FIL]  README.md  8.4 KiB   3h
 
 This Week (1)
-  src/           —   2d [child: today]
+  [DIR]  src/      <dir>      2d
 ```
 
 ## Output-mode comparison
 
 | Mode | Shape | Includes |
 | --- | --- | --- |
-| default human view | bucketed text | headers, `name`, `size`, `time`, optional suffix, optional color |
-| `--plain` | `path<TAB>bucket<TAB>time` | no headers, no size, no color, no child hint |
+| default human view | bucketed text | headers, `type`, `name`, `size`, `time`, optional color |
+| `--plain` | `path<TAB>bucket<TAB>time` | no headers, no type, no size, no color, no child hint |
 | `--json` | JSON Lines | structured fields for scripts and tooling |
 
 Examples:

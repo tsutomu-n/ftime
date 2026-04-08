@@ -53,6 +53,7 @@ fn readme_surfaces_v2_contract() {
             "docs/INSTALL.md",
             "ftime --plain",
             "ftime --json | jq -r '.path'",
+            "Directories show `<dir>` and symlinks show `<lnk>` in the size column.",
             "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh | bash",
         ],
     );
@@ -88,12 +89,13 @@ fn cli_contract_documents_v2_shapes() {
             "`--plain`",
             "`--json`",
             "`--files-only`",
-            "`--no-hints`",
+            "`--hints`",
             "`--color <auto|always|never>`",
             "Default output is always the human view.",
             "path<TAB>bucket<TAB>time",
             "JSON Lines",
             "child hint",
+            "`type | name | size | time`",
             "No matching entries",
             "Skipped N unreadable entries",
         ],
@@ -115,6 +117,7 @@ fn commands_and_install_docs_are_canonical() {
             "# ftime Command Guide",
             "| `ftime --no-ignore` | Show ignored entries too |",
             "| `ftime --check-update` | Check for a newer published release |",
+            "| `ftime --hints` | Show directory child hints in human view |",
             "Hidden-entry comparison",
             "$ ftime -a",
             "Output-mode comparison",
@@ -156,7 +159,7 @@ fn japanese_docs_track_v2_roles() {
             "`--all-history`",
             "`--hide-dots`",
             "`--plain`",
-            "`--no-hints`",
+            "`--hints`",
         ],
     );
     assert_contains_none(
@@ -182,7 +185,7 @@ fn japanese_docs_track_v2_roles() {
             "`--plain`",
             "`--check-update`",
             "`--self-update`",
-            "`--no-hints`",
+            "`--hints`",
             "`--color <auto|always|never>`",
             "Unicode 表示幅",
             "No matching entries",
@@ -232,7 +235,7 @@ fn chinese_readme_tracks_v2_core_flags() {
             "`--hide-dots`",
             "`--plain`",
             "`--files-only`",
-            "`--no-hints`",
+            "`--hints`",
         ],
     );
     assert_contains_none(
@@ -275,10 +278,10 @@ fn demo_assets_and_release_notes_reference_v2_commands() {
         "docs/RELEASE-NOTES-v2.0.md",
         &[
             &format!("# ftime v{} Release Notes", support::package_version()),
-            "`-a` now means hidden entries",
-            "default output is now the human view",
-            "`--plain` adds the TSV contract",
-            "`Fresh` was removed",
+            "stable `type | name | size | time` layout",
+            "`--no-hints` was removed and replaced by `--hints`",
+            "Human output no longer shows symlink targets in the default view.",
+            "Human output now starts with a type label column.",
         ],
     );
 }
