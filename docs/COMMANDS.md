@@ -24,7 +24,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 | `ftime --plain -A` | Feed scripts with exact timestamps | Same TSV shape, but the `time` field becomes absolute |
 | `ftime --json` | Feed scripts with structured output | Emits one JSON object per visible entry as JSON Lines |
 | `ftime --check-update` | Check for a newer published release | Prints whether a newer GitHub release exists |
-| `ftime --self-update` | Update the installed binary | Downloads and installs the latest published release |
+| `ftime --self-update` | Update a GitHub Releases install | Downloads and installs the latest published release in place |
 | `ftime --help` | Show the CLI contract quickly | Prints usage, options, and validation constraints |
 | `ftime --version` | Print the installed version | Emits the current binary version |
 
@@ -87,4 +87,5 @@ src	history	2026-04-01
 - `--plain` and `--json` cannot be combined
 - `-a` and `--hide-dots` cannot be combined
 - Update commands cannot be combined with scan flags or `PATH`
+- `--self-update` is for GitHub Releases install flows; Cargo installs should use `cargo install --locked --force`
 - For the exact contract, human-row details, and full validation matrix, see [CLI.md](CLI.md)

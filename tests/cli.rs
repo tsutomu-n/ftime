@@ -175,32 +175,6 @@ fn plain_output_is_three_column_tsv() {
 }
 
 #[test]
-fn absolute_time_flag_changes_plain_output_format() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
-    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
-
-    let output = bin()
-        .arg(dir.path())
-        .arg("--plain")
-        .arg("--absolute")
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let line = stdout.lines().next().unwrap();
-    let cols: Vec<&str> = line.split('\t').collect();
-
-    assert_eq!(cols.len(), 3);
-    assert!(
-        predicate::str::is_match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \(UTC[+-]\d{2}:\d{2}\)$")
-            .unwrap()
-            .eval(cols[2])
-    );
-}
-
-#[test]
 fn default_dot_policy_shows_hidden_files_but_not_hidden_directories() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("visible")).unwrap();
@@ -256,25 +230,6 @@ fn removed_labels_flag_is_rejected() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("--no-labels"));
-}
-
-#[test]
-fn history_bucket_previews_by_default_and_expands_with_all_history() {
-    let dir = tempdir().unwrap();
-    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
-    for i in 0..7 {
-        let path = dir.path().join(format!("old-{i}"));
-        File::create(&path).unwrap();
-        set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
-    }
-
-    let stdout = human_stdout(dir.path());
-    assert!(stdout.contains("History (5/7)"));
-    assert!(!stdout.contains("old-6"));
-
-    let stdout = human_stdout_with_args(dir.path(), &["--all-history"]);
-    assert!(stdout.contains("History (7)"));
-    assert!(stdout.contains("old-6"));
 }
 
 #[test]
@@ -398,46 +353,6 @@ fn plain_and_json_do_not_include_child_hints() {
 }
 
 #[test]
-fn plain_and_json_conflicts_are_rejected() {
-    bin().arg("--plain").arg("--json").assert().failure();
-}
-
-#[test]
-fn all_and_hide_dots_conflict_is_rejected() {
-    bin().arg("-a").arg("--hide-dots").assert().failure();
-}
-
-#[test]
-fn json_rejects_human_only_flags() {
-    for flag in [
-        "--absolute",
-        "--all-history",
-        "--hints",
-        "--icons",
-        "--color",
-    ] {
-        let mut cmd = bin();
-        cmd.arg("--json").arg(flag);
-        if flag == "--color" {
-            cmd.arg("always");
-        }
-        cmd.assert().failure();
-    }
-}
-
-#[test]
-fn plain_rejects_human_only_flags_except_absolute() {
-    for flag in ["--all-history", "--hints", "--icons", "--color"] {
-        let mut cmd = bin();
-        cmd.arg("--plain").arg(flag);
-        if flag == "--color" {
-            cmd.arg("always");
-        }
-        cmd.assert().failure();
-    }
-}
-
-#[test]
 fn plain_output_formats_dirs_and_symlinks_as_undecorated_paths() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("file");
@@ -483,30 +398,6 @@ fn ignores_ds_store_and_thumbs_db_even_with_hidden_default() {
 }
 
 #[test]
-fn json_output_contains_expected_fields_without_label() {
-    let dir = tempdir().unwrap();
-    let file_path = dir.path().join("f1");
-    File::create(&file_path).unwrap();
-
-    let output = bin()
-        .current_dir(dir.path())
-        .arg("--json")
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let first = stdout.lines().next().expect("one line present");
-    assert!(first.starts_with("{\"path\":\"f1\",\"bucket\":\"active\",\"mtime\":"));
-    assert!(!first.contains("\"label\""));
-
-    let v: Value = serde_json::from_str(first).unwrap();
-    assert_eq!(v.get("path").unwrap(), "f1");
-    assert_eq!(v.get("bucket").unwrap(), "active");
-    assert_eq!(v.get("is_dir").unwrap(), false);
-    assert_eq!(v.get("size").and_then(Value::as_u64), Some(0));
-}
-
-#[test]
 fn json_output_omits_size_for_directories() {
     let dir = tempdir().unwrap();
     fs::create_dir(dir.path().join("subdir")).unwrap();
@@ -522,17 +413,6 @@ fn json_output_omits_size_for_directories() {
     let v: Value = serde_json::from_str(first).unwrap();
     assert_eq!(v.get("is_dir").unwrap(), true);
     assert!(v.get("size").is_none());
-}
-
-#[test]
-fn no_matching_entries_message_mentions_filters() {
-    let dir = tempdir().unwrap();
-    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
-
-    let stdout = human_stdout_with_args(dir.path(), &["--hide-dots"]);
-
-    assert!(stdout.contains("No matching entries"));
-    assert!(stdout.contains("filters:"));
 }
 
 #[test]
@@ -641,34 +521,6 @@ fn self_update_prefers_invoked_symlink_directory() {
     assert!(output.status.success());
     let recorded = fs::read_to_string(marker_path).unwrap();
     assert_eq!(recorded.trim(), link_dir.display().to_string());
-}
-
-#[test]
-fn self_update_rejects_scan_arguments() {
-    let dir = tempdir().unwrap();
-
-    bin()
-        .arg("--self-update")
-        .arg(dir.path())
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "--self-update cannot be combined with scan options or PATH",
-        ));
-}
-
-#[test]
-fn check_update_rejects_scan_arguments() {
-    let dir = tempdir().unwrap();
-
-    bin()
-        .arg("--check-update")
-        .arg(dir.path())
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "--check-update cannot be combined with scan options or PATH",
-        ));
 }
 
 #[test]

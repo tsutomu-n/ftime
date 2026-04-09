@@ -39,10 +39,14 @@ ftime --version
 
 ## Update
 
+### GitHub Releases install
+
 ```bash
 ftime --check-update
 ftime --self-update
 ```
+
+--self-update is intended for GitHub Releases installs.
 
 Typical output:
 
@@ -54,6 +58,22 @@ ftime now points to <to> (was <from>) in /home/user/.local/bin
 ```
 
 When invoked via a symlink, `ftime --self-update` updates that symlink directory.
+
+### `cargo install`
+
+If you installed via cargo install, update with cargo install --locked --force instead.
+
+```bash
+cargo install ftime --locked --force
+```
+
+### `cargo install --path .`
+
+For from-source installs, rebuild with:
+
+```bash
+cargo install --path . --force
+```
 
 ## Uninstall
 

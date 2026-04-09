@@ -20,6 +20,11 @@ pub fn self_update() -> Result<()> {
         let invoked_exe = resolve_invoked_executable(&current_exe);
         resolve_install_dir(&current_exe, invoked_exe.as_deref())?
     };
+    if is_probable_cargo_bin_dir(&install_dir) {
+        eprintln!(
+            "warning: --self-update is intended for GitHub Releases installs; if this binary was installed with cargo install, update with `cargo install --locked --force` instead."
+        );
+    }
     let previous_version = read_binary_version(&current_exe);
 
     run_platform_update(&install_dir)?;
@@ -148,6 +153,48 @@ fn read_binary_version(executable: &Path) -> Option<String> {
     }
 
     parse_version_output(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn is_probable_cargo_bin_dir(install_dir: &Path) -> bool {
+    probable_cargo_bin_dirs()
+        .iter()
+        .any(|candidate| paths_match(candidate, install_dir))
+}
+
+fn probable_cargo_bin_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+
+    if let Some(cargo_home) = env::var_os("CARGO_HOME").filter(|value| !value.is_empty()) {
+        dirs.push(PathBuf::from(cargo_home).join("bin"));
+    }
+
+    if let Some(home) = home_dir() {
+        let default_cargo_bin = home.join(".cargo").join("bin");
+        if !dirs.iter().any(|dir| paths_match(dir, &default_cargo_bin)) {
+            dirs.push(default_cargo_bin);
+        }
+    }
+
+    dirs
+}
+
+fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| {
+            env::var_os("USERPROFILE")
+                .filter(|value| !value.is_empty())
+                .map(PathBuf::from)
+        })
+}
+
+fn paths_match(lhs: &Path, rhs: &Path) -> bool {
+    canonical_paths_match(lhs, rhs) || normalize_path(lhs) == normalize_path(rhs)
+}
+
+fn normalize_path(path: &Path) -> Option<PathBuf> {
+    absolutize_path(path).ok()
 }
 
 fn parse_version_output(output: &str) -> Option<String> {
@@ -385,6 +432,9 @@ fn run_platform_update(install_dir: &Path) -> Result<()> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use std::{ffi::OsString, sync::Mutex};
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn installer_url_for_version_points_to_versioned_release_asset() {
@@ -455,6 +505,39 @@ mod tests {
     }
 
     #[test]
+    fn probable_cargo_bin_dirs_include_cargo_home_bin() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _cargo_home = EnvGuard::set("CARGO_HOME", Some("/tmp/custom-cargo-home"));
+        let _home = EnvGuard::set("HOME", Some("/tmp/home"));
+
+        let dirs = probable_cargo_bin_dirs();
+        assert!(dirs.contains(&PathBuf::from("/tmp/custom-cargo-home/bin")));
+    }
+
+    #[test]
+    fn probable_cargo_bin_dirs_fall_back_to_default_home_layout() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _cargo_home = EnvGuard::set("CARGO_HOME", None);
+        let _home = EnvGuard::set("HOME", Some("/tmp/home"));
+        let _profile = EnvGuard::set("USERPROFILE", None);
+
+        let dirs = probable_cargo_bin_dirs();
+        assert!(dirs.contains(&PathBuf::from("/tmp/home/.cargo/bin")));
+    }
+
+    #[test]
+    fn probable_cargo_bin_detection_matches_configured_install_dir() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _cargo_home = EnvGuard::set("CARGO_HOME", Some("/tmp/custom-cargo-home"));
+        let _home = EnvGuard::set("HOME", Some("/tmp/home"));
+
+        assert!(is_probable_cargo_bin_dir(Path::new(
+            "/tmp/custom-cargo-home/bin"
+        )));
+        assert!(!is_probable_cargo_bin_dir(Path::new("/tmp/other/bin")));
+    }
+
+    #[test]
     fn parse_version_output_reads_clap_version_output() {
         let version = parse_version_output("ftime 1.0.0\n").unwrap();
         assert_eq!(version, "1.0.0");
@@ -515,6 +598,31 @@ mod tests {
     fn format_check_update_message_reports_up_to_date() {
         let message = format_check_update_message(Some("1.0.0"), "1.0.0");
         assert_eq!(message, "ftime is already up to date at 1.0.0");
+    }
+
+    struct EnvGuard {
+        key: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl EnvGuard {
+        fn set(key: &'static str, value: Option<&str>) -> Self {
+            let previous = env::var_os(key);
+            match value {
+                Some(value) => unsafe { env::set_var(key, value) },
+                None => unsafe { env::remove_var(key) },
+            }
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            match &self.previous {
+                Some(value) => unsafe { env::set_var(self.key, value) },
+                None => unsafe { env::remove_var(self.key) },
+            }
+        }
     }
 
     #[test]

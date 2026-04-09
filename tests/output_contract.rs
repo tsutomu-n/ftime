@@ -30,6 +30,16 @@ fn line_containing<'a>(stdout: &'a str, needle: &str) -> &'a str {
         .unwrap_or_else(|| panic!("missing line containing `{needle}` in:\n{stdout}"))
 }
 
+fn human_stdout(path: &Path, args: &[&str]) -> String {
+    let mut cmd = bin();
+    cmd.arg(path);
+    for arg in args {
+        cmd.arg(arg);
+    }
+    cmd.env("FTIME_FORCE_TTY", "1").env("NO_COLOR", "1");
+    stdout(cmd)
+}
+
 #[cfg(unix)]
 fn create_file_symlink(target: &Path, link: &Path) {
     std::os::unix::fs::symlink(target, link).unwrap();
@@ -119,7 +129,17 @@ fn plain_and_json_keep_machine_shapes_without_human_only_fields() {
         cmd.arg(dir.path()).arg("--json");
         cmd
     });
-    let first: Value = serde_json::from_str(json.lines().next().unwrap()).unwrap();
+    let first_line = json.lines().next().unwrap();
+    assert!(first_line.starts_with(
+        "{\"path\":\"alpha.txt\",\"bucket\":\"active\",\"mtime\":"
+    ));
+    assert!(first_line.contains(
+        ",\"relative_time\":"
+    ));
+    assert!(first_line.contains(
+        ",\"is_dir\":false,\"is_symlink\":false,\"size\":0}"
+    ));
+    let first: Value = serde_json::from_str(first_line).unwrap();
     assert_eq!(first["path"], "alpha.txt");
     assert_eq!(first["bucket"], "active");
     assert_eq!(first["is_dir"], false);
@@ -127,4 +147,60 @@ fn plain_and_json_keep_machine_shapes_without_human_only_fields() {
     assert_eq!(first["size"], 0);
     assert!(first.get("label").is_none());
     assert!(first.get("child_hint").is_none());
+}
+
+#[test]
+fn human_view_keeps_history_preview_and_all_history_header_contract() {
+    let dir = tempdir().unwrap();
+    let old_time = SystemTime::now() - Duration::from_secs(9 * 24 * 3600);
+
+    for i in 0..7 {
+        let path = dir.path().join(format!("old-{i}.txt"));
+        fs::write(&path, b"x").unwrap();
+        set_file_mtime(&path, FileTime::from_system_time(old_time)).unwrap();
+    }
+
+    let preview = human_stdout(dir.path(), &[]);
+    assert!(preview.contains("History (5/7)"));
+    assert!(!preview.contains("old-6.txt"));
+
+    let expanded = human_stdout(dir.path(), &["--all-history"]);
+    assert!(expanded.contains("History (7)"));
+    assert!(expanded.contains("old-6.txt"));
+}
+
+#[test]
+fn human_empty_state_only_shows_filters_when_non_default_filters_are_active() {
+    let dir = tempdir().unwrap();
+
+    let default_empty = human_stdout(dir.path(), &[]);
+    assert!(default_empty.contains("No matching entries"));
+    assert!(!default_empty.contains("filters:"));
+
+    fs::create_dir(dir.path().join(".hidden_dir")).unwrap();
+    let filtered_empty = human_stdout(dir.path(), &["--hide-dots"]);
+    assert!(filtered_empty.contains("No matching entries"));
+    assert!(filtered_empty.contains("filters:"));
+}
+
+#[test]
+fn plain_absolute_keeps_tsv_shape_and_only_changes_time_column() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("alpha.txt");
+    File::create(&file_path).unwrap();
+    let fixed = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    set_file_mtime(&file_path, FileTime::from_system_time(fixed)).unwrap();
+
+    let plain = stdout({
+        let mut cmd = bin();
+        cmd.arg(dir.path()).arg("--plain").arg("--absolute");
+        cmd
+    });
+    let line = plain.lines().next().unwrap();
+    let cols: Vec<&str> = line.split('\t').collect();
+    assert_eq!(cols.len(), 3);
+    assert_eq!(cols[0], "alpha.txt");
+    assert_eq!(cols[1], "history");
+    assert!(cols[2].starts_with("2023-"));
+    assert!(cols[2].contains(" (UTC"));
 }

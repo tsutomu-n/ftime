@@ -55,6 +55,7 @@ fn readme_surfaces_v2_contract() {
             "ftime --json | jq -r '.path'",
             "Directories show `<dir>` and symlinks show `<lnk>` in the size column.",
             "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-install.sh | bash",
+            "`--self-update` is intended for GitHub Releases installs.",
         ],
     );
     assert_contains_none(
@@ -139,8 +140,37 @@ fn commands_and_install_docs_are_canonical() {
             "cargo install --path . --force",
             "ftime --check-update",
             "ftime --self-update",
+            "--self-update is intended for GitHub Releases installs",
+            "If you installed via cargo install, update with cargo install --locked --force instead.",
             "curl -fsSL https://github.com/tsutomu-n/ftime/releases/latest/download/ftime-uninstall.sh | bash",
             "cargo uninstall ftime",
+        ],
+    );
+
+    assert_contains_all(
+        &commands,
+        "docs/COMMANDS.md",
+        &[
+            "GitHub Releases install",
+            "cargo install --locked --force",
+        ],
+    );
+
+    let cli = support::read_repo_file("docs/CLI.md");
+    assert_contains_all(
+        &cli,
+        "docs/CLI.md",
+        &[
+            "`--check-update`, `--self-update`: update flow commands (see `INSTALL.md` for install-source-specific update steps)",
+        ],
+    );
+
+    let cli_ja = support::read_repo_file("docs/CLI-ja.md");
+    assert_contains_all(
+        &cli_ja,
+        "docs/CLI-ja.md",
+        &[
+            "`--self-update`: GitHub Releases install を最新公開版へ更新",
         ],
     );
 }

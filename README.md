@@ -85,6 +85,8 @@ cargo install ftime --locked
 ftime --version
 ```
 
+`--self-update` is intended for GitHub Releases installs. If you installed via `cargo install`, update with `cargo install --locked --force` instead.
+
 For custom install paths, from-source installs, `--check-update`, `--self-update`, and uninstall steps, see [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Learn More

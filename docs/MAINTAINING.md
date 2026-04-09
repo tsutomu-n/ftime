@@ -10,6 +10,14 @@ When behavior changes, update in this order:
 
 Use `docs/CLI.md` as the canonical contract for flags, validation rules, and output shape.
 
+## Which tests to update
+
+- Help text / option description changes -> tests/help_contract.rs
+- CLI validation failure changes -> tests/cli_validation_contract.rs
+- Human / plain / JSON output contract changes -> tests/output_contract.rs
+- Public docs / README / release-notes / demo text changes -> tests/release_docs.rs
+- Maintainer workflow / sync-order changes -> tests/maintaining_docs.rs
+
 ## Canonical Public Surface
 
 Keep these files in sync whenever public behavior changes:

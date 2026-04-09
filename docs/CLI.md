@@ -32,7 +32,7 @@ Default output is always the human view.
 - `--json`: emit JSON Lines
 - `--color <auto|always|never>`: human-output ANSI color control
 - `-I, --icons`: enable icons only when the binary was built with the `icons` feature
-- `--check-update`, `--self-update`: update flow commands
+- `--check-update`, `--self-update`: update flow commands (see `INSTALL.md` for install-source-specific update steps)
 
 ## 4. Validation Rules
 

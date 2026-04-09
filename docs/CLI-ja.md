@@ -23,7 +23,7 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 - `--color <auto|always|never>`: human output の色制御
 - `-I, --icons`: icons build で Nerd Font icon を表示
 - `--check-update`: 新しい公開版があるか確認
-- `--self-update`: 現在の install 先を最新公開版へ更新
+- `--self-update`: GitHub Releases install を最新公開版へ更新
 
 ## 組み合わせ制約
 
