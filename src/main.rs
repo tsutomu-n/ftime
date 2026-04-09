@@ -37,7 +37,7 @@ struct Cli {
     #[arg(long = "hide-dots")]
     hide_dots: bool,
 
-    /// Disable ignore rules (built-in and ~/.ftimeignore)
+    /// Disable ignore rules (built-in, FTIME_IGNORE, ~/.ftimeignore, and local .ftimeignore)
     #[arg(long = "no-ignore")]
     no_ignore: bool,
 

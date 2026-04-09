@@ -10,7 +10,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 | `ftime [PATH]` | Scan another directory | Same output shape, different target folder |
 | `ftime -a` | Show hidden directories too | Keeps hidden files visible and adds hidden directories |
 | `ftime --hide-dots` | Remove all hidden entries | Hides hidden files, hidden directories, and hidden symlinks |
-| `ftime --no-ignore` | Show ignored entries too | Disables built-in ignore rules and `.ftimeignore` handling |
+| `ftime --no-ignore` | Show ignored entries too | Disables built-in ignore rules, `FTIME_IGNORE`, `~/.ftimeignore`, and local `.ftimeignore` |
 | `ftime --ext rs,toml` | Focus on selected file extensions | Filters regular files by extension while keeping dirs/symlinks |
 | `ftime --files-only` | Remove directories and symlinks | Leaves only regular files |
 | `ftime --files-only --ext rs,toml` | Show only selected regular files | Combines file-only filtering with extension filtering |

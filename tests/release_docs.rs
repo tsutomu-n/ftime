@@ -116,6 +116,7 @@ fn commands_and_install_docs_are_canonical() {
         &[
             "# ftime Command Guide",
             "| `ftime --no-ignore` | Show ignored entries too |",
+            "FTIME_IGNORE",
             "| `ftime --check-update` | Check for a newer published release |",
             "| `ftime --hints` | Show directory child hints in human view |",
             "Hidden-entry comparison",
@@ -187,6 +188,7 @@ fn japanese_docs_track_v2_roles() {
             "`--self-update`",
             "`--hints`",
             "`--color <auto|always|never>`",
+            "FTIME_IGNORE",
             "Unicode 表示幅",
             "No matching entries",
         ],

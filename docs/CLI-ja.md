@@ -13,7 +13,7 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 - `-a, --all`: hidden file と hidden directory を両方表示
 - `--all-history`: `History` bucket の preview 制限を外す
 - `--hide-dots`: hidden entry を全部隠す
-- `--no-ignore`: built-in ignore と `~/.ftimeignore` / local `.ftimeignore` を無効化
+- `--no-ignore`: built-in ignore と `FTIME_IGNORE`、`~/.ftimeignore`、local `.ftimeignore` を無効化
 - `--ext <csv>`: regular file だけを拡張子で絞る
 - `--files-only`: regular file だけ表示
 - `-A, --absolute`: `time` を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` にする
