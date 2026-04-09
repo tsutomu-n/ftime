@@ -26,7 +26,8 @@ jobs:
             target: x86_64-pc-windows-msvc
 
     steps:
-      - uses: actions/checkout@v4
+      # Pin Node 24 compatible JavaScript actions to avoid the old Node 20 runner warning.
+      - uses: actions/checkout@v6.0.1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "1.92.0"
@@ -74,6 +75,6 @@ jobs:
           cp scripts/uninstall.ps1 dist/ftime-uninstall.ps1
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.6.1
         with:
           files: dist/*
