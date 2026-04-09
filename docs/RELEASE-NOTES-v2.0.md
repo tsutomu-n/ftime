@@ -1,10 +1,11 @@
-# ftime v2.0.4 Release Notes
+# ftime v2.0.5 Release Notes
 
 ## Patch highlights
 
 - The default human view now renders a stable `type | name | size | time` layout.
-- Human rows now show `[FIL]`, `[DIR]`, and `[LNK]`, while directories and symlinks use `<dir>` / `<lnk>` placeholders in the size column.
-- Directory child hints are now opt-in through `--hints`, and the docs were updated to match the new contract.
+- `--self-update` docs now clearly distinguish GitHub Releases installs from `cargo install` installs.
+- Static contract tests now lock the Windows PowerShell installer and uninstaller defaults, error guidance, and user-visible messages.
+- Maintainer guidance now maps PowerShell installer changes to a dedicated contract test.
 
 ## Breaking changes
 
