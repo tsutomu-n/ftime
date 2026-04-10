@@ -42,6 +42,20 @@ function Resolve-Download {
     }
 }
 
+function Split-PathEntries {
+    param(
+        [string]$PathValue
+    )
+
+    if (-not $PathValue) {
+        return @()
+    }
+
+    return $PathValue -split ";" |
+        ForEach-Object { $_.Trim().TrimEnd("\") } |
+        Where-Object { $_ }
+}
+
 $Arch = $env:PROCESSOR_ARCHITECTURE
 if ($Arch -ne "AMD64") {
     throw "unsupported arch: $Arch"
@@ -81,8 +95,16 @@ $BinPath = Join-Path $InstallDir "$Bin.exe"
 Copy-Item -Path (Join-Path $Tmp "$Bin.exe") -Destination $BinPath -Force
 
 Write-Host "$Bin installed to $InstallDir"
-$PathParts = $env:Path -split ";" | ForEach-Object { $_.TrimEnd("\") }
 $InstallDirNorm = $InstallDir.TrimEnd("\")
-if ($PathParts -notcontains $InstallDirNorm) {
-    Write-Host "PATHに $InstallDir を追加してください"
+$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$UserPathParts = Split-PathEntries -PathValue $UserPath
+if ($UserPathParts -notcontains $InstallDirNorm) {
+    $UpdatedUserPath = if ($UserPath) { "$UserPath;$InstallDir" } else { $InstallDir }
+    [Environment]::SetEnvironmentVariable("Path", $UpdatedUserPath, "User")
+    Write-Host "Added $InstallDir to your user PATH. Restart your shell if needed."
+}
+
+$ProcessPathParts = Split-PathEntries -PathValue $env:Path
+if ($ProcessPathParts -notcontains $InstallDirNorm) {
+    $env:Path = if ($env:Path) { "$InstallDir;$env:Path" } else { $InstallDir }
 }

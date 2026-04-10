@@ -113,6 +113,20 @@ fn install_guide_explains_unix_and_windows_custom_args() {
 }
 
 #[test]
+fn install_guide_explains_windows_path_update_behavior() {
+    let content = support::read_repo_file("docs/INSTALL.md");
+
+    assert_contains_all(
+        &content,
+        "docs/INSTALL.md",
+        &[
+            "The installer adds the install directory to your user PATH.",
+            "Restart your shell if `ftime` is not found immediately.",
+        ],
+    );
+}
+
+#[test]
 fn localized_readmes_link_to_install_guide() {
     for path in ["README.md", "docs/README-ja.md", "docs/README-zh.md"] {
         let content = support::read_repo_file(path);

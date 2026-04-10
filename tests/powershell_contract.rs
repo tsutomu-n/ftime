@@ -28,7 +28,10 @@ fn install_ps1_uses_windows_release_defaults_and_messages() {
             "Expand-Archive -Path $ZipPath -DestinationPath $Tmp -Force",
             "Copy-Item -Path (Join-Path $Tmp \"$Bin.exe\") -Destination $BinPath -Force",
             "Write-Host \"$Bin installed to $InstallDir\"",
-            "Write-Host \"PATHに $InstallDir を追加してください\"",
+            "[Environment]::GetEnvironmentVariable(\"Path\", \"User\")",
+            "[Environment]::SetEnvironmentVariable(\"Path\", $UpdatedUserPath, \"User\")",
+            "$env:Path = if ($env:Path) { \"$InstallDir;$env:Path\" } else { $InstallDir }",
+            "Write-Host \"Added $InstallDir to your user PATH. Restart your shell if needed.\"",
         ],
     );
 }

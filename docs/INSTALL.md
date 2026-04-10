@@ -19,6 +19,8 @@ powershell -ExecutionPolicy Bypass -Command "iwr https://github.com/tsutomu-n/ft
 ```
 
 Default Windows install dir: `%LOCALAPPDATA%\Programs\ftime\bin`.
+The installer adds the install directory to your user PATH.
+Restart your shell if `ftime` is not found immediately.
 
 ## crates.io
 
