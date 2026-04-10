@@ -1,11 +1,11 @@
-# ftime v2.0.6 Release Notes
+# ftime v2.0.7 Release Notes
 
 ## Patch highlights
 
 - The default human view now renders a stable `type | name | size | time` layout.
 - The Windows PowerShell installer now adds the install directory to the user PATH and updates the current session PATH fallback.
 - Output contract coverage now locks the unreadable footer and JSON field order, including `symlink_target` placement.
-- The release workflow now pins Node 24 compatible JavaScript actions to avoid the old Node 20 deprecation warning.
+- The release workflow now uses `gh` CLI for release creation and asset upload, removing the Node-based release action warning path.
 
 ## Breaking changes
 
