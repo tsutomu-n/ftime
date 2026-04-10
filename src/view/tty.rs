@@ -121,8 +121,8 @@ pub fn render(buckets: &Bucketed, stats: &ScanStats, options: RenderOptions<'_>)
         render_bucket(bucket, widths, options.use_icons);
     }
 
-    if stats.skipped_unreadable > 0 {
-        println!("Skipped {} unreadable entries", stats.skipped_unreadable);
+    if let Some(footer) = unreadable_footer(stats) {
+        println!("{footer}");
     }
 
     Ok(())
@@ -476,6 +476,11 @@ fn filters_summary(scan_opts: &ScanOptions) -> Option<String> {
     }
 }
 
+fn unreadable_footer(stats: &ScanStats) -> Option<String> {
+    (stats.skipped_unreadable > 0)
+        .then(|| format!("Skipped {} unreadable entries", stats.skipped_unreadable))
+}
+
 fn should_colorize(mode: ColorMode) -> bool {
     match mode {
         ColorMode::Always => true,
@@ -536,6 +541,24 @@ mod tests {
             "History (5/7)"
         );
         assert_eq!(bucket_header(TimeBucket::Active, 3, 3, false), "Active (3)");
+    }
+
+    #[test]
+    fn unreadable_footer_is_only_rendered_when_entries_were_skipped() {
+        let empty = ScanStats {
+            skipped_unreadable: 0,
+            ..ScanStats::default()
+        };
+        assert_eq!(unreadable_footer(&empty), None);
+
+        let skipped = ScanStats {
+            skipped_unreadable: 2,
+            ..ScanStats::default()
+        };
+        assert_eq!(
+            unreadable_footer(&skipped),
+            Some("Skipped 2 unreadable entries".to_string())
+        );
     }
 
     #[test]

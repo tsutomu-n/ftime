@@ -30,6 +30,22 @@ fn line_containing<'a>(stdout: &'a str, needle: &str) -> &'a str {
         .unwrap_or_else(|| panic!("missing line containing `{needle}` in:\n{stdout}"))
 }
 
+fn assert_json_key_order(line: &str, keys: &[&str]) {
+    let mut last = 0;
+
+    for key in keys {
+        let needle = format!("\"{key}\":");
+        let pos = line
+            .find(&needle)
+            .unwrap_or_else(|| panic!("missing key `{key}` in:\n{line}"));
+        assert!(
+            pos >= last,
+            "key `{key}` appeared out of order in:\n{line}"
+        );
+        last = pos;
+    }
+}
+
 fn human_stdout(path: &Path, args: &[&str]) -> String {
     let mut cmd = bin();
     cmd.arg(path);
@@ -130,15 +146,18 @@ fn plain_and_json_keep_machine_shapes_without_human_only_fields() {
         cmd
     });
     let first_line = json.lines().next().unwrap();
-    assert!(first_line.starts_with(
-        "{\"path\":\"alpha.txt\",\"bucket\":\"active\",\"mtime\":"
-    ));
-    assert!(first_line.contains(
-        ",\"relative_time\":"
-    ));
-    assert!(first_line.contains(
-        ",\"is_dir\":false,\"is_symlink\":false,\"size\":0}"
-    ));
+    assert_json_key_order(
+        first_line,
+        &[
+            "path",
+            "bucket",
+            "mtime",
+            "relative_time",
+            "is_dir",
+            "is_symlink",
+            "size",
+        ],
+    );
     let first: Value = serde_json::from_str(first_line).unwrap();
     assert_eq!(first["path"], "alpha.txt");
     assert_eq!(first["bucket"], "active");
@@ -147,6 +166,43 @@ fn plain_and_json_keep_machine_shapes_without_human_only_fields() {
     assert_eq!(first["size"], 0);
     assert!(first.get("label").is_none());
     assert!(first.get("child_hint").is_none());
+}
+
+#[test]
+fn json_symlink_output_keeps_symlink_target_last() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join("target.txt");
+    fs::write(&target, b"target").unwrap();
+    let link = dir.path().join("link_to_target");
+    create_file_symlink(&target, &link);
+
+    let json = stdout({
+        let mut cmd = bin();
+        cmd.arg(dir.path()).arg("--json");
+        cmd
+    });
+    let line = line_containing(&json, "\"path\":\"link_to_target\"");
+
+    assert_json_key_order(
+        line,
+        &[
+            "path",
+            "bucket",
+            "mtime",
+            "relative_time",
+            "is_dir",
+            "is_symlink",
+            "symlink_target",
+        ],
+    );
+    assert!(line.ends_with("\"symlink_target\":\"target.txt\"}"), "{line}");
+
+    let value: Value = serde_json::from_str(line).unwrap();
+    assert_eq!(value["is_dir"], false);
+    assert_eq!(value["is_symlink"], true);
+    assert_eq!(value["symlink_target"], "target.txt");
+    assert!(value.get("label").is_none());
+    assert!(value.get("child_hint").is_none());
 }
 
 #[test]
