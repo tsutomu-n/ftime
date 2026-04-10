@@ -11,6 +11,15 @@ fn assert_contains_all(content: &str, path: &str, snippets: &[&str]) {
     }
 }
 
+fn assert_contains_none(content: &str, path: &str, snippets: &[&str]) {
+    for snippet in snippets {
+        assert!(
+            !content.contains(snippet),
+            "unexpected snippet in {path}: {snippet}"
+        );
+    }
+}
+
 #[test]
 fn maintaining_doc_exists_and_captures_sync_workflow() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/MAINTAINING.md");
@@ -47,6 +56,34 @@ fn maintaining_doc_exists_and_captures_sync_workflow() {
             "Cargo.toml",
             "cargo check",
             "cargo test --quiet",
+        ],
+    );
+}
+
+#[test]
+fn release_workflow_uses_gh_cli_instead_of_node_based_release_action() {
+    let content = support::read_repo_file(".github/workflows/release.yml");
+
+    assert_contains_all(
+        &content,
+        ".github/workflows/release.yml",
+        &[
+            "create_release:",
+            "needs: create_release",
+            "GH_TOKEN: ${{ github.token }}",
+            "gh release view \"$TAG\"",
+            "gh release edit \"$TAG\" --title \"$TAG\" --notes-file docs/RELEASE-NOTES-v2.0.md",
+            "gh release create \"$TAG\" --title \"$TAG\" --notes-file docs/RELEASE-NOTES-v2.0.md --verify-tag",
+            "gh release upload \"$TAG\" dist/* --clobber",
+            "gh release upload $env:TAG $files --clobber",
+        ],
+    );
+    assert_contains_none(
+        &content,
+        ".github/workflows/release.yml",
+        &[
+            "softprops/action-gh-release",
+            "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24",
         ],
     );
 }
