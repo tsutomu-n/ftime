@@ -77,6 +77,39 @@ fn readme_surfaces_v2_contract() {
 }
 
 #[test]
+fn since_docs_are_canonical() {
+    let root = support::read_repo_file("README.md");
+    assert_contains_all(
+        &root,
+        "README.md",
+        &[
+            "ftime --since 24h",
+            "`--since` filters entries by a lower bound before bucketing.",
+        ],
+    );
+
+    let cli = support::read_repo_file("docs/CLI.md");
+    assert_contains_all(
+        &cli,
+        "docs/CLI.md",
+        &[
+            "`--since <value>`",
+            "Only entries with `mtime >= since` remain visible",
+        ],
+    );
+
+    let commands = support::read_repo_file("docs/COMMANDS.md");
+    assert_contains_all(
+        &commands,
+        "docs/COMMANDS.md",
+        &[
+            "| `ftime --since 24h` | Focus on recently modified entries |",
+            "| `ftime --plain --since 7d` | Feed scripts with a recent lower bound |",
+        ],
+    );
+}
+
+#[test]
 fn cli_contract_documents_v2_shapes() {
     let cli = support::read_repo_file("docs/CLI.md");
     assert_contains_all(

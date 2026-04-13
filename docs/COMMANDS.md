@@ -14,6 +14,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 | `ftime --ext rs,toml` | Focus on selected file extensions | Filters regular files by extension while keeping dirs/symlinks |
 | `ftime --files-only` | Remove directories and symlinks | Leaves only regular files |
 | `ftime --files-only --ext rs,toml` | Show only selected regular files | Combines file-only filtering with extension filtering |
+| `ftime --since 24h` | Focus on recently modified entries | Keeps only entries whose `mtime` is within the last 24 hours before bucketing |
 | `ftime --all-history` | Expand the History bucket | Removes the default `History` preview limit |
 | `ftime -A` | Inspect exact timestamps | Replaces relative times with local absolute timestamps |
 | `ftime --hints` | Show directory child hints in human view | Directory rows keep their bucket and add child activity suffixes |
@@ -21,6 +22,7 @@ This document is the task-oriented guide to `ftime` commands. For the strict out
 | `ftime --color always` | Keep color through pipes | Forces ANSI color in the human view |
 | `ftime -I` | Enable Nerd Font icons | Adds bucket icons in builds with the `icons` feature |
 | `ftime --plain` | Feed scripts with compact text | Emits `path<TAB>bucket<TAB>time` and removes headers, size, color, and hints |
+| `ftime --plain --since 7d` | Feed scripts with a recent lower bound | Keeps the TSV shape while dropping entries older than seven days |
 | `ftime --plain -A` | Feed scripts with exact timestamps | Same TSV shape, but the `time` field becomes absolute |
 | `ftime --json` | Feed scripts with structured output | Emits one JSON object per visible entry as JSON Lines |
 | `ftime --check-update` | Check for a newer published release | Prints whether a newer GitHub release exists |
@@ -70,6 +72,12 @@ This Week (1)
 | `--json` | JSON Lines | structured fields for scripts and tooling |
 
 Examples:
+
+```text
+$ ftime --plain --since 7d
+README.md	today	2h
+src	this_week	2d
+```
 
 ```text
 $ ftime --plain

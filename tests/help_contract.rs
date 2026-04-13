@@ -17,3 +17,14 @@ fn help_describes_default_mode_and_ignore_sources() {
         "Disable ignore rules (built-in, FTIME_IGNORE, ~/.ftimeignore, and local .ftimeignore)"
     ));
 }
+
+#[test]
+fn since_help_describes_lower_bound_filter() {
+    let output = bin().arg("--help").output().unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("--since <SINCE>"));
+    assert!(stdout.contains("Only show entries modified at or after the given lower bound"));
+}

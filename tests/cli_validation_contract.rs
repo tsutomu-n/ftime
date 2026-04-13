@@ -35,6 +35,16 @@ fn all_and_hide_dots_cannot_be_combined() {
 }
 
 #[test]
+fn since_rejects_invalid_value() {
+    bin()
+        .arg("--since")
+        .arg("not-a-time")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("invalid value"));
+}
+
+#[test]
 fn json_rejects_human_only_flags() {
     for flag in [
         "--absolute",

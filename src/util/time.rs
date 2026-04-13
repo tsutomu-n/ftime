@@ -1,4 +1,5 @@
-use chrono::{DateTime, Local, TimeZone, Utc};
+use anyhow::{Result, bail};
+use chrono::{DateTime, Local, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use std::time::{Duration, SystemTime};
 
 /// Compute the bucket for a given modification time.
@@ -54,6 +55,25 @@ pub fn utc_rfc3339(mtime: SystemTime) -> String {
     dt.to_rfc3339()
 }
 
+pub fn parse_since(input: &str, now: SystemTime) -> Result<SystemTime> {
+    let value = input.trim();
+    if value.is_empty() {
+        bail!("invalid value for --since: expected duration or date");
+    }
+
+    if let Some(ts) = parse_duration_since(value, now) {
+        return Ok(ts);
+    }
+
+    if let Some(ts) = parse_absolute_since(value) {
+        return Ok(ts);
+    }
+
+    bail!(
+        "invalid value for --since: `{value}` (supported: 15m, 24h, 7d, 2026-04-13, RFC3339/local datetime)"
+    )
+}
+
 #[allow(dead_code)]
 pub fn start_of_day(ts: SystemTime) -> SystemTime {
     let dt: DateTime<Local> = ts.into();
@@ -70,6 +90,51 @@ fn start_of_local_day(now: DateTime<Local>) -> DateTime<Local> {
         chrono::LocalResult::Single(dt) => dt,
         chrono::LocalResult::Ambiguous(dt, _) => dt,
         chrono::LocalResult::None => now,
+    }
+}
+
+fn parse_duration_since(input: &str, now: SystemTime) -> Option<SystemTime> {
+    let (amount, unit) = input.split_at(input.len().checked_sub(1)?);
+    let amount: u64 = amount.parse().ok()?;
+    let seconds = match unit {
+        "s" => amount,
+        "m" => amount.checked_mul(60)?,
+        "h" => amount.checked_mul(3600)?,
+        "d" => amount.checked_mul(86_400)?,
+        "w" => amount.checked_mul(7 * 86_400)?,
+        _ => return None,
+    };
+    now.checked_sub(Duration::from_secs(seconds))
+}
+
+fn parse_absolute_since(input: &str) -> Option<SystemTime> {
+    if let Ok(dt) = DateTime::parse_from_rfc3339(input) {
+        return Some(dt.with_timezone(&Utc).into());
+    }
+
+    if let Ok(date) = NaiveDate::parse_from_str(input, "%Y-%m-%d") {
+        return localize_naive_datetime(date.and_hms_opt(0, 0, 0)?);
+    }
+
+    for format in [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M",
+    ] {
+        if let Ok(dt) = NaiveDateTime::parse_from_str(input, format) {
+            return localize_naive_datetime(dt);
+        }
+    }
+
+    None
+}
+
+fn localize_naive_datetime(dt: NaiveDateTime) -> Option<SystemTime> {
+    match Local.from_local_datetime(&dt) {
+        LocalResult::Single(local) => Some(local.into()),
+        LocalResult::Ambiguous(first, _) => Some(first.into()),
+        LocalResult::None => None,
     }
 }
 
@@ -241,5 +306,19 @@ mod tests {
         assert!(rendered.starts_with("20"));
         assert!(rendered.contains(" (UTC"));
         assert!(rendered.ends_with(')'));
+    }
+
+    #[test]
+    fn test_parse_since_duration() {
+        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(10_000);
+        let since = parse_since("24h", now).unwrap();
+        assert_eq!(since, now - Duration::from_secs(24 * 3600));
+    }
+
+    #[test]
+    fn test_parse_since_rejects_invalid_value() {
+        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(10_000);
+        let err = parse_since("nonsense", now).unwrap_err().to_string();
+        assert!(err.contains("invalid value for --since"));
     }
 }

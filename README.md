@@ -35,12 +35,14 @@ ftime
 ftime ~/Downloads
 ftime -a
 ftime --all-history
+ftime --since 24h
 ftime --hide-dots
 ftime --plain
 ftime --json | jq -r '.path'
 ```
 
 `--json` emits one JSON object per line, so it works well with `jq` and other scripts.
+`--since` filters entries by a lower bound before bucketing.
 
 ## Example output
 

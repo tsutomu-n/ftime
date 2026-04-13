@@ -21,6 +21,8 @@ pub struct ScanOptions {
     pub ext_filter: Option<Vec<String>>,
     pub files_only: bool,
     pub show_hints: bool,
+    pub since: Option<SystemTime>,
+    pub since_raw: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -47,6 +49,7 @@ enum FilterDecision {
     Ignored,
     Ext,
     Type,
+    Since,
 }
 
 pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
@@ -97,6 +100,7 @@ pub fn scan_dir(path: &Path, opts: &ScanOptions) -> Result<ScanResult> {
                 stats.filtered_type += 1;
                 continue;
             }
+            FilterDecision::Since => continue,
         }
 
         let name = entry.file_name().to_string_lossy().to_string();
@@ -279,6 +283,12 @@ fn should_include_entry(
         }
     }
 
+    if let Some(since) = opts.since
+        && metadata.modified().map(|mtime| mtime < since).unwrap_or(false)
+    {
+        return FilterDecision::Since;
+    }
+
     FilterDecision::Include
 }
 
@@ -399,6 +409,8 @@ mod tests {
             local_ignore_patterns: Vec::new(),
             files_only: false,
             show_hints: true,
+            since: None,
+            since_raw: None,
         }
     }
 

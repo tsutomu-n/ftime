@@ -5,7 +5,7 @@
 ## 1. Command Signature
 
 ```bash
-ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--all-history] [-A|--absolute] [--hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
+ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only] [--since <value>] [--all-history] [-A|--absolute] [--hints] [--plain|--json] [--color <auto|always|never>] [-I|--icons]
 ```
 
 Default output is always the human view.
@@ -17,6 +17,7 @@ Default output is always the human view.
 - Default hidden policy: hidden files and hidden symlinks stay visible, hidden directories stay hidden.
 - Built-in ignore patterns are `.DS_Store` and `Thumbs.db`.
 - `--ext` filters regular files only. Directories and symlinks stay visible unless `--files-only` is also set.
+- Only entries with `mtime >= since` remain visible when `--since <value>` is set.
 
 ## 3. Flags
 
@@ -26,6 +27,7 @@ Default output is always the human view.
 - `--no-ignore`: disable built-in ignore plus `FTIME_IGNORE`, `~/.ftimeignore`, and local `.ftimeignore`
 - `--ext <csv>`: filter regular files by comma-separated extensions
 - `--files-only`: only show regular files
+- `--since <value>`: filter visible entries by a lower-bound time such as `24h`, `7d`, `2026-04-13`, or RFC3339/local datetime input
 - `-A, --absolute`: human/plain time column becomes `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)`
 - `--hints`: show directory child hint calculation in human output
 - `--plain`: emit `path<TAB>bucket<TAB>time`

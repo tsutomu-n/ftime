@@ -468,6 +468,9 @@ fn filters_summary(scan_opts: &ScanOptions) -> Option<String> {
     if scan_opts.files_only {
         parts.push("type=files-only".to_string());
     }
+    if let Some(since_raw) = &scan_opts.since_raw {
+        parts.push(format!("since={since_raw}"));
+    }
 
     if parts == ["dots=default".to_string(), "ignore=on".to_string()] {
         None

@@ -280,6 +280,32 @@ fn files_only_excludes_directories_and_symlinks() {
 }
 
 #[test]
+fn since_filters_human_output_by_lower_bound() {
+    let dir = tempdir().unwrap();
+    let old_path = dir.path().join("old.log");
+    let recent_path = dir.path().join("recent.log");
+    File::create(&old_path).unwrap();
+    File::create(&recent_path).unwrap();
+
+    let now = SystemTime::now();
+    set_file_mtime(
+        &old_path,
+        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &recent_path,
+        FileTime::from_system_time(now - Duration::from_secs(30 * 60)),
+    )
+    .unwrap();
+
+    let stdout = human_stdout_with_args(dir.path(), &["--since", "24h"]);
+
+    assert!(stdout.contains("recent.log"));
+    assert!(!stdout.contains("old.log"));
+}
+
+#[test]
 fn human_output_shows_compact_skew_without_footer_or_fresh_label() {
     let dir = tempdir().unwrap();
     let file_path = dir.path().join("future-file");

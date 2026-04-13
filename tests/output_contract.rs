@@ -226,6 +226,66 @@ fn human_view_keeps_history_preview_and_all_history_header_contract() {
 }
 
 #[test]
+fn since_filters_all_output_modes_consistently() {
+    let dir = tempdir().unwrap();
+    let now = SystemTime::now();
+    let old_path = dir.path().join("old.txt");
+    let recent_path = dir.path().join("recent.txt");
+    File::create(&old_path).unwrap();
+    File::create(&recent_path).unwrap();
+
+    set_file_mtime(
+        &old_path,
+        FileTime::from_system_time(now - Duration::from_secs(3 * 24 * 3600)),
+    )
+    .unwrap();
+    set_file_mtime(
+        &recent_path,
+        FileTime::from_system_time(now - Duration::from_secs(15 * 60)),
+    )
+    .unwrap();
+
+    let human = human_stdout(dir.path(), &["--since", "24h"]);
+    assert!(human.contains("recent.txt"), "{human}");
+    assert!(!human.contains("old.txt"), "{human}");
+
+    let plain = stdout({
+        let mut cmd = bin();
+        cmd.arg(dir.path()).arg("--plain").arg("--since").arg("24h");
+        cmd
+    });
+    assert!(plain.contains("recent.txt\t"), "{plain}");
+    assert!(!plain.contains("old.txt\t"), "{plain}");
+
+    let json = stdout({
+        let mut cmd = bin();
+        cmd.arg(dir.path()).arg("--json").arg("--since").arg("24h");
+        cmd
+    });
+    let lines: Vec<&str> = json.lines().collect();
+    assert_eq!(lines.len(), 1, "{json}");
+    let value: Value = serde_json::from_str(lines[0]).unwrap();
+    assert_eq!(value["path"], "recent.txt");
+}
+
+#[test]
+fn since_empty_state_reports_filters_summary() {
+    let dir = tempdir().unwrap();
+    let old_path = dir.path().join("old.txt");
+    File::create(&old_path).unwrap();
+    set_file_mtime(
+        &old_path,
+        FileTime::from_system_time(SystemTime::now() - Duration::from_secs(2 * 24 * 3600)),
+    )
+    .unwrap();
+
+    let stdout = human_stdout(dir.path(), &["--since", "1h"]);
+    assert!(stdout.contains("No matching entries"), "{stdout}");
+    assert!(stdout.contains("filters:"), "{stdout}");
+    assert!(stdout.contains("since="), "{stdout}");
+}
+
+#[test]
 fn human_empty_state_only_shows_filters_when_non_default_filters_are_active() {
     let dir = tempdir().unwrap();
 

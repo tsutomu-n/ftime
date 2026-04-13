@@ -10,6 +10,7 @@ use std::env;
 use std::path::PathBuf;
 use std::process;
 use util::ignore::{load_ignore_patterns, load_local_ignore};
+use util::time::parse_since;
 use view::tty::ColorMode;
 
 #[derive(Parser, Debug)]
@@ -48,6 +49,10 @@ struct Cli {
     /// Only show regular files
     #[arg(long = "files-only")]
     files_only: bool,
+
+    /// Only show entries modified at or after the given lower bound
+    #[arg(long = "since", value_name = "SINCE")]
+    since: Option<String>,
 
     /// Expand the History bucket
     #[arg(long = "all-history")]
@@ -140,6 +145,12 @@ fn run() -> Result<()> {
     };
 
     let use_ignore = !cli.no_ignore;
+    let now = std::time::SystemTime::now();
+    let since = cli
+        .since
+        .as_deref()
+        .map(|value| parse_since(value, now))
+        .transpose()?;
     let scan_opts = ScanOptions {
         dot_mode,
         ext_filter: cli.ext.as_ref().map(|s| {
@@ -161,6 +172,8 @@ fn run() -> Result<()> {
         },
         files_only: cli.files_only,
         show_hints: cli.hints,
+        since,
+        since_raw: cli.since.clone(),
     };
 
     let scan = scan_dir(&path, &scan_opts)?;
@@ -236,6 +249,7 @@ fn has_scan_options(cli: &Cli) -> bool {
         || cli.hide_dots
         || cli.ext.is_some()
         || cli.files_only
+        || cli.since.is_some()
         || cli.all_history
         || cli.hints
         || cli.use_icons
