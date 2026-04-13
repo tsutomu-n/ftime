@@ -1,7 +1,8 @@
-# ftime v2.0.7 Release Notes
+# ftime v2.0.8 Release Notes
 
 ## Patch highlights
 
+- Added `--since <value>` to keep only entries newer than a lower-bound time before bucketing, with support for duration, date, and datetime input forms.
 - The default human view now renders a stable `type | name | size | time` layout.
 - The Windows PowerShell installer now adds the install directory to the user PATH and updates the current session PATH fallback.
 - Output contract coverage now locks the unreadable footer and JSON field order, including `symlink_target` placement.
