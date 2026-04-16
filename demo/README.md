@@ -11,6 +11,7 @@ cd /path/to/generated/demo-scene
 ftime
 ftime -a
 ftime --all-history
+ftime --since 24h
 ftime --plain
 ftime --json | jq -r '.path'
 ```

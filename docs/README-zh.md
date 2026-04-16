@@ -18,6 +18,7 @@
 ftime
 ftime -a
 ftime --all-history
+ftime --since 24h
 ftime --hide-dots
 ftime --files-only --ext rs,toml
 ftime --plain
@@ -28,7 +29,7 @@ ftime --check-update
 
 `ftime` 不是 `fd`、`find`、`eza` 或 `git status` 的替代品。
 
-代表参数：`--all-history`、`--hide-dots`、`--plain`、`--files-only`、`--hints`
+代表参数：`--all-history`、`--since`、`--hide-dots`、`--plain`、`--files-only`、`--hints`
 
 ## 继续阅读
 

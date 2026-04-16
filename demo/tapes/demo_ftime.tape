@@ -36,6 +36,16 @@ Enter
 Sleep 400ms
 Show
 
+Type "ftime --since 24h"
+Enter
+Sleep 1800ms
+
+Hide
+Type "clear"
+Enter
+Sleep 400ms
+Show
+
 Type "ftime --plain"
 Enter
 Sleep 1800ms

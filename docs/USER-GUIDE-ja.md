@@ -8,6 +8,7 @@
 - hidden も見たければ `ftime -a`
 - hidden を全部消したければ `ftime --hide-dots`
 - `History` を全部開くなら `ftime --all-history`
+- 最近更新されたものだけ見たければ `ftime --since 24h`
 - 機械処理なら `ftime --plain` か `ftime --json`
 - `--hints` で child hint を表示できます
 - 公開版の更新確認は `ftime --check-update`
@@ -17,6 +18,7 @@
 ```bash
 ftime
 ftime --all-history
+ftime --since 24h
 ftime --hide-dots
 ftime --plain
 ftime --json | jq -r '.path'
@@ -28,6 +30,7 @@ ftime --json | jq -r '.path'
 - TSV が欲しい: `--plain`
 - ツール連携したい: `--json`
 - hidden directory も必要: `ftime -a`
+- 直近だけに絞りたい: `ftime --since 24h`
 - hidden entry を全部消したい: `ftime --hide-dots`
 - 新しい公開版を見たい: `ftime --check-update`
 

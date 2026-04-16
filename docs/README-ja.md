@@ -18,6 +18,7 @@
 ftime
 ftime -a
 ftime --all-history
+ftime --since 24h
 ftime --hide-dots
 ftime --files-only --ext rs,toml
 ftime --plain
@@ -30,7 +31,7 @@ ftime --check-update
 
 `ftime` は Context Recovery（作業文脈の再構築）のための道具です。再帰検索や Git 状態確認の代わりではありません。
 
-代表フラグ: `--all-history`, `--hide-dots`, `--plain`, `--hints`
+代表フラグ: `--all-history`, `--since`, `--hide-dots`, `--plain`, `--hints`
 
 ## 詳しく読む
 
