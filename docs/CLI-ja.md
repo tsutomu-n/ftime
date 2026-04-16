@@ -16,7 +16,7 @@ ftime [PATH] [-a|--all] [--hide-dots] [--no-ignore] [--ext <csv>] [--files-only]
 - `--no-ignore`: built-in ignore と `FTIME_IGNORE`、`~/.ftimeignore`、local `.ftimeignore` を無効化
 - `--ext <csv>`: regular file だけを拡張子で絞る
 - `--files-only`: regular file だけ表示
-- `--since <value>`: `24h`, `7d`, `2026-04-13` などの lower-bound 時刻以降に更新された entry だけを表示
+- `--since <value>`: `24h`, `7d`, `2024-01-01` などの lower-bound 時刻以降に更新された entry だけを表示
 - `-A, --absolute`: `time` を `YYYY-MM-DD HH:MM:SS (UTC±HH:MM)` にする
 - `--hints`: human view で directory の `[child: ...]` hint を表示する
 - `--plain`: `path<TAB>bucket<TAB>time`
